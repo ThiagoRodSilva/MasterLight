@@ -1,4 +1,5 @@
 """Modelos base compartilhados (timestamps)."""
+
 import uuid
 
 from django.db import models
@@ -25,15 +26,9 @@ class SiteSettings(models.Model):
     por isso não herda `BaseModel` e usa `pk=1` fixa (singleton).
     """
 
-    id = models.PositiveSmallIntegerField(
-        primary_key=True, default=1, editable=False
-    )
-    store_enabled = models.BooleanField(
-        default=True, verbose_name="loja habilitada"
-    )
-    services_enabled = models.BooleanField(
-        default=True, verbose_name="serviços habilitados"
-    )
+    id = models.PositiveSmallIntegerField(primary_key=True, default=1, editable=False)
+    store_enabled = models.BooleanField(default=True, verbose_name="loja habilitada")
+    services_enabled = models.BooleanField(default=True, verbose_name="serviços habilitados")
     affiliates_enabled = models.BooleanField(
         default=True, verbose_name="programa de afiliados habilitado"
     )
@@ -47,14 +42,17 @@ class SiteSettings(models.Model):
         # Garante a linha única (singleton) sempre com pk=1: se a linha já
         # existe, atualiza-a no lugar de tentar inserir um duplicado.
         self.pk = 1
+        now = timezone.now()
         if self.__class__.objects.filter(pk=1).exists():
             self.__class__.objects.filter(pk=1).update(
                 store_enabled=self.store_enabled,
                 services_enabled=self.services_enabled,
                 affiliates_enabled=self.affiliates_enabled,
+                updated_at=now,
             )
-            self.updated_at = timezone.now()
+            self.updated_at = now
             return
+        self.updated_at = now
         super().save(*args, **kwargs)
 
     @classmethod

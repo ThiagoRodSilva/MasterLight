@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 """WSGI config para produção (Hostinger / gunicorn)."""
+
 import os
 
 from django.core.wsgi import get_wsgi_application

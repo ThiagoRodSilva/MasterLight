@@ -18,12 +18,9 @@ class AffiliateReferralMiddleware:
     def __call__(self, request):
         ref_code = request.GET.get("ref")
         if ref_code:
-            valid = AffiliateProfile.objects.filter(
-                code=ref_code, is_active=True
-            ).exists()
+            valid = AffiliateProfile.objects.filter(code=ref_code, is_active=True).exists()
             if valid:
                 max_age = getattr(settings, "AFFILIATE_COOKIE_MAX_AGE", 30 * 24 * 60 * 60)
-                request._affiliate_ref_valid = True
                 response = self.get_response(request)
                 response.set_cookie(
                     settings.AFFILIATE_COOKIE_NAME,

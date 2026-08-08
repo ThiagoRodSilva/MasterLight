@@ -1,4 +1,5 @@
 """Testes do AsaasGateway: cobrança Pix/cartão, refund e webhook."""
+
 import json
 
 import pytest
@@ -60,9 +61,7 @@ class TestAsaasWebhook:
         AsaasGateway().charge(order)
         tx = order.transactions.get(provider="asaas")
 
-        payload = json.dumps(
-            {"event": "PAYMENT_CONFIRMED", "payment": {"id": asaas.payment_id}}
-        )
+        payload = json.dumps({"event": "PAYMENT_CONFIRMED", "payment": {"id": asaas.payment_id}})
         AsaasGateway().webhook(payload, {"x-webhook-token": "segredo"})
 
         tx.refresh_from_db()
@@ -72,9 +71,7 @@ class TestAsaasWebhook:
         order = create_order(user, with_referral=False)
         AsaasGateway().charge(order)
 
-        payload = json.dumps(
-            {"event": "PAYMENT_CONFIRMED", "payment": {"id": asaas.payment_id}}
-        )
+        payload = json.dumps({"event": "PAYMENT_CONFIRMED", "payment": {"id": asaas.payment_id}})
         with pytest.raises(ValueError):
             AsaasGateway().webhook(payload, {"x-webhook-token": "errado"})
 
@@ -103,6 +100,7 @@ class TestPixConfirmationView:
 
         response = client.get(reverse("payments-pix-confirm", kwargs={"order_pk": order.pk}))
         assert response.status_code == 404
+
     def test_refund_sets_refunded(self, asaas, user):
         order = create_order(user, with_referral=False)
         tx_id = AsaasGateway().charge(order).external_id

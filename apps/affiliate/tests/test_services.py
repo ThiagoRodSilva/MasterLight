@@ -1,4 +1,5 @@
 """Testes do programa de afiliados (middleware + services)."""
+
 import pytest
 from django.conf import settings
 from django.test import Client
@@ -36,6 +37,23 @@ class TestApproveReferral:
         tx.save(update_fields=["status", "updated_at"])
         order.refresh_from_db()
         assert order.status == Order.Status.PAID
+
+    def test_paid_order_decrements_stock(self, user):
+        order = create_order(user, with_referral=False, qty=3)
+        product = order.items.first().product
+        initial_stock = product.stock
+        tx = order.transactions.first()
+        tx.status = "paid"
+        tx.save(update_fields=["status", "updated_at"])
+        product.refresh_from_db()
+        assert product.stock == initial_stock - 3
+
+    def test_unpaid_order_does_not_decrement_stock(self, user):
+        order = create_order(user, with_referral=False, qty=3)
+        product = order.items.first().product
+        initial_stock = product.stock
+        product.refresh_from_db()
+        assert product.stock == initial_stock
 
     def test_order_paid_and_balance_credited_with_referral(self, user):
         order = create_order(user, with_referral=True)

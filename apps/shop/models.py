@@ -1,4 +1,5 @@
 """Catalogo de produtos da loja."""
+
 from django.db import models
 
 from apps.core.models import BaseModel
@@ -54,9 +55,7 @@ class ProductVariant(BaseModel):
     )
     name = models.CharField(max_length=80)  # ex: Tamanho M
     value = models.CharField(max_length=80)  # ex: M
-    price_adjustment = models.DecimalField(
-        max_digits=12, decimal_places=2, default=0
-    )
+    price_adjustment = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     stock = models.PositiveIntegerField(default=0)
 
     def __str__(self) -> str:

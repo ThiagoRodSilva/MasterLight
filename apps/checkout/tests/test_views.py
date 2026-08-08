@@ -1,4 +1,5 @@
 """Testes do carrinho/checkout."""
+
 import pytest
 from django.conf import settings
 from django.shortcuts import reverse
@@ -70,6 +71,16 @@ class TestCheckoutView:
         order = Order.objects.filter(user=user).latest("created_at")
         assert order.items.first().unit_price == 100
 
+    def test_checkout_empty_cart_redirects(self, client_user):
+        response = client_user.post(reverse("checkout"))
+        assert response.status_code == 302
+        assert response.url == reverse("shop-list")
+
+    def test_checkout_get_empty_cart_redirects(self, client_user):
+        response = client_user.get(reverse("checkout"))
+        assert response.status_code == 302
+        assert response.url == reverse("shop-list")
+
     def test_self_referral_blocked(self, user, client):
         affil, _ = AffiliateProfile.objects.get_or_create(user=user)
         user.role = user.Role.AFILIADO
@@ -80,3 +91,24 @@ class TestCheckoutView:
         client.post(reverse("checkout-cart-add", args=[product.pk]), {"qty": "1"})
         client.post(reverse("checkout"))
         assert Referral.objects.filter(affiliate=affil).count() == 0
+
+
+class TestReferralCreation:
+    def test_checkout_creates_referral_with_cookie(self, user, client, affiliate_profile):
+        client.force_login(user)
+        client.cookies[settings.AFFILIATE_COOKIE_NAME] = affiliate_profile.code
+        product = ProductFactory(stock=10, price=100)
+        client.post(reverse("checkout-cart-add", args=[product.pk]), {"qty": "1"})
+        client.post(reverse("checkout"))
+
+        order = Order.objects.filter(user=user).latest("created_at")
+        referral = Referral.objects.get(affiliate=affiliate_profile, order=order)
+        assert referral.referred == user
+        assert referral.commission_amount == order.total * affiliate_profile.commission_rate
+
+    def test_no_referral_without_cookie(self, user, client, affiliate_profile):
+        client.force_login(user)
+        product = ProductFactory(stock=10)
+        client.post(reverse("checkout-cart-add", args=[product.pk]), {"qty": "1"})
+        client.post(reverse("checkout"))
+        assert Referral.objects.filter(affiliate=affiliate_profile).count() == 0

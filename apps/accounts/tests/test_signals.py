@@ -1,4 +1,5 @@
 """Testes de accounts (signals de perfil)."""
+
 import pytest
 
 from apps.accounts.models import CustomUser, PublicProfile

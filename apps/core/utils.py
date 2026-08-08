@@ -1,4 +1,5 @@
 """Utils de uso transversal."""
+
 import random
 import string
 

@@ -1,4 +1,5 @@
 """CustomUser eAMPLO de role perfis."""
+
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
@@ -30,9 +31,7 @@ class CustomUser(AbstractUser):
     telefone = models.CharField(max_length=20, blank=True, default="")
     cpf = models.CharField(max_length=14, blank=True, default="")
     avatar = models.ImageField(upload_to="avatars/", blank=True, null=True)
-    asaas_customer_id = models.CharField(
-        max_length=64, blank=True, default="", db_index=True
-    )
+    asaas_customer_id = models.CharField(max_length=64, blank=True, default="", db_index=True)
 
     # configuracoes herdadadas do AbstractUser
     USERNAME_FIELD = "email"

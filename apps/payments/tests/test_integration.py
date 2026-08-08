@@ -1,4 +1,5 @@
 """Integração ponta a ponta: compra -> PIX -> webhook -> comissão afiliado."""
+
 import json
 
 import pytest
@@ -16,9 +17,7 @@ class TestAsaasEndToEnd:
     def _pay(self, asaas, order):
         """Gera cobrança asaas e dispara webhook CONFIRMED."""
         AsaasGateway().charge(order, billing_type="PIX")
-        payload = json.dumps(
-            {"event": "PAYMENT_CONFIRMED", "payment": {"id": asaas.payment_id}}
-        )
+        payload = json.dumps({"event": "PAYMENT_CONFIRMED", "payment": {"id": asaas.payment_id}})
         AsaasGateway().webhook(payload, {"x-webhook-token": "segredo"})
 
     def test_paid_transaction_approves_referral(self, asaas, user):

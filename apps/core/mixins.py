@@ -1,4 +1,5 @@
 """Mixins reutilizaveis para views."""
+
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import Http404
 
@@ -34,7 +35,7 @@ class ProviderRequiredMixin(LoginRequiredMixin):
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
             return self.handle_no_permission()
-        if request.user.role not in ("prestador", "admin"):
+        if not request.user.is_superuser and request.user.role not in ("prestador", "admin"):
             return self.handle_no_permission()
         return super().dispatch(request, *args, **kwargs)
 
@@ -45,7 +46,7 @@ class AffiliateRequiredMixin(LoginRequiredMixin):
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
             return self.handle_no_permission()
-        if request.user.role not in ("afiliado", "admin"):
+        if not request.user.is_superuser and request.user.role not in ("afiliado", "admin"):
             return self.handle_no_permission()
         return super().dispatch(request, *args, **kwargs)
 
@@ -56,6 +57,6 @@ class ClienteRequiredMixin(LoginRequiredMixin):
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
             return self.handle_no_permission()
-        if request.user.role not in ("cliente", "admin"):
+        if not request.user.is_superuser and request.user.role not in ("cliente", "admin"):
             return self.handle_no_permission()
         return super().dispatch(request, *args, **kwargs)

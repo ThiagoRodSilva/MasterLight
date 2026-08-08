@@ -1,4 +1,5 @@
 """Views de loja."""
+
 from django.views.generic import DetailView, ListView
 
 from apps.core.mixins import SectionEnabledMixin
@@ -25,7 +26,9 @@ class ProductListView(SectionEnabledMixin, ListView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx["categories"] = Category.objects.filter(is_active=True)
-        ctx["active_category"] = self.kwargs.get("category_slug") or self.request.GET.get("categoria")
+        ctx["active_category"] = self.kwargs.get("category_slug") or self.request.GET.get(
+            "categoria"
+        )
         return ctx
 
 
@@ -35,6 +38,4 @@ class ProductDetailView(SectionEnabledMixin, DetailView):
     context_object_name = "product"
 
     def get_queryset(self):
-        return Product.objects.filter(is_active=True).prefetch_related(
-            "images", "variants"
-        )
+        return Product.objects.filter(is_active=True).prefetch_related("images", "variants")

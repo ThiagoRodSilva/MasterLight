@@ -86,6 +86,10 @@ class ManualGateway(PaymentGateway):
         from .models import Transaction
 
         token = str(headers.get("x-webhook-token") or "")
+        if not settings.MANUAL_WEBHOOK_TOKEN:
+            raise WebhookAuthError(
+                "MANUAL_WEBHOOK_TOKEN não configurada (webhook manual desabilitado)."
+            )
         if token != settings.MANUAL_WEBHOOK_TOKEN:
             raise WebhookAuthError("Assinatura de webhook manual inválida.")
 
@@ -112,9 +116,7 @@ class ManualGateway(PaymentGateway):
         try:
             transaction_id = str(uuid.UUID(str(transaction_id)))
         except (ValueError, TypeError) as exc:
-            raise ValueError(
-                f"transaction_id '{transaction_id}' não é um UUID válido."
-            ) from exc
+            raise ValueError(f"transaction_id '{transaction_id}' não é um UUID válido.") from exc
 
         tx = Transaction.objects.filter(pk=transaction_id).first()
         if tx is None:
@@ -205,9 +207,7 @@ class AsaasGateway(PaymentGateway):
 
         normalized = (billing_type or "PIX").upper()
         if normalized not in ("PIX", "CREDIT_CARD"):
-            raise ValueError(
-                f"billing_type inválido: {billing_type} (use PIX ou CREDIT_CARD)."
-            )
+            raise ValueError(f"billing_type inválido: {billing_type} (use PIX ou CREDIT_CARD).")
 
         customer = self._ensure_customer(order.user)
         due_date = date.today() + timedelta(days=1)
@@ -234,9 +234,7 @@ class AsaasGateway(PaymentGateway):
             status=Transaction.Status.PENDING,
             raw_payload=json.dumps({"payment": payment, "pix": pix}),
         )
-        redirect_url = str(
-            reverse_lazy("payments-pix-confirm", kwargs={"order_pk": order.pk})
-        )
+        redirect_url = str(reverse_lazy("payments-pix-confirm", kwargs={"order_pk": order.pk}))
         return ChargeResult(
             ok=True,
             redirect_url=redirect_url,

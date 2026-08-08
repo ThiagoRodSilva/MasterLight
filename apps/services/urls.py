@@ -26,9 +26,19 @@ urlpatterns = [
         name="services-provider-requests",
     ),
     path("minhas-solicitacoes/", MyServiceRequestListView.as_view(), name="services-my-requests"),
-    path("minhas-solicitacoes/<uuid:pk>/aprovar/", ServiceRequestApproveView.as_view(), name="services-request-approve"),
-    path("minhas-solicitacoes/<uuid:pk>/cancelar/", ServiceRequestCancelView.as_view(), name="services-request-cancel"),
-    path("solicitacoes/<uuid:pk>/orcar/", ServiceQuoteView.as_view(), name="services-request-quote"),
+    path(
+        "minhas-solicitacoes/<uuid:pk>/aprovar/",
+        ServiceRequestApproveView.as_view(),
+        name="services-request-approve",
+    ),
+    path(
+        "minhas-solicitacoes/<uuid:pk>/cancelar/",
+        ServiceRequestCancelView.as_view(),
+        name="services-request-cancel",
+    ),
+    path(
+        "solicitacoes/<uuid:pk>/orcar/", ServiceQuoteView.as_view(), name="services-request-quote"
+    ),
     path("<slug:slug>/editar/", ServiceUpdateView.as_view(), name="services-update"),
     path("<slug:slug>/", ServiceDetailView.as_view(), name="services-detail"),
     path("<slug:slug>/solicitar/", ServiceRequestCreateView.as_view(), name="services-request"),

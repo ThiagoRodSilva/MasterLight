@@ -1,4 +1,5 @@
 """URLs de accounts: perfil publico e meus dados (allauth trata login)."""
+
 from django.urls import path
 
 from .views import ProfileDetailView, me_view

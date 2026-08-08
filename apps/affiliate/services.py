@@ -20,15 +20,15 @@ def approve_referral(tx) -> int | None:
         return None
 
     order = tx.order
-    referral_qs = (
-        order.referrals.filter(status="pending") if order is not None else None
-    )
+    referral_qs = order.referrals.filter(status="pending") if order is not None else None
     referral = referral_qs.first() if referral_qs else None
 
     with db_transaction.atomic():
         if order is not None and order.status != Order.Status.PAID:
             order.status = Order.Status.PAID
             order.save(update_fields=["status", "updated_at"])
+            # Estoque baixa apenas na transição para pago (guarda acima).
+            order.decrement_stock()
 
         if referral is None:
             return None
@@ -55,9 +55,7 @@ def create_payout_request(profile):
     amount = None
     payout = None
     with db_transaction.atomic():
-        locked = (
-            AffiliateProfile.objects.select_for_update().filter(pk=profile.pk).first()
-        )
+        locked = AffiliateProfile.objects.select_for_update().filter(pk=profile.pk).first()
         if locked is None or locked.balance is None or locked.balance <= Decimal(0):
             raise ValueError("Saldo insuficiente para saque.")
 

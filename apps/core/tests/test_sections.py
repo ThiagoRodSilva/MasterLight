@@ -1,4 +1,5 @@
 """Testes de desabilitação de seções via SiteSettings."""
+
 import pytest
 from django.urls import reverse
 
@@ -43,9 +44,7 @@ class TestStoreDisabled:
     def test_cart_add_blocked(self, client_user):
         product = ProductFactory(slug="produto-teste")
         _unset("store_enabled")
-        response = client_user.post(
-            reverse("checkout-cart-add", args=[product.pk]), {"qty": "1"}
-        )
+        response = client_user.post(reverse("checkout-cart-add", args=[product.pk]), {"qty": "1"})
         assert response.status_code == 302
         assert response.url == reverse("home")
 
@@ -64,13 +63,9 @@ class TestServicesDisabled:
 
     def test_services_detail_404(self, client):
         category = ServiceCategory.objects.create(name="Cat", slug="cat")
-        Service.objects.create(
-            name="Servico Teste", slug="servico-teste", category=category
-        )
+        Service.objects.create(name="Servico Teste", slug="servico-teste", category=category)
         _unset("services_enabled")
-        response = client.get(
-            reverse("services-detail", kwargs={"slug": "servico-teste"})
-        )
+        response = client.get(reverse("services-detail", kwargs={"slug": "servico-teste"}))
         assert response.status_code == 404
 
     def test_home_hides_pedir_servico(self, client):
@@ -105,9 +100,6 @@ class TestAllEnabledDefault:
     def test_sections_available_by_default(self, client):
         product = ProductFactory(slug="produto-teste")
         assert client.get(reverse("shop-list")).status_code == 200
-        assert (
-            client.get(reverse("shop-detail", kwargs={"slug": product.slug})).status_code
-            == 200
-        )
+        assert client.get(reverse("shop-detail", kwargs={"slug": product.slug})).status_code == 200
         assert client.get(reverse("services-list")).status_code == 200
         assert client.get(reverse("affiliate-landing")).status_code == 200

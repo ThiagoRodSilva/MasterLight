@@ -1,4 +1,5 @@
 """Modelos do programa de afiliados."""
+
 from django.conf import settings
 from django.db import models
 
@@ -75,9 +76,7 @@ class Referral(BaseModel):
         choices=Status.choices,
         default=Status.PENDING,
     )
-    commission_amount = models.DecimalField(
-        max_digits=12, decimal_places=2, default=0
-    )
+    commission_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     commission_rate = models.DecimalField(
         max_digits=5, decimal_places=4, default=settings.AFFILIATE_DEFAULT_COMMISSION_RATE
     )

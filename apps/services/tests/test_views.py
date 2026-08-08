@@ -1,4 +1,5 @@
 """Testes das views de serviços (catálogo, self-service e solicitações)."""
+
 from decimal import Decimal
 
 import pytest
@@ -117,9 +118,7 @@ class TestServiceRequestFlow:
             created_by=provider,
         )
         cliente = UserFactory(role=CustomUser.Role.CLIENTE)
-        sr = ServiceRequest.objects.create(
-            cliente=cliente, service=service, prestador=provider
-        )
+        sr = ServiceRequest.objects.create(cliente=cliente, service=service, prestador=provider)
         client.force_login(provider)
         response = client.get(reverse("services-provider-requests"))
         assert response.status_code == 200
@@ -145,9 +144,7 @@ class TestServiceRequestFlow:
         cliente = UserFactory(role=CustomUser.Role.CLIENTE)
         sr = ServiceRequest.objects.create(cliente=cliente, service=service)
         client.force_login(cliente)
-        response = client.post(
-            reverse("services-request-cancel", kwargs={"pk": sr.pk})
-        )
+        response = client.post(reverse("services-request-cancel", kwargs={"pk": sr.pk}))
         assert response.status_code == 302
         sr.refresh_from_db()
         assert sr.status == ServiceRequest.Status.CANCELED

@@ -1,4 +1,5 @@
 """Settings de produção (Hostinger)."""
+
 import os
 
 from .base import *  # noqa: F401,F403
@@ -30,4 +31,6 @@ EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = os.getenv("DJANGO_DEFAULT_FROM_EMAIL", "no-reply@dominio.com")
 
 # Hostinger roda via Passenger; collectstatic obrigatório.
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+STORAGES["staticfiles"] = {  # noqa: F405 (definido em .base)
+    "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"
+}

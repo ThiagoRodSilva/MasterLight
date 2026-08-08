@@ -1,4 +1,5 @@
 """Admin do app core (configurações do site)."""
+
 from django.contrib import admin
 
 from .models import SiteSettings

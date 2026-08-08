@@ -1,4 +1,5 @@
 """Testes das configurações do site (singleton)."""
+
 import pytest
 
 from apps.core.models import SiteSettings

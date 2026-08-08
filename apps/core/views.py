@@ -1,4 +1,5 @@
 """Views globais (home)."""
+
 from django.shortcuts import render
 
 

@@ -1,4 +1,5 @@
 """Testes do portfolio (visibilidade)."""
+
 import pytest
 from django.shortcuts import reverse
 
@@ -28,8 +29,12 @@ class TestPortfolioVisibility:
     def test_inactive_item_404_on_detail(self, client):
         owner = UserFactory()
         item = PortfolioItem.objects.create(
-            title="Inativo", description="", category="", published=True,
-            is_active=False, created_by=owner,
+            title="Inativo",
+            description="",
+            category="",
+            published=True,
+            is_active=False,
+            created_by=owner,
         )
         response = client.get(reverse("portfolio-detail", args=[item.pk]))
         assert response.status_code == 404

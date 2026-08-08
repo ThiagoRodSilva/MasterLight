@@ -1,4 +1,5 @@
 """Pedidos, itens e enderecos."""
+
 from decimal import Decimal
 
 from django.db import models
@@ -160,8 +161,7 @@ class Cart:
 
     def total(self) -> float:
         return sum(
-            float(item.get("price", 0)) * int(item.get("qty", 0))
-            for item in self.cart.values()
+            float(item.get("price", 0)) * int(item.get("qty", 0)) for item in self.cart.values()
         )
 
     def clear(self) -> None:

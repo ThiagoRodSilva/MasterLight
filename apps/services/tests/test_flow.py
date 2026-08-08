@@ -1,4 +1,5 @@
 """Fluxo completo: aprovação do orçamento gera pedido PIX e aprova solicitação."""
+
 import json
 from decimal import Decimal
 
@@ -69,9 +70,7 @@ class TestApprovalCreatesOrderAndPays:
         sr.refresh_from_db()
         order = sr.order
 
-        payload = json.dumps(
-            {"event": "PAYMENT_CONFIRMED", "payment": {"id": asaas.payment_id}}
-        )
+        payload = json.dumps({"event": "PAYMENT_CONFIRMED", "payment": {"id": asaas.payment_id}})
         AsaasGateway().webhook(payload, {"x-webhook-token": "segredo"})
 
         order.refresh_from_db()

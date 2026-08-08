@@ -1,4 +1,5 @@
 """Testes de views do app affiliate (landing + dashboard + saque)."""
+
 import pytest
 from django.urls import reverse
 
@@ -34,6 +35,17 @@ class TestAffiliateDashboard:
         response = client.get(reverse("affiliate-dashboard"))
         assert response.status_code == 200
 
+    def test_dashboard_404_when_profile_missing(self, client):
+        from apps.accounts.models import CustomUser
+        from apps.affiliate.models import AffiliateProfile
+        from conftest import UserFactory
+
+        user = UserFactory(role=CustomUser.Role.AFILIADO)
+        AffiliateProfile.objects.filter(user=user).delete()
+        client.force_login(user)
+        response = client.get(reverse("affiliate-dashboard"))
+        assert response.status_code == 404
+
 
 class TestPayoutView:
     def test_payout_zero_saldo_locked(self, affiliate_profile, client):
@@ -41,3 +53,19 @@ class TestPayoutView:
         response = client.post(reverse("affiliate-payout"))
         assert response.status_code == 302
         assert not PayoutRequest.objects.filter(affiliate=affiliate_profile).exists()
+
+    def test_payout_requires_afiliado(self, user, client):
+        client.force_login(user)
+        response = client.post(reverse("affiliate-payout"))
+        assert response.status_code in (302, 403)
+        assert not PayoutRequest.objects.exists()
+
+    def test_payout_blocked_when_affiliates_disabled(self, affiliate_profile, client):
+        from apps.core.models import SiteSettings
+
+        settings = SiteSettings.load()
+        settings.affiliates_enabled = False
+        settings.save(update_fields=["affiliates_enabled"])
+        client.force_login(affiliate_profile.user)
+        response = client.post(reverse("affiliate-payout"))
+        assert response.status_code == 404

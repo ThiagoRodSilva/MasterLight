@@ -1,4 +1,5 @@
 """Fixtures e factories globais (pytest-django)."""
+
 import json
 
 import factory
@@ -16,6 +17,13 @@ class UserFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = get_user_model()
         django_get_or_create = ("email",)
+
+    @classmethod
+    def _after_postgeneration(cls, instance, create, results=None):
+        # Persiste o hash gerado por PostGenerationMethodCall("set_password")
+        # (o save padrao de pos-geracao sera removido numa versao futura).
+        if create:
+            instance.save()
 
     username = factory.Sequence(lambda n: f"user{n}")
     email = factory.Sequence(lambda n: f"user{n}@example.com")
@@ -79,9 +87,7 @@ def create_order(user, product=None, with_referral=False, qty=2):
         )
     from apps.payments.models import Transaction
 
-    Transaction.objects.create(
-        order=order, user=user, provider="manual", amount=order.total
-    )
+    Transaction.objects.create(order=order, user=user, provider="manual", amount=order.total)
     return order
 
 

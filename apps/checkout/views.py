@@ -1,4 +1,5 @@
 """Views de carrinho/pedido."""
+
 from django.apps import apps
 from django.conf import settings
 from django.contrib import messages
@@ -108,7 +109,9 @@ class CheckoutView(LoginRequiredMixin, View):
             order.recompute_total()
 
             # registra referral se cookie ref existir (nao-referencia a si mesmo)
-            ref_code = request.COOKIES.get(settings.AFFILIATE_COOKIE_NAME) or request.session.get(settings.AFFILIATE_COOKIE_NAME)
+            ref_code = request.COOKIES.get(settings.AFFILIATE_COOKIE_NAME) or request.session.get(
+                settings.AFFILIATE_COOKIE_NAME
+            )
             if ref_code:
                 affil = AffiliateProfile.objects.filter(code=ref_code, is_active=True).first()
                 if affil and affil.user_id != request.user.pk:

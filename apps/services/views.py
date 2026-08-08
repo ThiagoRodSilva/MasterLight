@@ -1,4 +1,5 @@
 """Views de servicos: catalogo, solicitacoes e painel prestador."""
+
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
@@ -96,9 +97,7 @@ class ServiceListViewMine(ProviderRequiredMixin, ListView):
     context_object_name = "services"
 
     def get_queryset(self):
-        return Service.objects.filter(
-            created_by=self.request.user
-        ).select_related("category")
+        return Service.objects.filter(created_by=self.request.user).select_related("category")
 
 
 # -------------------------------------------------------------------------
@@ -175,9 +174,7 @@ class ServiceRequestApproveView(ClienteRequiredMixin, UpdateView):
     fields: list = []
 
     def get_queryset(self):
-        return ServiceRequest.objects.filter(
-            cliente=self.request.user, status="quoted"
-        )
+        return ServiceRequest.objects.filter(cliente=self.request.user, status="quoted")
 
     def post(self, request, *args, **kwargs):
         from apps.checkout.models import Order, OrderItem
@@ -242,6 +239,8 @@ class MyServiceRequestListView(LoginRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        return ServiceRequest.objects.filter(
-            cliente=self.request.user
-        ).select_related("service", "prestador").order_by("-created_at")
+        return (
+            ServiceRequest.objects.filter(cliente=self.request.user)
+            .select_related("service", "prestador")
+            .order_by("-created_at")
+        )

@@ -1,9 +1,9 @@
 from django.urls import path
 
-from .views import AffiliateDashboardView, AffiliateLandingView, request_payout
+from .views import AffiliateDashboardView, AffiliateLandingView, PayoutRequestView
 
 urlpatterns = [
     path("", AffiliateLandingView.as_view(), name="affiliate-landing"),
     path("painel/", AffiliateDashboardView.as_view(), name="affiliate-dashboard"),
-    path("saque/", request_payout, name="affiliate-payout"),
+    path("saque/", PayoutRequestView.as_view(), name="affiliate-payout"),
 ]

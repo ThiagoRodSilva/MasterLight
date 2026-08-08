@@ -1,4 +1,5 @@
 """Inicializacao de SocialApp para dev/prod a partir de variaveis de ambiente."""
+
 import os
 
 from allauth.socialaccount.models import SocialApp

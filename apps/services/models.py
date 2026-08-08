@@ -1,4 +1,5 @@
 """Catalogo de servicos e solicitacoes de clientes."""
+
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -107,7 +108,11 @@ class ServiceRequest(BaseModel):
         verbose_name="situação",
     )
     final_price = models.DecimalField(
-        max_digits=12, decimal_places=2, default=0, null=True, blank=True,
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        null=True,
+        blank=True,
         verbose_name="preço do orçamento",
     )
     notes = models.TextField(blank=True, default="", verbose_name="observações")
