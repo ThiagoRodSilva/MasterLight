@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load socialaccount %}
+{% block content %}
+<div class="container py-5" style="max-width:540px">
+  <h1>Entrar com rede social</h1>
+  {% if request.GET.next %}<p class="text-muted small">Continuando para: {{ request.GET.next }}</p>{% endif %}
+
+  <div class="list-group my-3">
+    {% get_providers as providers %}
+    {% for provider in providers %}
+      {% if provider.app and provider.app.client_id %}
+        <a class="list-group-item list-group-item-action" href="{% provider_login_url provider.id %}?next={{ request.GET.next|default:'' }}">
+          <strong>{{ provider.name }}</strong> — entrar com {{ provider.id|title }}
+        </a>
+      {% endif %}
+    {% endfor %}
+  </div>
+
+  <p class="text-muted small">
+    Nenhum provedor habilitado? Cadastre via Django Admin → Social Applications
+    e defina as variáveis <code>GOOGLE_CLIENT_ID/SECRET</code> ou <code>FACEBOOK_CLIENT_ID/SECRET</code> no <code>.env</code>.
+  </p>
+  <a href="{% url 'account_login' %}" class="btn btn-dark">Entrar com email/senha</a>
+</div>
+{% endblock %}

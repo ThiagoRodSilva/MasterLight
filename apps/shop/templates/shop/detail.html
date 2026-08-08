@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-5">
+  <div class="row">
+    <div class="col-md-6">
+      <div id="cover" class="ratio ratio-4x3 bg-light">
+        {% if product.cover %}<img src="{{ product.cover.image.url }}" class="img-fluid rounded">{% endif %}
+      </div>
+      <div class="d-flex gap-2 mt-2">
+        {% for img in product.images.all %}
+        <img src="{{ img.image.url }}" height="60" class="rounded border">
+        {% endfor %}
+      </div>
+    </div>
+    <div class="col-md-6">
+      <h1>{{ product.name }}</h1>
+      <p class="text-muted">Código: {{ product.sku }} · {{ product.category|default:"Geral" }}</p>
+      <h3 class="text-warning-emphasis">R$ {{ product.price|floatformat:2 }}</h3>
+      <p>{{ product.description|linebreaks }}</p>
+      <form method="post" action="{% url 'checkout-cart-add' product.pk %}">
+        {% csrf_token %}
+        <label>Quantidade</label>
+        <input type="number" name="qty" value="1" min="1" max="{{ product.stock }}" class="form-control mb-2" style="max-width:120px">
+        <button class="btn btn-dark" {% if product.stock == 0 %}disabled{% endif %}>
+          {% if product.stock > 0 %}Adicionar ao carrinho{% else %}Esgotado{% endif %}
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

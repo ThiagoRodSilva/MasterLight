@@ -1,0 +1,33 @@
+# Django
+Django==5.0.7
+gunicorn==23.0.0
+django-environ==0.11.2
+python-decouple==3.8
+
+# Banco de dados
+# mysqlclient exige dev-libs no host; em ambiente sem build tools usamos PyMySQL como fallback
+PyMySQL==1.1.1
+cryptography==43.0.0  # dependencia do PyMySQL p/ auth caching_sha2
+Pillow==10.4.0
+
+# Autenticação social
+django-allauth==64.0.0
+
+# Pagamentos (HTTP client p/ gateways)
+requests==2.32.3
+
+# Frontend utilitários
+django-crispy-forms==2.3
+crispy-bootstrap5==2024.10
+django-widget-tweaks==1.5.0
+
+# Static files
+whitenoise==6.7.0
+
+# Dev / testes
+pytest==8.3.2
+pytest-django==4.8.0
+pytest-cov==5.0.0
+factory-boy==3.3.1
+ruff==0.5.6
+pre-commit==3.8.0

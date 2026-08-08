@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+{% block content %}
+<div class="container py-5">
+  <h1>Pedir orçamento — {{ service.name }}</h1>
+  {% if service.providers.count == 0 %}
+    <div class="alert alert-warning">Este serviço ainda não tem profissional disponível.</div>
+  {% endif %}
+  <form method="post">
+    {% csrf_token %}
+    {{ form|crispy }}
+    <button class="btn btn-dark" type="submit">Enviar pedido de orçamento</button>
+  </form>
+</div>
+{% endblock %}

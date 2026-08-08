@@ -1,0 +1,12 @@
+<footer class="bg-dark text-white mt-auto py-4">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-6"><strong>{{ BRAND_NAME }}</strong><br><small>{{ BRAND_TAGLINE }}</small></div>
+      <div class="col-md-6 text-md-end small">
+        {% if AFFILIATES_ENABLED %}
+        <a class="text-white text-decoration-none" href="{% url 'affiliate-landing' %}">Programa de afiliados</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</footer>

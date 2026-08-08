@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-5">
+  <div class="row">
+    <div class="col-md-6">
+      {% if service.image %}<img src="{{ service.image.url }}" class="img-fluid rounded">{% endif %}
+    </div>
+    <div class="col-md-6">
+      <h1>{{ service.name }}</h1>
+      <p class="text-muted">{{ service.category|default:"Geral" }}</p>
+      <p>{{ service.description|linebreaks }}</p>
+      <span class="badge bg-warning text-dark fs-5">A partir de R$ {{ service.base_price|floatformat:2 }}</span>
+      {% if service.providers.count > 0 %}
+      <p class="text-muted mb-4"><strong>{{ service.providers.count }}</strong> profissionais disponíveis</p>
+      {% else %}
+      <p class="text-muted mb-4">Ainda sem profissional disponível.</p>
+      {% endif %}
+      <div class="mt-4">
+        <a href="{% url 'services-request' service.slug %}" class="btn btn-dark {% if service.providers.count == 0 %}disabled{% endif %}">Pedir orçamento</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

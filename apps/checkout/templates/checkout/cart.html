@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-5">
+  <h1>Carrinho</h1>
+  {% if cart.is_empty %}
+    <p class="text-muted">Seu carrinho está vazio. <a href="{% url 'shop-list' %}">Ver produtos</a></p>
+  {% else %}
+  <table class="table">
+    <thead><tr><th>Produto</th><th>Qtd</th><th>Preço</th><th>Total</th><th></th></tr></thead>
+    <tbody>
+      {% for line in cart %}
+      <tr>
+        <td>{{ line.name }}</td>
+        <td>{{ line.qty }}</td>
+        <td>R$ {{ line.price|floatformat:2 }}</td>
+        <td>R$ {{ line.subtotal|floatformat:2 }}</td>
+        <td><a href="{% url 'checkout-cart-remove' line.pk %}" class="btn btn-sm btn-outline-danger">Remover</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr><th colspan="3" class="text-end">Total</th><th>R$ {{ cart.total|floatformat:2 }}</th><th></th></tr>
+    </tfoot>
+  </table>
+  <a href="{% url 'checkout' %}" class="btn btn-dark">Finalizar compra</a>
+  {% endif %}
+</div>
+{% endblock %}

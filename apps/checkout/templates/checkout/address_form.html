@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+{% block content %}
+<div class="container py-5">
+  <h1>Endereço de entrega</h1>
+  <form method="post">{% csrf_token %}{{ form|crispy }}<button class="btn btn-dark">Salvar</button></form>
+</div>
+{% endblock %}

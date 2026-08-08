@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-5">
+  <h1 class="mb-4">Painel do Afiliado</h1>
+
+  {% if not profile.pix_key %}
+  <div class="alert alert-warning">
+    Cadastre sua <strong>chave Pix</strong> para receber os saques. Isso será obrigatório ao solicitar o pagamento.
+  </div>
+  {% endif %}
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-4"><div class="card text-bg-dark p-3"><small>Saldo disponível</small><h3 class="m-0">R$ {{ profile.balance|floatformat:2 }}</h3></div></div>
+    <div class="col-md-4"><div class="card p-3" style="background:#FFC107"><small>Comissão</small><h3 class="m-0">{{ profile.commission_rate|floatformat:2 }}%</h3></div></div>
+    <div class="col-md-4">
+      <div class="card p-3 border">
+        <small>Seu link</small>
+        <div class="input-group">
+          <input readonly class="form-control" id="ref-link" value="{{ ref_url }}">
+          <button class="btn btn-dark" type="button" id="copy-btn">Copiar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h2>Indicações</h2>
+    <form method="post" action="{% url 'affiliate-payout' %}">{% csrf_token %}
+      {% if profile.balance and profile.balance > 0 %}
+      <button class="btn btn-dark" type="submit">Solicitar saque (R$ {{ profile.balance|floatformat:2 }})</button>
+      {% else %}
+      <button class="btn btn-outline-dark" type="submit" disabled>Saldo insuficiente</button>
+      {% endif %}
+    </form>
+  </div>
+  <table class="table table-striped">
+    <thead><tr><th>Pedido</th><th>Status</th><th>Comissão</th><th>Data</th></tr></thead>
+    <tbody>
+      {% for r in referrals %}
+      <tr><td>{{ r.order|default:"-" }}</td><td>{{ r.get_status_display }}</td><td>{{ r.commission_amount|floatformat:2 }}</td><td>{{ r.created_at|date:"d/m/Y" }}</td></tr>
+      {% empty %}
+      <tr><td colspan="4" class="text-center text-muted">Nenhuma indicação ainda.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2 class="mt-5">Saques</h2>
+  <table class="table">
+    <thead><tr><th>Valor</th><th>Status</th><th>Pago em</th></tr></thead>
+    <tbody>
+      {% for p in payouts %}
+      <tr><td>{{ p.amount|floatformat:2 }}</td><td>{{ p.get_status_display }}</td><td>{{ p.paid_at|date:"d/m/Y"|default:"-" }}</td></tr>
+      {% empty %}
+      <tr><td colspan="3" class="text-center text-muted">Nenhuma solicitação ainda.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  document.getElementById('copy-btn')?.addEventListener('click', function () {
+    const el = document.getElementById('ref-link');
+    if (!el) return;
+    el.select();
+    navigator.clipboard?.writeText(el.value);
+    this.textContent = 'Copiado!';
+  });
+</script>
+{% endblock %}

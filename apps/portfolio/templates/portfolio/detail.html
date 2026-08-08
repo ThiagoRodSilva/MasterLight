@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-5">
+  <div class="card">
+    {% if item.image %}<img src="{{ item.image.url }}" class="card-img-top">{% endif %}
+    <div class="card-body">
+      <h1 class="card-title">{{ item.title }}</h1>
+      {% if item.category %}<span class="badge text-bg-warning mb-3">{{ item.category }}</span>{% endif %}
+      <p class="card-text">{{ item.description|linebreaks }}</p>
+      {% if item.video %}<a href="{{ item.video }}" target="_blank" class="btn btn-outline-dark">Ver vídeo</a>{% endif %}
+      <p class="text-muted small mt-3">Por {{ item.created_by.get_full_name|default:item.created_by.email }} em {{ item.created_at|date:"d/m/Y" }}</p>
+    </div>
+  </div>
+  {% if user == item.created_by %}
+    <a class="btn btn-secondary mt-3" href="{% url 'portfolio-update' item.pk %}">Editar</a>
+  {% endif %}
+</div>
+{% endblock %}

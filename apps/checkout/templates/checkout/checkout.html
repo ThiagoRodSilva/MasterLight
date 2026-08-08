@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-5">
+  <h1>Finalizar pedido</h1>
+  <p>Total: <strong>R$ {{ cart.total|floatformat:2 }}</strong></p>
+  <form method="post">
+    {% csrf_token %}
+    <div class="card mb-3 p-3" style="max-width: 480px;">
+      <h6 class="mb-2">Forma de pagamento</h6>
+      <div class="form-check">
+        <input class="form-check-input" type="radio" name="payment_method" id="pm_pix" value="PIX" checked>
+        <label class="form-check-label" for="pm_pix">Pix (QR Code)</label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="radio" name="payment_method" id="pm_card" value="CREDIT_CARD" disabled>
+        <label class="form-check-label" for="pm_card">Cartão de crédito (em breve)</label>
+      </div>
+    </div>
+    <button class="btn btn-dark">Confirmar e pagar</button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+{% block content %}
+<div class="container py-5">
+  <h1>{% if form.instance.pk %}Editar{% else %}Novo{% endif %} item de portfólio</h1>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form|crispy }}
+    <button class="btn btn-dark" type="submit">Salvar</button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+{% block content %}
+<div class="container py-5">
+  <h1>{% if object %}Editar{% else %}Novo{% endif %} serviço</h1>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form|crispy }}
+    <button class="btn btn-dark" type="submit">Salvar</button>
+    <a href="{% url 'services-my' %}" class="btn btn-outline-dark">Cancelar</a>
+  </form>
+</div>
+{% endblock %}

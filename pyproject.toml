@@ -1,0 +1,19 @@
+[tool.ruff]
+line-length = 100
+extend-exclude = ["migrations", "staticfiles", "static", "media", "venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.dev"
+python_files = ["tests.py", "test_*.py", "*_tests.py"]
+
+[tool.coverage.run]
+source = ["apps"]
+omit = ["apps/*/migrations/*"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true

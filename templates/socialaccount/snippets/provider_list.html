@@ -1,0 +1,9 @@
+{% load socialaccount %}
+<div class="d-flex flex-wrap gap-2">
+  {% get_providers as providers %}
+  {% for p in providers %}
+    <a class="btn btn-outline-dark" href="{% provider_login_url p.id %}" title="{{ p.name }}">{{ p.name }}</a>
+  {% empty %}
+    <p class="text-muted small mb-0">Nenhum provedor social configurado. Adicione via <em>Admin → Social Applications</em> e variáveis de ambiente.</p>
+  {% endfor %}
+</div>

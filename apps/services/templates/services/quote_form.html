@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+{% block content %}
+<div class="container py-5">
+  <h1>Enviar orçamento</h1>
+  <p>Serviço: <strong>{{ request.service.name }}</strong> — Cliente: <strong>{{ request.cliente.email }}</strong></p>
+  <form method="post">
+    {% csrf_token %}
+    {{ form|crispy }}
+    <button class="btn btn-dark" type="submit">Enviar orçamento</button>
+    <a href="{% url 'services-provider-requests' %}" class="btn btn-outline-dark">Cancelar</a>
+  </form>
+</div>
+{% endblock %}

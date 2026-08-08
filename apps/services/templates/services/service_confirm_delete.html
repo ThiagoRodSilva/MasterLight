@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-5">
+  <h1>Excluir serviço</h1>
+  <p>Confirma a remoção de <strong>{{ service.name }}</strong> do catálogo?</p>
+  <form method="post">
+    {% csrf_token %}
+    <button class="btn btn-danger" type="submit">Confirmar exclusão</button>
+    <a href="{% url 'services-my' %}" class="btn btn-outline-dark">Cancelar</a>
+  </form>
+</div>
+{% endblock %}

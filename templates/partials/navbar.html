@@ -1,0 +1,42 @@
+<nav class="navbar navbar-expand-lg navbar-dark">
+  <div class="container">
+    <a class="navbar-brand fw-bold" href="{% url 'home' %}">{{ BRAND_NAME }}</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="nav">
+      <ul class="navbar-nav me-auto">
+        {% if SERVICES_ENABLED %}
+        <li class="nav-item"><a class="nav-link" href="{% url 'services-list' %}">Serviços</a></li>
+        {% endif %}
+        {% if STORE_ENABLED %}
+        <li class="nav-item"><a class="nav-link" href="{% url 'shop-list' %}">Loja</a></li>
+        {% endif %}
+        <li class="nav-item"><a class="nav-link" href="{% url 'portfolio-list' %}">Portfólio</a></li>
+        {% if AFFILIATES_ENABLED %}
+        <li class="nav-item"><a class="nav-link" href="{% url 'affiliate-landing' %}">Afiliação</a></li>
+        {% endif %}
+      </ul>
+      {% if STORE_ENABLED %}
+      <form class="d-flex me-2" method="get" action="{% url 'shop-list' %}">
+        <input class="form-control" name="q" placeholder="Buscar produtos" value="{{ request.GET.q|default:'' }}">
+      </form>
+      {% endif %}
+      <ul class="navbar-nav">
+        {% if user.is_authenticated %}
+          {% if STORE_ENABLED %}
+          <li class="nav-item"><a class="nav-link" href="{% url 'checkout-cart' %}">Carrinho</a></li>
+          {% endif %}
+          <li class="nav-item"><a class="nav-link" href="{% url 'accounts-me' %}">Olá, {{ user.email }}</a></li>
+          <li class="nav-item">
+            <form method="post" action="{% url 'account_logout' %}">{% csrf_token %}
+              <button class="btn btn-sm btn-warning text-dark" type="submit">Sair</button>
+            </form>
+          </li>
+        {% else %}
+          <li class="nav-item"><a class="btn btn-sm btn-warning text-dark" href="{% url 'account_login' %}">Entrar</a></li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
+</nav>

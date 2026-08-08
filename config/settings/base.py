@@ -1,0 +1,176 @@
+"""Settings base compartilhados entre dev e prod."""
+from pathlib import Path
+
+import environ
+
+# Permite usar PyMySQL como driver MySQL drop-in (instalado sem build tools)
+try:
+    import pymysql  # noqa: F401
+
+    pymysql.install_as_MySQLdb()
+except ImportError:  # pragma: no cover
+    pass
+
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+env = environ.Env(
+    DJANGO_DEBUG=(bool, False),
+    DJANGO_ALLOWED_HOSTS=(list, []),
+)
+environ.Env.read_env(BASE_DIR / ".env", overwrite=False)
+
+SECRET_KEY = env("DJANGO_SECRET_KEY", default="dev-insecure-change-me")
+DEBUG = env("DJANGO_DEBUG")
+ALLOWED_HOSTS = env(
+    "DJANGO_ALLOWED_HOSTS",
+    default=["localhost", "127.0.0.1", "0.0.0.0"],
+)
+
+INSTALLED_APPS = [
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "django.contrib.sites",
+
+    # Third-party
+    "allauth",
+    "allauth.account",
+    "allauth.socialaccount",
+    "crispy_forms",
+    "crispy_bootstrap5",
+    "widget_tweaks",
+
+    # Local apps
+    "apps.core",
+    "apps.accounts",
+    "apps.portfolio",
+    "apps.services",
+    "apps.shop",
+    "apps.affiliate",
+    "apps.checkout",
+    "apps.payments",
+]
+
+MIDDLEWARE = [
+    "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
+    "apps.affiliate.middleware.AffiliateReferralMiddleware",
+]
+
+ROOT_URLCONF = "config.urls"
+
+TEMPLATES = [
+    {
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [BASE_DIR / "templates"],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+                "apps.core.context_processors.branding",
+            ],
+        },
+    },
+]
+
+WSGI_APPLICATION = "config.wsgi.application"
+
+DATABASES = {
+    "default": env.db_url(
+        "DATABASE_URL",
+        default="sqlite:///db.sqlite3",
+    )
+}
+
+AUTH_USER_MODEL = "accounts.CustomUser"
+
+AUTH_PASSWORD_VALIDATORS = [
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+]
+
+LANGUAGE_CODE = env("DJANGO_LANGUAGE_CODE", default="pt-br")
+TIME_ZONE = env("DJANGO_TIME_ZONE", default="America/Sao_Paulo")
+USE_I18N = True
+USE_TZ = True
+
+STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_DIRS = [BASE_DIR / "static"]
+STATICFILES_STORAGE = (
+    "whitenoise.storage.CompressedManifestStaticFilesStorage"
+    if not DEBUG
+    else "django.contrib.staticfiles.storage.StaticFilesStorage"
+)
+
+MEDIA_URL = "media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# django-allauth
+SITE_ID = 1
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+    "allauth.account.auth_backends.AuthenticationBackend",
+]
+ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+ACCOUNT_LOGIN_METHODS = {"email", "username"}
+ACCOUNT_SIGNUP_FIELDS = ["email*", "username*", "password1*", "password2*"]
+ACCOUNT_SIGNUP_FORM_CLASS = "apps.accounts.forms.CustomSignupForm"
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_UNIQUE_EMAIL = True
+ACCOUNT_USERNAME_REQUIRED = False
+ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 7
+SOCIALACCOUNT_AUTO_SIGNUP = True
+SOCIALACCOUNT_LOGIN_ON_GET = True
+SOCIALACCOUNT_STORE_TOKENS = False
+SOCIALACCOUNT_PROVIDERS = {
+    "google": {"SCOPE": ["email", "profile"], "AUTH_PARAMS": {"access_type": "online"}},
+    "facebook": {"SCOPE": ["email"], "FIELDS": ["email", "name"]},
+    "apple": {
+        "SCOPE": ["email", "name"],
+        # Orientações para gerar o client secret JWT com a chave privada (.p8)
+        # em https://developer.apple.com/account/resources/authkeys (Sign in with Apple).
+        "APPS": [
+            {
+                "app_id": env("APPLE_CLIENT_ID", default=""),
+                "bundle_id": env("APPLE_CLIENT_ID", default=""),
+            }
+        ],
+    },
+}
+
+# crispy forms
+CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
+CRISPY_TEMPLATE_PACK = "bootstrap5"
+
+# Pagamentos (app payments)
+PAYMENT_PROVIDER = env("PAYMENT_PROVIDER", default="manual")
+ASAAS_API_KEY = env("ASAAS_API_KEY", default="")
+ASAAS_SANDBOX = env.bool("ASAAS_SANDBOX", default=True)
+ASAAS_WEBHOOK_TOKEN = env("ASAAS_WEBHOOK_TOKEN", default="")
+MANUAL_WEBHOOK_TOKEN = env("MANUAL_WEBHOOK_TOKEN", default="")
+
+# Afiliados
+AFFILIATE_COOKIE_NAME = "ref"
+AFFILIATE_COOKIE_MAX_AGE = 30 * 24 * 60 * 60  # 30 dias
+AFFILIATE_DEFAULT_COMMISSION_RATE = 0.10  # 10%
+
+LOGIN_REDIRECT_URL = "/"
+ACCOUNT_LOGOUT_REDIRECT_URL = "/"

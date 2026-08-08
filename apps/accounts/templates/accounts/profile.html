@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-5">
+  <h1>{{ profile_user.get_full_name|default:profile_user.email }}</h1>
+  <p>{{ profile_user.get_role_display }}</p>
+  {% with pp=profile_user.public_profile %}
+    {% if pp.bio %}<p>{{ pp.bio }}</p>{% endif %}
+    {% if pp.website %}<a href="{{ pp.website }}" target="_blank" class="btn btn-outline-dark">Website</a>{% endif %}
+    {% if pp.instagram %}<a href="{{ pp.instagram }}" target="_blank" class="btn btn-outline-dark">Instagram</a>{% endif %}
+  {% endwith %}
+</div>
+{% endblock %}

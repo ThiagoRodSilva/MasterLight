@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-5">
+  <h1>Serviços</h1>
+  <div class="mb-3 d-flex gap-2 flex-wrap">
+    <a href="{% url 'services-list' %}" class="badge {% if not request.GET.categoria %}bg-dark text-white{% else %}bg-light text-dark border{% endif %}">Todos</a>
+    {% for c in categories %}
+      <a href="?categoria={{ c.slug }}" class="badge {% if request.GET.categoria == c.slug %}bg-warning text-dark{% else %}bg-light text-dark border{% endif %}">{{ c.name }}</a>
+    {% endfor %}
+  </div>
+  <div class="row g-3">
+    {% for s in services %}
+    <div class="col-md-4">
+      <a href="{% url 'services-detail' s.slug %}" class="card text-decoration-none text-dark h-100">
+        {% if s.image %}<img src="{{ s.image.url }}" class="card-img-top">{% endif %}
+        <div class="card-body">
+          <h5 class="card-title">{{ s.name }}</h5>
+          <p class="text-muted small">{{ s.category|default:"Geral" }}</p>
+          <span class="badge bg-warning text-dark">A partir de R$ {{ s.base_price|floatformat:2 }}</span>
+        </div>
+      </a>
+    </div>
+    {% empty %}
+    <p class="text-muted">Nenhum serviço disponível.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
