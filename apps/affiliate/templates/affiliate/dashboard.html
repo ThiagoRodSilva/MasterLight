@@ -11,7 +11,7 @@
 
   <div class="row g-3 mb-4">
     <div class="col-md-4"><div class="card text-bg-dark p-3"><small>Saldo disponível</small><h3 class="m-0">R$ {{ profile.balance|floatformat:2 }}</h3></div></div>
-    <div class="col-md-4"><div class="card p-3" style="background:#FFC107"><small>Comissão</small><h3 class="m-0">{{ profile.commission_rate|floatformat:2 }}%</h3></div></div>
+    <div class="col-md-4"><div class="card stat-card--brand p-3"><small>Comissão</small><h3 class="m-0">{{ profile.commission_rate|floatformat:2 }}%</h3></div></div>
     <div class="col-md-4">
       <div class="card p-3 border">
         <small>Seu link</small>

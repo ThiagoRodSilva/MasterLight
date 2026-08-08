@@ -19,7 +19,7 @@
     <div class="row g-3">
       {% for p in products %}
         <div class="col-md-3">
-          <a href="{% url 'shop-detail' p.slug %}" class="card text-decoration-none text-dark h-100">
+          <a href="{% url 'shop-detail' p.slug %}" class="card card-hover text-decoration-none text-dark h-100">
             {% if p.cover %}<img src="{{ p.cover.image.url }}" class="card-img-top" alt="{{ p.cover.alt }}">{% endif %}
             <div class="card-body">
               <h6 class="card-title">{{ p.name }}</h6>

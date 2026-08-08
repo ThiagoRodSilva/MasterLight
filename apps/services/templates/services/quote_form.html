@@ -3,7 +3,7 @@
 {% block content %}
 <div class="container py-5">
   <h1>Enviar orçamento</h1>
-  <p>Serviço: <strong>{{ request.service.name }}</strong> — Cliente: <strong>{{ request.cliente.email }}</strong></p>
+  <p>Serviço: <strong>{{ service_request.service.name }}</strong> — Cliente: <strong>{{ service_request.cliente.email }}</strong></p>
   <form method="post">
     {% csrf_token %}
     {{ form|crispy }}

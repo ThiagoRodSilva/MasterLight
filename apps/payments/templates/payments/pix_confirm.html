@@ -9,7 +9,7 @@
 
       {% if pix.encodedImage %}
         <img src="data:image/png;base64,{{ pix.encodedImage }}" alt="QR Code Pix"
-             class="img-fluid border rounded mb-3" style="max-width: 240px;">
+             class="qr-img img-fluid border rounded mb-3">
       {% else %}
         <div class="alert alert-warning">QR Code indisponível no momento.</div>
       {% endif %}

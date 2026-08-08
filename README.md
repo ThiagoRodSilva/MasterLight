@@ -1,4 +1,4 @@
-# Master Light — Django
+# MasterLight — Django
 
 Plataforma de loja de produtos + serviços + programa de afiliados, com autenticação social (allauth) e pagamentos via Asaas (Pix/cartão).
 
@@ -23,7 +23,7 @@ Plataforma de loja de produtos + serviços + programa de afiliados, com autentic
 ## Apps
 | App | Responsabilidade |
 |-----|------------------|
-| `apps.core` | BaseModel, mixins, utils, context processors (branding Master Light) |
+| `apps.core` | BaseModel, mixins, utils, context processors (branding MasterLight) |
 | `apps.accounts` | `CustomUser` (role), perfis, signals -> cria `AffiliateProfile` |
 | `apps.portfolio` | CRUD de portfólio do prestador |
 | `apps.services` | Categorias/Serviços, self-service de prestadores e solicitação de orçamento |

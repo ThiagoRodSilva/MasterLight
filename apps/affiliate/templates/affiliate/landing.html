@@ -2,11 +2,11 @@
 {% block content %}
 <section class="hero py-5">
   <div class="container">
-    <h1 class="display-5 fw-bold">Seja um Afiliado Master Light</h1>
+    <h1 class="display-5 fw-bold">Seja um Afiliado {{ BRAND_NAME }}</h1>
     <p class="lead">Divulgue e ganhe comissão por cada venda que vier através do seu link.</p>
     {% if profile %}
       <p class="mb-3">Seu link exclusivo:</p>
-      <div class="input-group mb-3" style="max-width: 560px;">
+      <div class="input-group mb-3 form-panel--medium">
         <input type="text" class="form-control" id="ref-link" readonly value="{{ ref_url }}">
         <button class="btn btn-dark" type="button" id="copy-btn">Copiar</button>
       </div>

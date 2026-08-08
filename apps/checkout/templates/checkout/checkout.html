@@ -5,7 +5,7 @@
   <p>Total: <strong>R$ {{ cart.total|floatformat:2 }}</strong></p>
   <form method="post">
     {% csrf_token %}
-    <div class="card mb-3 p-3" style="max-width: 480px;">
+    <div class="card mb-3 p-3 form-panel--narrow">
       <h6 class="mb-2">Forma de pagamento</h6>
       <div class="form-check">
         <input class="form-check-input" type="radio" name="payment_method" id="pm_pix" value="PIX" checked>

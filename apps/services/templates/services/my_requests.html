@@ -35,5 +35,7 @@
     <p class="text-muted">Nenhuma solicitação ainda. <a href="{% url 'services-list' %}">Solicitar um serviço</a>.</p>
     {% endfor %}
   </div>
+
+  {% include "partials/pagination.html" %}
 </div>
 {% endblock %}

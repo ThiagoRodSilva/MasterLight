@@ -7,11 +7,11 @@
     <a href="{% url 'portfolio-create' %}" class="btn btn-dark">Novo item de portfólio</a>
     {% if SERVICES_ENABLED %}
     <a href="{% url 'services-my' %}" class="btn btn-dark">Meus serviços</a>
-    <a href="{% url 'services-provider-requests' %}" class="btn btn-warning text-dark">Solicitações recebidas</a>
+    <a href="{% url 'services-provider-requests' %}" class="btn btn-brand">Solicitações recebidas</a>
     {% endif %}
   {% endif %}
   {% if user.is_afiliado and AFFILIATES_ENABLED %}
-    <a href="{% url 'affiliate-dashboard' %}" class="btn btn-warning text-dark">Painel de afiliado</a>
+    <a href="{% url 'affiliate-dashboard' %}" class="btn btn-brand">Painel de afiliado</a>
   {% endif %}
   {% if SERVICES_ENABLED %}
   <a href="{% url 'services-my-requests' %}" class="btn btn-outline-dark">Minhas solicitações</a>

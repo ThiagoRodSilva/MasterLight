@@ -152,7 +152,7 @@ class ServiceQuoteView(ProviderRequiredMixin, UpdateView):
     model = ServiceRequest
     fields = ["final_price"]
     template_name = "services/quote_form.html"
-    context_object_name = "request"
+    context_object_name = "service_request"
 
     def get_queryset(self):
         qs = ServiceRequest.objects.filter(status="pending")

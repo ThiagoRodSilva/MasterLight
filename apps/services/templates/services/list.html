@@ -11,7 +11,7 @@
   <div class="row g-3">
     {% for s in services %}
     <div class="col-md-4">
-      <a href="{% url 'services-detail' s.slug %}" class="card text-decoration-none text-dark h-100">
+      <a href="{% url 'services-detail' s.slug %}" class="card card-hover text-decoration-none text-dark h-100">
         {% if s.image %}<img src="{{ s.image.url }}" class="card-img-top">{% endif %}
         <div class="card-body">
           <h5 class="card-title">{{ s.name }}</h5>
@@ -24,5 +24,7 @@
     <p class="text-muted">Nenhum serviço disponível.</p>
     {% endfor %}
   </div>
+
+  {% include "partials/pagination.html" %}
 </div>
 {% endblock %}

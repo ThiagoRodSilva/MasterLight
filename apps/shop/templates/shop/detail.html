@@ -20,7 +20,7 @@
       <form method="post" action="{% url 'checkout-cart-add' product.pk %}">
         {% csrf_token %}
         <label>Quantidade</label>
-        <input type="number" name="qty" value="1" min="1" max="{{ product.stock }}" class="form-control mb-2" style="max-width:120px">
+        <input type="number" name="qty" value="1" min="1" max="{{ product.stock }}" class="form-control mb-2 qty-input">
         <button class="btn btn-dark" {% if product.stock == 0 %}disabled{% endif %}>
           {% if product.stock > 0 %}Adicionar ao carrinho{% else %}Esgotado{% endif %}
         </button>
