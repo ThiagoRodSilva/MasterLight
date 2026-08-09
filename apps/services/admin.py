@@ -1,6 +1,12 @@
 from django.contrib import admin
 
-from .models import Service, ServiceCategory, ServiceRequest
+from .models import (
+    MaintenancePlan,
+    MaintenanceVisit,
+    Service,
+    ServiceCategory,
+    ServiceRequest,
+)
 
 
 @admin.register(ServiceCategory)
@@ -31,3 +37,27 @@ class ServiceRequestAdmin(admin.ModelAdmin):
     list_filter = ("status", "service__category")
     search_fields = ("cliente__email", "prestador__email", "service__name", "address")
     date_hierarchy = "created_at"
+
+
+@admin.register(MaintenancePlan)
+class MaintenancePlanAdmin(admin.ModelAdmin):
+    list_display = (
+        "client",
+        "plan_type",
+        "value",
+        "next_due_date",
+        "prestador",
+        "is_active",
+        "created_at",
+    )
+    list_filter = ("plan_type", "is_active")
+    search_fields = ("client__email", "prestador__email", "asaas_subscription_id")
+    date_hierarchy = "created_at"
+
+
+@admin.register(MaintenanceVisit)
+class MaintenanceVisitAdmin(admin.ModelAdmin):
+    list_display = ("plan", "scheduled_at", "completed_at", "is_active", "created_at")
+    list_filter = ("completed_at", "plan__plan_type")
+    search_fields = ("plan__client__email", "notes")
+    date_hierarchy = "scheduled_at"

@@ -32,6 +32,12 @@ class SiteSettings(models.Model):
     affiliates_enabled = models.BooleanField(
         default=True, verbose_name="programa de afiliados habilitado"
     )
+    maintenance_enabled = models.BooleanField(
+        default=True, verbose_name="manutenção habilitada"
+    )
+    provider_registration_enabled = models.BooleanField(
+        default=True, verbose_name="cadastro de prestadores habilitado"
+    )
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -48,6 +54,8 @@ class SiteSettings(models.Model):
                 store_enabled=self.store_enabled,
                 services_enabled=self.services_enabled,
                 affiliates_enabled=self.affiliates_enabled,
+                maintenance_enabled=self.maintenance_enabled,
+                provider_registration_enabled=self.provider_registration_enabled,
                 updated_at=now,
             )
             self.updated_at = now

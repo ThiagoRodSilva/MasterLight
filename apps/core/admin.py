@@ -9,7 +9,13 @@ from .models import SiteSettings
 class SiteSettingsAdmin(admin.ModelAdmin):
     """Painel de configuração do site (singleton)."""
 
-    list_display = ("store_enabled", "services_enabled", "affiliates_enabled")
+    list_display = (
+        "store_enabled",
+        "services_enabled",
+        "affiliates_enabled",
+        "maintenance_enabled",
+        "provider_registration_enabled",
+    )
     readonly_fields = ("updated_at",)
 
     def has_add_permission(self, request):

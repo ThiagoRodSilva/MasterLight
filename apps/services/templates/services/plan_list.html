@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-5">
+  <h1 class="mb-2">Assinatura de Manutenção Elétrica</h1>
+  <p class="text-muted">
+    Visitas preventivas programadas, agendadas e acompanhadas pelo nosso time. Plano com mensalidade
+    recorrente e gerência de vencimentos automática.
+  </p>
+  <div class="row g-3">
+    {% for p in plans %}
+    <div class="col-md-4">
+      <div class="card h-100 card-hover">
+        <div class="card-body">
+          <h5 class="card-title">{{ p.label }}</h5>
+          <h4 class="text-brand-contrast">R$ {{ p.price|floatformat:2 }}</h4>
+          <p class="text-muted small">{{ p.description }}</p>
+          <a href="{% url 'services-plan-subscribe' %}?tipo={{ p.value }}" class="btn btn-brand w-100">Assinar</a>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <h2 class="mt-5 mb-3">Como funciona</h2>
+  <div class="row g-3">
+    <div class="col-md-4"><div class="border rounded p-3 h-100"><strong>1. Assine</strong><p class="text-muted mb-0">Escolha o plano e o prestador responsável pela sua região.</p></div></div>
+    <div class="col-md-4"><div class="border rounded p-3 h-100"><strong>2. Visitas</strong><p class="text-muted mb-0">Receba visitas preventivas programadas na sua casa ou empresa.</p></div></div>
+    <div class="col-md-4"><div class="border rounded p-3 h-100"><strong>3. Renovação</strong><p class="text-muted mb-0">O vencimento avança automaticamente a cada ciclo pago.</p></div></div>
+  </div>
+</div>
+{% endblock %}

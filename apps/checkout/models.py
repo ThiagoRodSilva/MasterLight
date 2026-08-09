@@ -39,6 +39,7 @@ class Order(BaseModel):
     class Kind(models.TextChoices):
         PRODUCT = "product", "Produto"
         SERVICE = "service", "Serviço"
+        SUBSCRIPTION = "subscription", "Assinatura"
 
     user = models.ForeignKey(
         CustomUser,
@@ -51,7 +52,7 @@ class Order(BaseModel):
         choices=Status.choices,
         default=Status.OPEN,
     )
-    kind = models.CharField(max_length=10, choices=Kind.choices, default=Kind.PRODUCT)
+    kind = models.CharField(max_length=20, choices=Kind.choices, default=Kind.PRODUCT)
     address = models.ForeignKey(
         Address,
         on_delete=models.SET_NULL,

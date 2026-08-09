@@ -23,6 +23,7 @@ class ChargeResult:
     message: str = ""
     raw_payload: str = ""
     status: Optional[str] = None
+    subscription_id: str = ""
 
 
 class PaymentGateway:
@@ -35,6 +36,14 @@ class PaymentGateway:
     name: str = "base"
 
     def charge(self, order) -> ChargeResult:
+        raise NotImplementedError
+
+    def subscribe(self, plan, billing_type: str = "PIX") -> ChargeResult:
+        """Cria assinatura recorrente para um plano de manutenção."""
+        raise NotImplementedError
+
+    def tokenize_credit_card(self, user, card: dict, holder: dict, remote_ip: str = "") -> str:
+        """Tokeniza cartão de crédito; apenas providers que suportam cartão."""
         raise NotImplementedError
 
     def refund(self, transaction_id, amount) -> ChargeResult:  # pragma: no cover
@@ -71,6 +80,28 @@ class ManualGateway(PaymentGateway):
             external_id=str(tx.pk),
             message="Pedido criado. Pagamento manual em análise.",
         )
+
+    def subscribe(self, plan, billing_type: str = "PIX") -> ChargeResult:
+        from .models import Transaction
+
+        tx = Transaction.objects.create(
+            order=plan.order,
+            user=plan.client,
+            provider=self.name,
+            amount=plan.value,
+            status=Transaction.Status.PENDING,
+        )
+        return ChargeResult(
+            ok=True,
+            redirect_url=str(
+                reverse_lazy("payments-manual-confirm", kwargs={"order_pk": plan.order.pk})
+            ),
+            external_id=str(tx.pk),
+            message="Assinatura criada. Pagamento manual em análise.",
+        )
+
+    def tokenize_credit_card(self, user, card: dict, holder: dict, remote_ip: str = "") -> str:
+        raise ValueError("Cartão de crédito requer o provider 'asaas'.")
 
     def refund(self, transaction_id, amount) -> ChargeResult:
         from .models import Transaction
@@ -180,6 +211,10 @@ class AsaasGateway(PaymentGateway):
             raise ValueError(f"Erro Asaas {response.status_code}: {detail}")
         return response.json()
 
+    def _sanitize_digits(self, value: str) -> str:
+        """Remove máscara de CPF/CNPJ, mantendo apenas dígitos."""
+        return "".join(ch for ch in (value or "") if ch.isdigit())
+
     def _ensure_customer(self, user) -> str:
         """Reutiliza (e salva) o customer_id do Asaas no usuario."""
         if getattr(user, "asaas_customer_id", ""):
@@ -191,7 +226,7 @@ class AsaasGateway(PaymentGateway):
             "externalReference": str(user.pk),
         }
         if user.cpf:
-            body["cpfCnpj"] = user.cpf
+            body["cpfCnpj"] = self._sanitize_digits(user.cpf)
         customer = self._api("POST", "customers", body)
         customer_id = customer["id"]
         user.asaas_customer_id = customer_id
@@ -201,7 +236,39 @@ class AsaasGateway(PaymentGateway):
     def _fetch_pix(self, payment_id: str) -> dict:
         return self._api("GET", f"payments/{payment_id}/pixQrCode")
 
-    def charge(self, order, billing_type: str = "PIX") -> ChargeResult:
+    def tokenize_credit_card(self, user, card: dict, holder: dict, remote_ip: str = "") -> str:
+        """Gera `creditCardToken` no Asaas (tokenização de cartão).
+
+        O token fica vinculado ao customer; cobranças seguintes do mesmo
+        cliente podem reusá-lo sem trafegar dados do cartão novamente.
+        """
+        customer = self._ensure_customer(user)
+        body = {
+            "customer": customer,
+            "creditCard": {
+                "holderName": card.get("holder_name", ""),
+                "number": card.get("number", "").strip(),
+                "expiryMonth": str(card.get("expiry_month", "")).strip(),
+                "expiryYear": str(card.get("expiry_year", "")).strip(),
+                "ccv": card.get("ccv", "").strip(),
+            },
+            "creditCardHolderInfo": {
+                "name": holder.get("name", ""),
+                "email": holder.get("email", ""),
+                "cpfCnpj": holder.get("cpf_cnpj", ""),
+                "postalCode": holder.get("postal_code", ""),
+                "addressNumber": holder.get("address_number", ""),
+                "phone": holder.get("phone", ""),
+            },
+            "remoteIp": remote_ip,
+        }
+        result = self._api("POST", "creditCards/tokenizeCreditCard", body)
+        token = result.get("creditCardToken") or result.get("credit_card_token")
+        if not token:
+            raise ValueError("Falha ao tokenizar cartão: resposta sem creditCardToken.")
+        return token
+
+    def charge(self, order, billing_type: str = "PIX", credit_card_token: str = "", remote_ip: str = "") -> ChargeResult:
         """Gera cobranca Pix ou cartao no Asaas e salva Transaction."""
         from .models import Transaction
 
@@ -217,10 +284,12 @@ class AsaasGateway(PaymentGateway):
             "value": float(order.total),
             "dueDate": due_date.isoformat(),
         }
-        # Cartao requer token client-side (creditCardToken). Sem token, o Asaas
-        # retorna erro; mantemos payload simples e documentamos no README.
         if normalized == "CREDIT_CARD":
-            body.setdefault("creditCard", {})
+            if not credit_card_token:
+                raise ValueError("CREDIT_CARD exige um creditCardToken (tokenize primeiro).")
+            body["creditCardToken"] = credit_card_token
+            if remote_ip:
+                body["remoteIp"] = remote_ip
 
         payment = self._api("POST", "payments", body)
         pix = self._fetch_pix(payment["id"]) if normalized == "PIX" else {}
@@ -234,7 +303,10 @@ class AsaasGateway(PaymentGateway):
             status=Transaction.Status.PENDING,
             raw_payload=json.dumps({"payment": payment, "pix": pix}),
         )
-        redirect_url = str(reverse_lazy("payments-pix-confirm", kwargs={"order_pk": order.pk}))
+        if normalized == "CREDIT_CARD":
+            redirect_url = str(reverse_lazy("payments-manual-confirm", kwargs={"order_pk": order.pk}))
+        else:
+            redirect_url = str(reverse_lazy("payments-pix-confirm", kwargs={"order_pk": order.pk}))
         return ChargeResult(
             ok=True,
             redirect_url=redirect_url,
@@ -242,6 +314,83 @@ class AsaasGateway(PaymentGateway):
             message=f"Cobrança {normalized} criada para análise.",
             status=Transaction.Status.PENDING,
             raw_payload=json.dumps({"payment": payment, "pix": pix}),
+        )
+
+    def subscribe(self, plan, billing_type: str = "PIX", credit_card_token: str = "", remote_ip: str = "") -> ChargeResult:
+        """Cria assinatura recorrente no Asaas e mapeia a 1ª cobrança."""
+        from .models import Transaction
+
+        normalized = (billing_type or "PIX").upper()
+        if normalized not in ("PIX", "CREDIT_CARD"):
+            raise ValueError(f"billing_type inválido: {billing_type} (use PIX ou CREDIT_CARD).")
+
+        cycle_map = {
+            "mensal": "MONTHLY",
+            "trimestral": "QUARTERLY",
+            "anual": "YEARLY",
+        }
+        cycle = cycle_map.get(plan.plan_type, "MONTHLY")
+        customer = self._ensure_customer(plan.client)
+        body = {
+            "customer": customer,
+            "billingType": normalized,
+            "value": float(plan.value),
+            "nextDueDate": plan.next_due_date.isoformat(),
+            "cycle": cycle,
+        }
+        if normalized == "CREDIT_CARD":
+            if not credit_card_token:
+                raise ValueError("CREDIT_CARD exige um creditCardToken (tokenize primeiro).")
+            body["creditCardToken"] = credit_card_token
+            if remote_ip:
+                body["remoteIp"] = remote_ip
+        subscription = self._api("POST", "subscriptions", body)
+        subscription_id = subscription["id"]
+
+        # Primeira cobranca da assinatura: usa o id do payment para que o
+        # webhook existente (mapeado por Transaction.external_id) o encontre.
+        external_payment_id = subscription_id
+        try:
+            payments = self._api("GET", f"subscriptions/{subscription_id}/payments")
+        except ValueError:
+            payments = {}
+        rows = payments.get("data") if isinstance(payments, dict) else None
+        if rows:
+            first = rows[0]
+            external_payment_id = first.get("id") or subscription_id
+
+        try:
+            pix = self._fetch_pix(external_payment_id) if normalized == "PIX" else {}
+        except ValueError:
+            # Cobrança ainda não possui Pix disponível (ex.: cartão sem emissão
+            # imediata); segue sem QR, o status é atualizado via webhook.
+            pix = {}
+
+        tx = Transaction.objects.create(
+            order=plan.order,
+            user=plan.client,
+            provider=self.name,
+            external_id=external_payment_id,
+            amount=plan.value,
+            status=Transaction.Status.PENDING,
+            raw_payload=json.dumps({"subscription": subscription, "first_payment": external_payment_id, "pix": pix}),
+        )
+
+        plan.asaas_subscription_id = subscription_id
+        plan.save(update_fields=["asaas_subscription_id", "updated_at"])
+
+        if normalized == "CREDIT_CARD":
+            redirect_url = str(reverse_lazy("payments-manual-confirm", kwargs={"order_pk": plan.order.pk}))
+        else:
+            redirect_url = str(reverse_lazy("payments-pix-confirm", kwargs={"order_pk": plan.order.pk}))
+        return ChargeResult(
+            ok=True,
+            redirect_url=redirect_url,
+            external_id=str(tx.pk),
+            message="Assinatura criada. Aguardando o primeiro pagamento.",
+            status=Transaction.Status.PENDING,
+            raw_payload=json.dumps({"subscription": subscription, "first_payment": external_payment_id, "pix": pix}),
+            subscription_id=subscription_id,
         )
 
     def refund(self, transaction_id, amount) -> ChargeResult:
@@ -260,7 +409,41 @@ class AsaasGateway(PaymentGateway):
             ok=True,
             redirect_url="/",
             external_id=str(tx.pk),
-            message="Reembolso solicitado.",
+message="Reembolso solicitado.",
+        )
+
+    def _create_subscription_transaction(self, payment, external_id):
+        """Cria Transaction para uma cobrança de assinatura (renovação).
+
+        Renovações chegam via webhook com um `payment.id` novo, ainda sem
+        `Transaction` local. O payload traz `payment.subscription`; mapeamos
+        para o `MaintenancePlan.asaas_subscription_id` e abrimos a transação
+        pendente ligada ao pedido do plano. Retorna None se não encontrar plano.
+        """
+        from apps.services.models import MaintenancePlan
+
+        from .models import Transaction
+
+        subscription_id = payment.get("subscription") if isinstance(payment, dict) else None
+        if not subscription_id:
+            return None
+        plan = (
+            MaintenancePlan.objects.filter(
+                asaas_subscription_id=str(subscription_id), is_active=True
+            )
+            .select_related("order", "client")
+            .first()
+        )
+        if plan is None or plan.order is None:
+            return None
+        return Transaction.objects.create(
+            order=plan.order,
+            user=plan.client,
+            provider=self.name,
+            external_id=external_id,
+            amount=payment.get("value") or plan.value,
+            status=Transaction.Status.PENDING,
+            raw_payload=json.dumps(payment),
         )
 
     def webhook(self, payload, headers) -> ChargeResult:
@@ -282,7 +465,7 @@ class AsaasGateway(PaymentGateway):
 
         token = str(headers.get("x-webhook-token") or "")
         expected = settings.ASAAS_WEBHOOK_TOKEN
-        if expected and token != expected:
+        if not expected or token != expected:
             raise WebhookAuthError("Assinatura de webhook Asaas inválida.")
 
         payment = data.get("payment") if isinstance(data, dict) else None
@@ -292,26 +475,59 @@ class AsaasGateway(PaymentGateway):
         external_id = str(payment.get("id"))
         event = str(data.get("event") or "").lower()
         tx = Transaction.objects.filter(external_id=external_id).first()
+
+        if event == "payment_created":
+            # Cobrança criada (ex.: nova fatura da assinatura). Abre a transação
+            # pendente quando ainda não existe; nenhum ajuste de status além disso.
+            if tx is None:
+                tx = self._create_subscription_transaction(payment, external_id)
+                if tx is None:
+                    raise ValueError("Transação não encontrada.")
+                return ChargeResult(
+                    ok=True,
+                    redirect_url="/",
+                    external_id=str(tx.pk),
+                    message="Transação aguardando pagamento.",
+                    status=tx.status,
+                    raw_payload=payload_str,
+                )
+            return ChargeResult(
+                ok=True,
+                redirect_url="/",
+                external_id=str(tx.pk),
+                message="Transação aguardando pagamento.",
+                status=tx.status,
+                raw_payload=payload_str,
+            )
+
         if tx is None:
-            raise ValueError("Transação não encontrada.")
+            # Renovação de assinatura: cobrança nova com id desconhecido, mas
+            # pertencente a uma assinatura registrada. Abre a transação antes de
+            # aplicar o status do evento financeiro.
+            tx = self._create_subscription_transaction(payment, external_id)
+            if tx is None:
+                raise ValueError("Transação não encontrada.")
 
         if event in ("payment_confirmed", "payment_received", "payment_authorized"):
-            tx.status = Transaction.Status.PAID
+            new_status = Transaction.Status.PAID
         elif event in ("payment_overdue", "payment_deleted", "payment_failed"):
-            tx.status = Transaction.Status.FAILED
+            new_status = Transaction.Status.FAILED
         elif event in ("payment_refunded", "payment_refund_requested"):
-            tx.status = Transaction.Status.REFUNDED
+            new_status = Transaction.Status.REFUNDED
         else:
             raise ValueError(f"Evento de webhook '{event}' não mapeado.")
 
-        tx.raw_payload = payload_str
-        tx.save(update_fields=["status", "raw_payload", "updated_at"])
+        if tx.status != new_status:
+            tx.status = new_status
+            tx.raw_payload = payload_str
+            tx.save(update_fields=["status", "raw_payload", "updated_at"])
         return ChargeResult(
             ok=True,
             redirect_url="/",
             external_id=str(tx.pk),
             message=f"Transação atualizada para {tx.status}.",
             status=tx.status,
+            raw_payload=payload_str,
         )
 
 
@@ -327,13 +543,15 @@ def get_gateway() -> PaymentGateway:
     return cls()
 
 
-def charge_order(order, billing_type: str = "PIX") -> ChargeResult:
+def charge_order(order, billing_type: str = "PIX", credit_card_token: str = "", remote_ip: str = "") -> ChargeResult:
     """Cria transacao inicial e chama gateway configurado."""
     from .models import Transaction
 
     gateway = get_gateway()
     if gateway.name == "asaas":
-        result = gateway.charge(order, billing_type=billing_type)
+        result = gateway.charge(
+            order, billing_type=billing_type, credit_card_token=credit_card_token, remote_ip=remote_ip
+        )
     else:
         result = gateway.charge(order)
     if result.external_id:
@@ -347,6 +565,18 @@ def charge_order(order, billing_type: str = "PIX") -> ChargeResult:
                 tx.status = result.status or tx.status
             tx.raw_payload = result.raw_payload
             tx.save(update_fields=["status", "raw_payload", "updated_at"])
+    return result
+
+
+def subscribe_plan(plan, billing_type: str = "PIX", credit_card_token: str = "", remote_ip: str = "") -> ChargeResult:
+    """Cria transacao de assinatura e chama gateway configurado."""
+    gateway = get_gateway()
+    if gateway.name == "asaas":
+        result = gateway.subscribe(
+            plan, billing_type=billing_type, credit_card_token=credit_card_token, remote_ip=remote_ip
+        )
+    else:
+        result = gateway.subscribe(plan)
     return result
 
 

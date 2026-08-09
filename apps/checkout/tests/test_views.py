@@ -3,6 +3,7 @@
 import pytest
 from django.conf import settings
 from django.shortcuts import reverse
+from django.test import override_settings
 
 from apps.affiliate.models import AffiliateProfile, Referral
 from apps.checkout.models import Order
@@ -91,6 +92,16 @@ class TestCheckoutView:
         client.post(reverse("checkout-cart-add", args=[product.pk]), {"qty": "1"})
         client.post(reverse("checkout"))
         assert Referral.objects.filter(affiliate=affil).count() == 0
+
+    def test_checkout_credit_card_graceful_on_manual_provider(self, client_user, user):
+        with override_settings(PAYMENT_PROVIDER="manual"):
+            product = ProductFactory(stock=10)
+            self._with_cart(client_user, product, qty=1)
+            response = client_user.post(reverse("checkout"), {"payment_method": "CREDIT_CARD"})
+            assert response.status_code == 302
+            assert response.url == reverse("checkout-cart")
+            order = Order.objects.filter(user=user).latest("created_at")
+            assert order.status == Order.Status.CANCELED
 
 
 class TestReferralCreation:

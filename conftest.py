@@ -142,7 +142,11 @@ class FakeAsaasApi:
         self.calls = []
         self.customer_id = "cus_0001"
         self.payment_id = "pay_0001"
+        self.renewal_payment_id = "pay_0002"
+        self.subscription_id = "sub_0001"
+        self.card_token = "tok_0001"
         self.fail_next = None
+        self.empty_subscription_payments = False
 
     def __call__(self, method, url, headers, json, timeout):
         self.calls.append({"method": method, "url": url, "body": json})
@@ -153,11 +157,27 @@ class FakeAsaasApi:
         if method == "POST" and url.endswith("/customers"):
             return FakeResponse({"id": self.customer_id})
         if method == "POST" and url.endswith("/payments"):
+            if json and json.get("billingType") == "CREDIT_CARD":
+                return FakeResponse({"id": self.payment_id, "status": "PENDING"})
             return FakeResponse({"id": self.payment_id, "status": "PENDING"})
+        if method == "POST" and url.endswith("/gerarCobranca"):
+            return FakeResponse({"id": self.payment_id, "status": "PENDING"})
+        if method == "POST" and url.endswith("/subscriptions"):
+            self.subscription_id = "sub_0001"
+            return FakeResponse({"id": self.subscription_id})
+        if method == "POST" and url.endswith("/creditCards/tokenizeCreditCard"):
+            return FakeResponse({"creditCardToken": self.card_token, "creditCardBrand": "VISA"})
+        if method == "GET" and "subscriptions/" in url and url.endswith("/payments"):
+            data = [] if self.empty_subscription_payments else [
+                {"id": self.payment_id, "status": "PENDING", "value": 79.9}
+            ]
+            return FakeResponse({"data": data})
         if method == "GET" and f"payments/{self.payment_id}/pixQrCode" in url:
             return FakeResponse(
                 {"encodedImage": "base64png", "payload": "00020126580014BR.GOV.BCB.PIX"}
             )
+        if method == "GET" and "/pixQrCode" in url:
+            return FakeResponse({"errors": [{"description": "cobranca sem pix"}]}, status_code=404)
         if method == "POST" and "refund" in url:
             return FakeResponse({"id": self.payment_id, "status": "REFUNDED"})
         raise AssertionError(f"Chamada inesperada: {method} {url}")

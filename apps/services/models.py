@@ -62,6 +62,95 @@ class Service(BaseModel):
         return self.name
 
 
+class MaintenancePlan(BaseModel):
+    class PlanType(models.TextChoices):
+        MONTHLY = "mensal", _("Mensal")
+        QUARTERLY = "trimestral", _("Trimestral")
+        ANNUAL = "anual", _("Anual")
+
+    plan_type = models.CharField(
+        max_length=20,
+        choices=PlanType.choices,
+        default=PlanType.MONTHLY,
+        verbose_name="tipo de plano",
+    )
+    value = models.DecimalField(
+        max_digits=12, decimal_places=2, default=0, verbose_name="valor do ciclo"
+    )
+    next_due_date = models.DateField(verbose_name="próximo vencimento")
+    client = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name="maintenance_plans",
+        verbose_name="cliente",
+    )
+    prestador = models.ForeignKey(
+        CustomUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="maintenance_plans_as_provider",
+        limit_choices_to={"role": "prestador"},
+        verbose_name="prestador atribuído",
+    )
+    order = models.OneToOneField(
+        "checkout.Order",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="maintenance_plan",
+        verbose_name="pedido de pagamento",
+    )
+    asaas_subscription_id = models.CharField(
+        max_length=120, blank=True, default="", db_index=True, verbose_name="assinatura Asaas"
+    )
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Plano de Manutenção"
+        verbose_name_plural = "Planos de Manutenção"
+
+    def __str__(self) -> str:
+        return f"Manutenção {self.get_plan_type_display()} de {self.client}"
+
+    @classmethod
+    def cycle_days_for(cls, plan_type: str) -> int:
+        """Intervalo em dias do ciclo (30/90/365) para um tipo de plano."""
+        return {
+            cls.PlanType.MONTHLY: 30,
+            cls.PlanType.QUARTERLY: 90,
+            cls.PlanType.ANNUAL: 365,
+        }[plan_type]
+
+    def cycle_days(self) -> int:
+        """Intervalo em dias do ciclo (30/90/365) para avançar vencimentos."""
+        return self.cycle_days_for(self.plan_type)
+
+
+class MaintenanceVisit(BaseModel):
+    plan = models.ForeignKey(
+        MaintenancePlan,
+        on_delete=models.CASCADE,
+        related_name="visits",
+        verbose_name="plano",
+    )
+    scheduled_at = models.DateTimeField(verbose_name="agendada para")
+    completed_at = models.DateTimeField(null=True, blank=True, verbose_name="concluída em")
+    notes = models.TextField(blank=True, default="", verbose_name="observações")
+
+    class Meta:
+        ordering = ["scheduled_at"]
+        verbose_name = "Visita de Manutenção"
+        verbose_name_plural = "Visitas de Manutenção"
+
+    def __str__(self) -> str:
+        return f"Visita {self.plan} em {self.scheduled_at}"
+
+    @property
+    def is_pending(self) -> bool:
+        return self.completed_at is None
+
+
 class ServiceRequest(BaseModel):
     class Status(models.TextChoices):
         PENDING = "pending", _("Pendente")

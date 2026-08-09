@@ -17,7 +17,9 @@ def branding(request):
             "light": "#FFFFFF",
         },
         "AFFILIATE_COOKIE_NAME": settings.AFFILIATE_COOKIE_NAME,
+        "CARD_ENABLED": settings.PAYMENT_PROVIDER == "asaas",
         "STORE_ENABLED": flags.store_enabled,
         "SERVICES_ENABLED": flags.services_enabled,
         "AFFILIATES_ENABLED": flags.affiliates_enabled,
+        "MAINTENANCE_ENABLED": flags.maintenance_enabled,
     }

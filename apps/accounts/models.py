@@ -63,3 +63,48 @@ class PublicProfile(BaseModel):
 
     def __str__(self) -> str:
         return f"Perfil publico de {self.user.email}"
+
+
+class ProviderApplication(BaseModel):
+    """Solicitação de abertura de conta de prestador, aguardando aprovação do admin.
+
+    O usuário candidato mantém `role=cliente` até a aprovação; o admin aprova
+    (promove para `prestador`) ou recusa direto do Django Admin.
+    """
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pendente"
+        APPROVED = "approved", "Aprovado"
+        REJECTED = "rejected", "Recusado"
+
+    user = models.OneToOneField(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name="provider_application",
+    )
+    status = models.CharField(
+        max_length=12,
+        choices=Status.choices,
+        default=Status.PENDING,
+    )
+    bio = models.TextField(blank=True, default="", verbose_name="bio / especialidades")
+    reviewed_by = models.ForeignKey(
+        CustomUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reviewed_applications",
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "solicitação de prestador"
+        verbose_name_plural = "solicitações de prestador"
+
+    @property
+    def is_pending(self) -> bool:
+        return self.status == self.Status.PENDING
+
+    def __str__(self) -> str:
+        return f"Solicitação de {self.user.email} ({self.get_status_display()})"

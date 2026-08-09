@@ -19,6 +19,9 @@
         {% if AFFILIATES_ENABLED %}
         <li class="nav-item"><a class="nav-link" href="{% url 'affiliate-landing' %}">Afiliação</a></li>
         {% endif %}
+        {% if MAINTENANCE_ENABLED %}
+        <li class="nav-item"><a class="nav-link" href="{% url 'services-plan-list' %}">Manutenção</a></li>
+        {% endif %}
       </ul>
       {% if STORE_ENABLED %}
       <form class="d-flex me-2" method="get" action="{% url 'shop-list' %}">

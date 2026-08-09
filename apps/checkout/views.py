@@ -12,7 +12,7 @@ from django.views.generic import CreateView
 
 from apps.affiliate.models import AffiliateProfile, Referral
 from apps.core.models import SiteSettings
-from apps.payments.services import charge_order
+from apps.payments.services import charge_order, get_gateway
 
 from .models import Address, Cart, Order, OrderItem
 
@@ -130,7 +130,42 @@ class CheckoutView(LoginRequiredMixin, View):
                 order.save(update_fields=["address", "updated_at"])
 
             billing_type = (request.POST.get("payment_method") or "PIX").upper()
-            result = charge_order(order, billing_type=billing_type)
+
+            try:
+                credit_card_token = ""
+                remote_ip = request.META.get("REMOTE_ADDR", "")
+                if billing_type == "CREDIT_CARD":
+                    holder = {
+                        "name": request.user.get_full_name() or request.user.email,
+                        "email": request.user.email,
+                        "cpf_cnpj": request.user.cpf,
+                        "phone": request.user.telefone,
+                    }
+                    if address:
+                        holder["postal_code"] = address.zip_code
+                        holder["address_number"] = address.number
+                    card = {
+                        "holder_name": request.POST.get("card_holder", ""),
+                        "number": request.POST.get("card_number", ""),
+                        "expiry_month": request.POST.get("card_expiry_month", ""),
+                        "expiry_year": request.POST.get("card_expiry_year", ""),
+                        "ccv": request.POST.get("card_ccv", ""),
+                    }
+                    credit_card_token = get_gateway().tokenize_credit_card(
+                        request.user, card, holder, remote_ip=remote_ip
+                    )
+
+                result = charge_order(
+                    order,
+                    billing_type=billing_type,
+                    credit_card_token=credit_card_token,
+                    remote_ip=remote_ip,
+                )
+            except ValueError as exc:
+                order.status = Order.Status.CANCELED
+                order.save(update_fields=["status", "updated_at"])
+                messages.error(request, str(exc) or "Falha ao iniciar pagamento.")
+                return redirect("checkout-cart")
 
         cart.clear()
         if result.ok:

@@ -151,6 +151,11 @@ class TestWebhookView:
 
 @pytest.mark.usefixtures("manual_token")
 class TestManualConfirmationView:
+    def test_manual_tokenize_credit_card_raises(self, user):
+        gateway = ManualGateway()
+        with pytest.raises(ValueError, match="asaas"):
+            gateway.tokenize_credit_card(user, card={}, holder={})
+
     def test_manual_confirm_200_for_owner(self, user, client):
         client.force_login(user)
         order = create_order(user, with_referral=False)

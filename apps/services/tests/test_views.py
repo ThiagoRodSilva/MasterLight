@@ -133,6 +133,23 @@ class TestServiceRequestFlow:
         assert sr.status == ServiceRequest.Status.QUOTED
         assert sr.final_price == Decimal("99.90")
 
+    def test_provider_member_without_creating_sees_request(self, provider, category, client):
+        owner = UserFactory(role=CustomUser.Role.PRESTADOR)
+        service = Service.objects.create(
+            name="Serviço Membro",
+            slug="servico-membro",
+            base_price=10,
+            category=category,
+            created_by=owner,
+        )
+        service.providers.add(owner, provider)
+        cliente = UserFactory(role=CustomUser.Role.CLIENTE)
+        ServiceRequest.objects.create(cliente=cliente, service=service, prestador=provider)
+        client.force_login(provider)
+        response = client.get(reverse("services-provider-requests"))
+        assert response.status_code == 200
+        assert service.name in response.content.decode()
+
     def test_cliente_can_cancel_request(self, provider, category, client):
         service = Service.objects.create(
             name="Serviço C",

@@ -1,5 +1,6 @@
 """Settings base compartilhados entre dev e prod."""
 
+from decimal import Decimal
 from pathlib import Path
 
 import environ
@@ -175,6 +176,13 @@ MANUAL_WEBHOOK_TOKEN = env("MANUAL_WEBHOOK_TOKEN", default="")
 AFFILIATE_COOKIE_NAME = "ref"
 AFFILIATE_COOKIE_MAX_AGE = 30 * 24 * 60 * 60  # 30 dias
 AFFILIATE_DEFAULT_COMMISSION_RATE = 0.10  # 10%
+
+# Manutenção elétrica (planos de assinatura recorrente)
+MAINTENANCE_PLAN_PRICES = {
+    "mensal": Decimal("79.90"),
+    "trimestral": Decimal("219.90"),
+    "anual": Decimal("799.90"),
+}
 
 LOGIN_REDIRECT_URL = "/"
 ACCOUNT_LOGOUT_REDIRECT_URL = "/"
