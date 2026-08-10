@@ -3,12 +3,12 @@
 Django 5 "MasterLight" (codename PlataformaVendas) — empresa de **Elétrica** (serviços + loja + afiliados). Ignore `venv/` (Python 3.13; CI/Docker usa 3.12). Marca: amarelo `#FFC107` / preto `#111` / branco.
 
 ## Commands
-- Use o venv explicitamente (`python`/`ruff`/`pytest` não estão no PATH do shell): `venv/bin/python`, `venv/bin/ruff`, `venv/bin/pytest`.
+- Use o venv explicitamente (`python`/`ruff`/`coverage` não estão no PATH do shell): `venv/bin/python`, `venv/bin/ruff`, `venv/bin/coverage`.
 - Dev server: `venv/bin/python manage.py runserver` (defaults para `config.settings.dev`, setado no `manage.py`).
-- Tests: `venv/bin/pytest` (config em `pyproject.toml`, settings = `config.settings.dev`, CI exige `--cov-fail-under=70`). Root `conftest.py` tem factories compartilhadas (`UserFactory`, `ProductFactory`, `AffiliateProfileFactory`) + `create_order()` + mocks `FakeAsaasApi`/`asaas`/`activation`; testes por app em `apps/**/tests/`.
-- Lint: `venv/bin/ruff check .` (line-length 100). Ordem do CI: `ruff check .` → `makemigrations --check --dry-run` → `manage.py check` → `pytest --cov=apps --cov-fail-under=70`.
+- Tests: `venv/bin/python manage.py test apps` (runner nativo Django, TestCase). Cobertura: `venv/bin/coverage run manage.py test apps && venv/bin/coverage report --fail-under=70` (config lida de `pyproject.toml`). Helpers compartilhados em `apps/tests/helpers.py`: `make_user`/`make_product`/`make_category`/`make_affiliate` + `create_order()` + mock `FakeAsaasApi` via `AsaasMockMixin` (classe) ou `mock_asaas()` (context manager). Testes por app em `apps/**/tests/`.
+- Lint: `venv/bin/ruff check .` (line-length 100). Ordem do CI: `ruff check .` → `makemigrations --check --dry-run` → `manage.py check` → `coverage run manage.py test apps` + `coverage report --fail-under=70`.
 - Primeira execução: `cp .env.example .env`; env vars lidas por django-environ em `config/settings/base.py`.
-- Social login (allauth Google/Facebook/Apple): `venv/bin/python manage.py bootstrap_social` sincroniza `Site` + `SocialApp` a partir do `.env`. Necessário porque `ACCOUNT_EMAIL_VERIFICATION="mandatory"` e o signup social espera o app registrado.
+- Social login (allauth Google/Facebook/Apple): `venv/bin/python manage.py bootstrap_social` sincroniza `Site` + `SocialApp` a partir do `.env`. Necessário porque sem confirmação de email (`ACCOUNT_EMAIL_VERIFICATION="none"`) o signup social loga direto e o app ainda precisa estar registrado.
 
 ## Branding & estáticos (não óbvio)
 - **Nenhum CDN**: Bootstrap 5.3.3 é self-hosted em `static/vendor/bootstrap/`; CSS da marca em `static/css/styles.css`; logos em `static/img/{logo,favicon}.svg`. `base.html` faz `{% load static %}` + bloco `:root` inline injetando a paleta de `{{ BRAND_PALETTE }}`.

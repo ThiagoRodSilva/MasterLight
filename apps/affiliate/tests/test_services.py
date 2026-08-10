@@ -1,23 +1,20 @@
 """Testes do programa de afiliados (middleware + services)."""
 
-import pytest
 from django.conf import settings
-from django.test import Client
+from django.test import Client, TestCase
 
 from apps.affiliate.services import create_payout_request
 from apps.checkout.models import Order
-from conftest import create_order
-
-pytestmark = pytest.mark.django_db
+from apps.tests.helpers import create_order, make_affiliate, make_user
 
 
-class TestAffiliateReferralMiddleware:
-    def test_cookie_set_on_valid_ref(self, affiliate_profile):
-        client = Client()
-        response = client.get(f"/?ref={affiliate_profile.code}")
+class TestAffiliateReferralMiddleware(TestCase):
+    def test_cookie_set_on_valid_ref(self):
+        affiliate = make_affiliate()
+        response = Client().get(f"/?ref={affiliate.code}")
         assert settings.AFFILIATE_COOKIE_NAME in response.cookies
         cookie = response.cookies[settings.AFFILIATE_COOKIE_NAME]
-        assert cookie.value == affiliate_profile.code
+        assert cookie.value == affiliate.code
         assert int(cookie["max-age"]) == settings.AFFILIATE_COOKIE_MAX_AGE
 
     def test_no_cookie_on_invalid_ref(self):
@@ -29,8 +26,9 @@ class TestAffiliateReferralMiddleware:
         assert settings.AFFILIATE_COOKIE_NAME not in response.cookies
 
 
-class TestApproveReferral:
-    def test_order_paid_without_referral(self, user):
+class TestApproveReferral(TestCase):
+    def test_order_paid_without_referral(self):
+        user = make_user()
         order = create_order(user, with_referral=False)
         tx = order.transactions.first()
         tx.status = "paid"
@@ -38,7 +36,8 @@ class TestApproveReferral:
         order.refresh_from_db()
         assert order.status == Order.Status.PAID
 
-    def test_paid_order_decrements_stock(self, user):
+    def test_paid_order_decrements_stock(self):
+        user = make_user()
         order = create_order(user, with_referral=False, qty=3)
         product = order.items.first().product
         initial_stock = product.stock
@@ -48,14 +47,16 @@ class TestApproveReferral:
         product.refresh_from_db()
         assert product.stock == initial_stock - 3
 
-    def test_unpaid_order_does_not_decrement_stock(self, user):
+    def test_unpaid_order_does_not_decrement_stock(self):
+        user = make_user()
         order = create_order(user, with_referral=False, qty=3)
         product = order.items.first().product
         initial_stock = product.stock
         product.refresh_from_db()
         assert product.stock == initial_stock
 
-    def test_order_paid_and_balance_credited_with_referral(self, user):
+    def test_order_paid_and_balance_credited_with_referral(self):
+        user = make_user()
         order = create_order(user, with_referral=True)
         referral = order.referrals.first()
         tx = order.transactions.first()
@@ -69,7 +70,8 @@ class TestApproveReferral:
         assert referral.status == referral.Status.APPROVED
         assert affiliate.balance == referral.commission_amount
 
-    def test_refund_does_not_touch_order(self, user):
+    def test_refund_does_not_touch_order(self):
+        user = make_user()
         order = create_order(user, with_referral=True)
         tx = order.transactions.first()
         tx.status = "refunded"
@@ -78,25 +80,28 @@ class TestApproveReferral:
         assert order.status == Order.Status.AWAITING_PAYMENT
 
 
-class TestCreatePayoutRequest:
-    def test_requires_pix_key(self, affiliate_profile):
-        affiliate_profile.balance = 100
-        affiliate_profile.save(update_fields=["balance"])
-        with pytest.raises(ValueError, match="chave Pix"):
-            create_payout_request(affiliate_profile)
+class TestCreatePayoutRequest(TestCase):
+    def test_requires_pix_key(self):
+        affiliate = make_affiliate()
+        affiliate.balance = 100
+        affiliate.save(update_fields=["balance"])
+        with self.assertRaisesRegex(ValueError, "chave Pix"):
+            create_payout_request(affiliate)
 
-    def test_insufficient_balance_raises(self, affiliate_profile):
-        affiliate_profile.balance = 0
-        affiliate_profile.pix_key = "email@exemplo.com"
-        affiliate_profile.save(update_fields=["balance", "pix_key"])
-        with pytest.raises(ValueError):
-            create_payout_request(affiliate_profile)
+    def test_insufficient_balance_raises(self):
+        affiliate = make_affiliate()
+        affiliate.balance = 0
+        affiliate.pix_key = "email@exemplo.com"
+        affiliate.save(update_fields=["balance", "pix_key"])
+        with self.assertRaises(ValueError):
+            create_payout_request(affiliate)
 
-    def test_payout_zeroes_balance(self, affiliate_profile):
-        affiliate_profile.balance = 100
-        affiliate_profile.pix_key = "email@exemplo.com"
-        affiliate_profile.save(update_fields=["balance", "pix_key"])
-        payout = create_payout_request(affiliate_profile)
+    def test_payout_zeroes_balance(self):
+        affiliate = make_affiliate()
+        affiliate.balance = 100
+        affiliate.pix_key = "email@exemplo.com"
+        affiliate.save(update_fields=["balance", "pix_key"])
+        payout = create_payout_request(affiliate)
         assert payout.amount == 100
-        affiliate_profile.refresh_from_db()
-        assert affiliate_profile.balance == 0
+        affiliate.refresh_from_db()
+        assert affiliate.balance == 0

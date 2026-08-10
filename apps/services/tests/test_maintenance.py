@@ -4,7 +4,7 @@ import json
 from datetime import date, timedelta
 from decimal import Decimal
 
-import pytest
+from django.test import TestCase, override_settings
 from django.utils import timezone
 
 from apps.accounts.models import CustomUser
@@ -13,14 +13,14 @@ from apps.core.models import SiteSettings
 from apps.payments.models import Transaction
 from apps.payments.services import AsaasGateway
 from apps.services.models import MaintenancePlan, MaintenanceVisit
-from conftest import UserFactory
+from apps.tests.helpers import AsaasMockMixin, make_user, mock_asaas
 
-pytestmark = [pytest.mark.django_db, pytest.mark.usefixtures("activation")]
-
-
-@pytest.fixture
-def cliente(db):
-    return UserFactory(role=CustomUser.Role.CLIENTE)
+ASAAS_SETTINGS = {
+    "PAYMENT_PROVIDER": "asaas",
+    "ASAAS_API_KEY": "teste-key",
+    "ASAAS_SANDBOX": True,
+    "ASAAS_WEBHOOK_TOKEN": "segredo",
+}
 
 
 def _make_plan(cliente, prestador=None, plan_type="mensal"):
@@ -37,7 +37,15 @@ def _make_plan(cliente, prestador=None, plan_type="mensal"):
     )
 
 
-class TestMaintenancePlanModel:
+def _make_cliente():
+    return make_user(role=CustomUser.Role.CLIENTE)
+
+
+def _make_prestador():
+    return make_user(role=CustomUser.Role.PRESTADOR)
+
+
+class TestMaintenancePlanModel(TestCase):
     def test_cycle_days(self):
         assert MaintenancePlan.PlanType.MONTHLY in "mensal"
         plan = MaintenancePlan(plan_type="trimestral")
@@ -48,19 +56,18 @@ class TestMaintenancePlanModel:
         assert MaintenancePlan.cycle_days_for("trimestral") == 90
         assert MaintenancePlan.cycle_days_for("anual") == 365
 
-    def test_str(self, cliente):
-        plan = _make_plan(cliente)
+    def test_str(self):
+        plan = _make_plan(_make_cliente())
         assert "Manutenção" in str(plan)
 
 
-class TestSubscribeManual:
-    def test_manual_subscribe_creates_pending_transaction(self, client, cliente):
-        from django.test import override_settings
-
-        prestador = UserFactory(role=CustomUser.Role.PRESTADOR)
+class TestSubscribeManual(TestCase):
+    def test_manual_subscribe_creates_pending_transaction(self):
+        prestador = _make_prestador()
+        cliente = _make_cliente()
         with override_settings(PAYMENT_PROVIDER="manual"):
-            client.force_login(cliente)
-            resp = client.post(
+            self.client.force_login(cliente)
+            resp = self.client.post(
                 "/servicos/planos/assinar/", {"plan_type": "mensal", "prestador": prestador.pk}
             )
         assert resp.status_code == 302
@@ -69,14 +76,12 @@ class TestSubscribeManual:
         assert tx.status == Transaction.Status.PENDING
         assert tx.amount == Decimal("79.90")
 
-    def test_subscribe_next_due_respects_cycle(self, client):
-        from django.test import override_settings
-
-        cliente = UserFactory(role=CustomUser.Role.CLIENTE)
-        prestador = UserFactory(role=CustomUser.Role.PRESTADOR)
+    def test_subscribe_next_due_respects_cycle(self):
+        cliente = _make_cliente()
+        prestador = _make_prestador()
         with override_settings(PAYMENT_PROVIDER="manual"):
-            client.force_login(cliente)
-            client.post(
+            self.client.force_login(cliente)
+            self.client.post(
                 "/servicos/planos/assinar/",
                 {"plan_type": "trimestral", "prestador": prestador.pk},
             )
@@ -84,13 +89,12 @@ class TestSubscribeManual:
         expected = timezone.localdate() + timedelta(days=90)
         assert plan.next_due_date == expected
 
-    def test_credit_card_subscribe_graceful_on_manual(self, client, cliente):
-        from django.test import override_settings
-
-        prestador = UserFactory(role=CustomUser.Role.PRESTADOR)
+    def test_credit_card_subscribe_graceful_on_manual(self):
+        prestador = _make_prestador()
+        cliente = _make_cliente()
         with override_settings(PAYMENT_PROVIDER="manual"):
-            client.force_login(cliente)
-            resp = client.post(
+            self.client.force_login(cliente)
+            resp = self.client.post(
                 "/servicos/planos/assinar/",
                 {
                     "plan_type": "mensal",
@@ -101,10 +105,12 @@ class TestSubscribeManual:
         assert resp.status_code == 302
         assert not MaintenancePlan.objects.filter(client=cliente).exists()
 
-    def test_credit_card_subscribe_asaas_with_cpf(self, client, cliente, asaas):
+    @override_settings(**ASAAS_SETTINGS)
+    def test_credit_card_subscribe_asaas_with_cpf(self):
         from apps.checkout.models import Address
 
-        prestador = UserFactory(role=CustomUser.Role.PRESTADOR)
+        prestador = _make_prestador()
+        cliente = _make_cliente()
         Address.objects.create(
             user=cliente,
             street="Rua A",
@@ -117,21 +123,22 @@ class TestSubscribeManual:
         cliente.cpf = "12345678901"
         cliente.telefone = "11999999999"
         cliente.save(update_fields=["cpf", "telefone"])
-        client.force_login(cliente)
-        resp = client.post(
-            "/servicos/planos/assinar/",
-            {
-                "plan_type": "mensal",
-                "prestador": prestador.pk,
-                "payment_method": "CREDIT_CARD",
-                "card_holder": "Fulano",
-                "card_cpf": "12345678901",
-                "card_number": "4111111111111111",
-                "card_expiry_month": "12",
-                "card_expiry_year": "2035",
-                "card_ccv": "123",
-            },
-        )
+        with mock_asaas() as _fake:
+            self.client.force_login(cliente)
+            resp = self.client.post(
+                "/servicos/planos/assinar/",
+                {
+                    "plan_type": "mensal",
+                    "prestador": prestador.pk,
+                    "payment_method": "CREDIT_CARD",
+                    "card_holder": "Fulano",
+                    "card_cpf": "12345678901",
+                    "card_number": "4111111111111111",
+                    "card_expiry_month": "12",
+                    "card_expiry_year": "2035",
+                    "card_ccv": "123",
+                },
+            )
         assert resp.status_code == 302
         plan = MaintenancePlan.objects.get(client=cliente)
         tx = Transaction.objects.get(order=plan.order)
@@ -139,8 +146,8 @@ class TestSubscribeManual:
         assert tx.provider == "asaas"
         assert plan.asaas_subscription_id == "sub_0001"
 
-    def test_paid_transaction_schedules_first_visit(self, cliente):
-
+    def test_paid_transaction_schedules_first_visit(self):
+        cliente = _make_cliente()
         plan = _make_plan(cliente)
         original_due = plan.next_due_date
         tx = Transaction.objects.create(
@@ -154,9 +161,11 @@ class TestSubscribeManual:
         assert plan.next_due_date == original_due + timedelta(days=30)
 
 
-class TestAsaasSubscribe:
-    def test_asaas_subscribe_createssubscription(self, cliente, asaas):
-        prestador = UserFactory(role=CustomUser.Role.PRESTADOR)
+@override_settings(**ASAAS_SETTINGS)
+class TestAsaasSubscribe(AsaasMockMixin, TestCase):
+    def test_asaas_subscribe_createssubscription(self):
+        prestador = _make_prestador()
+        cliente = _make_cliente()
         plan = _make_plan(cliente, prestador=prestador)
         result = AsaasGateway().subscribe(plan)
         assert result.ok
@@ -164,15 +173,16 @@ class TestAsaasSubscribe:
         plan.refresh_from_db()
         assert plan.asaas_subscription_id == "sub_0001"
         tx = Transaction.objects.get(order=plan.order)
-        assert tx.external_id == asaas.payment_id
+        assert tx.external_id == self.asaas.payment_id
 
-    def test_webhook_schedules_visit(self, cliente, asaas):
-        prestador = UserFactory(role=CustomUser.Role.PRESTADOR)
+    def test_webhook_schedules_visit(self):
+        prestador = _make_prestador()
+        cliente = _make_cliente()
         plan = _make_plan(cliente, prestador=prestador)
         original_due = plan.next_due_date
         AsaasGateway().subscribe(plan)
         tx = Transaction.objects.get(order=plan.order)
-        payload = json.dumps({"event": "PAYMENT_CONFIRMED", "payment": {"id": asaas.payment_id}})
+        payload = json.dumps({"event": "PAYMENT_CONFIRMED", "payment": {"id": self.asaas.payment_id}})
         AsaasGateway().webhook(payload, {"x-webhook-token": "segredo"})
         tx.refresh_from_db()
         assert tx.status == Transaction.Status.PAID
@@ -180,40 +190,63 @@ class TestAsaasSubscribe:
         assert visit.scheduled_at.date() == original_due
 
 
-class TestMaintenanceViews:
-    def test_plan_list_200_when_enabled(self, client):
-        resp = client.get("/servicos/planos/")
+class TestMaintenanceViews(TestCase):
+    def test_plan_list_200_when_enabled(self):
+        resp = self.client.get("/servicos/planos/")
         assert resp.status_code == 200
         assert "Assinatura" in resp.content.decode()
 
-    def test_plan_list_404_when_disabled(self, client):
+    def test_plan_list_404_when_disabled(self):
         settings = SiteSettings.load()
         settings.maintenance_enabled = False
         settings.save(update_fields=["maintenance_enabled"])
-        resp = client.get("/servicos/planos/")
+        resp = self.client.get("/servicos/planos/")
         assert resp.status_code == 404
 
-    def test_plan_form_requires_login(self, client):
-        resp = client.get("/servicos/planos/assinar/")
+    def test_plan_form_requires_login(self):
+        resp = self.client.get("/servicos/planos/assinar/")
         assert resp.status_code == 302
 
-    def test_visits_dashboard_requires_provider(self, client, cliente):
-        prestador = UserFactory(role=CustomUser.Role.PRESTADOR)
+    def test_plan_form_prefills_tipo_valid(self):
+        cliente = _make_cliente()
+        self.client.force_login(cliente)
+        resp = self.client.get("/servicos/planos/assinar/?tipo=trimestral")
+        assert resp.status_code == 200
+        assert "trimestral" in resp.content.decode()
+
+    def test_plan_form_ignores_invalid_tipo(self):
+        cliente = _make_cliente()
+        self.client.force_login(cliente)
+        resp = self.client.get("/servicos/planos/assinar/?tipo=inexistente")
+        assert resp.status_code == 200
+
+    def test_visits_dashboard_lists_for_provider(self):
+        prestador = _make_prestador()
+        cliente = _make_cliente()
         plan = _make_plan(cliente, prestador)
         MaintenanceVisit.objects.create(plan=plan, scheduled_at=timezone.now())
-        client.force_login(cliente)
-        resp = client.get("/servicos/visitas/")
+        self.client.force_login(prestador)
+        resp = self.client.get("/servicos/visitas/")
+        assert resp.status_code == 200
+
+    def test_visits_dashboard_requires_provider(self):
+        prestador = _make_prestador()
+        cliente = _make_cliente()
+        plan = _make_plan(cliente, prestador)
+        MaintenanceVisit.objects.create(plan=plan, scheduled_at=timezone.now())
+        self.client.force_login(cliente)
+        resp = self.client.get("/servicos/visitas/")
         assert resp.status_code == 403
 
 
-class TestVisitCompleteView:
-    def test_complete_marks_visit(self, client):
-        prestador = UserFactory(role=CustomUser.Role.PRESTADOR)
-        cliente = UserFactory(role=CustomUser.Role.CLIENTE)
+class TestVisitCompleteView(TestCase):
+    def test_complete_marks_visit(self):
+        prestador = _make_prestador()
+        cliente = _make_cliente()
         plan = _make_plan(cliente, prestador)
         visit = MaintenanceVisit.objects.create(plan=plan, scheduled_at=timezone.now())
-        client.force_login(prestador)
-        resp = client.post(f"/servicos/visitas/{visit.pk}/concluir/")
+        self.client.force_login(prestador)
+        resp = self.client.post(f"/servicos/visitas/{visit.pk}/concluir/")
         assert resp.status_code == 302
         visit.refresh_from_db()
         assert visit.completed_at is not None

@@ -1,19 +1,17 @@
 """Testes do fluxo de aprovação de prestadores."""
 
-import pytest
 from django.contrib.auth import get_user_model
+from django.test import TestCase
 
 from apps.accounts.forms import CustomSignupForm
 from apps.accounts.models import ProviderApplication, PublicProfile
 from apps.accounts.services import approve_provider_application, reject_provider
-from conftest import UserFactory
-
-pytestmark = pytest.mark.django_db
+from apps.tests.helpers import make_user
 
 CustomUser = get_user_model()
 
 
-class TestCustomSignupFormProvider:
+class TestCustomSignupFormProvider(TestCase):
     @staticmethod
     def _signup(form, email, username, **user_kwargs):
         user = CustomUser(email=email, username=username, **user_kwargs)
@@ -69,13 +67,13 @@ class TestCustomSignupFormProvider:
         assert CustomUser.Role.AFILIADO in choices
 
 
-class TestProviderApprovalServices:
+class TestProviderApprovalServices(TestCase):
     def test_approve_promotes_user_and_copies_bio_to_public_profile(self):
-        candidate = UserFactory(role=CustomUser.Role.CLIENTE)
+        candidate = make_user(role=CustomUser.Role.CLIENTE)
         application = ProviderApplication.objects.create(
             user=candidate, status=ProviderApplication.Status.PENDING, bio="Eletricista predial"
         )
-        admin = UserFactory(is_superuser=True)
+        admin = make_user(is_superuser=True)
 
         approve_provider_application(application, admin)
 
@@ -90,16 +88,16 @@ class TestProviderApprovalServices:
         assert profile.bio == "Eletricista predial"
 
     def test_approve_non_pending_raises(self):
-        application = ProviderApplication.objects.create(user=UserFactory())
+        application = ProviderApplication.objects.create(user=make_user())
         application.status = ProviderApplication.Status.REJECTED
         application.save()
-        with pytest.raises(ValueError):
-            approve_provider_application(application, UserFactory(is_superuser=True))
+        with self.assertRaises(ValueError):
+            approve_provider_application(application, make_user(is_superuser=True))
 
     def test_reject_keeps_cliente(self):
-        candidate = UserFactory(role=CustomUser.Role.CLIENTE)
+        candidate = make_user(role=CustomUser.Role.CLIENTE)
         application = ProviderApplication.objects.create(user=candidate)
-        admin = UserFactory(is_superuser=True)
+        admin = make_user(is_superuser=True)
 
         reject_provider(application, admin)
 
@@ -111,14 +109,11 @@ class TestProviderApprovalServices:
         assert not PublicProfile.objects.filter(user=candidate).exists()
 
 
-class TestPendingDashboardNotice:
-    def test_me_shows_notice_when_pending(self, db):
-        candidate = UserFactory(role=CustomUser.Role.CLIENTE)
+class TestPendingDashboardNotice(TestCase):
+    def test_me_shows_notice_when_pending(self):
+        candidate = make_user(role=CustomUser.Role.CLIENTE)
         ProviderApplication.objects.create(user=candidate)
-        from django.test import Client
-
-        client = Client()
-        client.force_login(candidate)
-        response = client.get("/accounts/me/")
+        self.client.force_login(candidate)
+        response = self.client.get("/accounts/me/")
         assert response.status_code == 200
         assert "aguardando aprovação" in response.content.decode()

@@ -1,13 +1,11 @@
 """Testes das configurações do site (singleton)."""
 
-import pytest
+from django.test import TestCase
 
 from apps.core.models import SiteSettings
 
-pytestmark = pytest.mark.django_db
 
-
-class TestSiteSettingsSingleton:
+class TestSiteSettingsSingleton(TestCase):
     def test_load_creates_default_row(self):
         obj = SiteSettings.load()
         assert obj.pk == 1

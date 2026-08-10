@@ -1,68 +1,75 @@
-"""Fixtures e factories globais (pytest-django)."""
+"""Factories e helpers compartilhados dos testes (runner nativo Django).
 
+Substitui o antigo `conftest.py` do pytest: funções puras (`make_user`,
+`make_product`, ...), `create_order()` e o mock `FakeAsaasApi` usado em
+payments/services via `AsaasMockMixin`.
+"""
+
+import itertools
 import json
-
-import factory
-import factory.fuzzy
-import pytest
-from django.contrib.auth import get_user_model
+from contextlib import contextmanager
+from decimal import Decimal
+from unittest import mock
 
 from apps.accounts.models import CustomUser
 from apps.affiliate.models import AffiliateProfile
 from apps.checkout.models import Order, OrderItem
 from apps.shop.models import Category, Product
 
-
-class UserFactory(factory.django.DjangoModelFactory):
-    class Meta:
-        model = get_user_model()
-        django_get_or_create = ("email",)
-
-    @classmethod
-    def _after_postgeneration(cls, instance, create, results=None):
-        # Persiste o hash gerado por PostGenerationMethodCall("set_password")
-        # (o save padrao de pos-geracao sera removido numa versao futura).
-        if create:
-            instance.save()
-
-    username = factory.Sequence(lambda n: f"user{n}")
-    email = factory.Sequence(lambda n: f"user{n}@example.com")
-    password = factory.PostGenerationMethodCall("set_password", "senha#123")
-    role = CustomUser.Role.CLIENTE
+_counter = itertools.count(1)
 
 
-class AffiliateProfileFactory(factory.django.DjangoModelFactory):
-    class Meta:
-        model = AffiliateProfile
-
-    user = factory.SubFactory(UserFactory)
-    code = factory.Sequence(lambda n: f"CODE{n}")
+def _next() -> int:
+    return next(_counter)
 
 
-class CategoryFactory(factory.django.DjangoModelFactory):
-    class Meta:
-        model = Category
+def make_user(role=CustomUser.Role.CLIENTE, is_superuser=False, email=None, **extra):
+    """Cria um CustomUser com dados únicos e senha conhecida (dispara signals)."""
+    n = _next()
+    user = CustomUser.objects.create_user(
+        username=f"user{n}",
+        email=email or f"user{n}@example.com",
+        password="senha#123",
+        role=role,
+        is_superuser=is_superuser,
+        **extra,
+    )
+    return user
 
-    name = factory.Sequence(lambda n: f"Categoria {n}")
-    slug = factory.Sequence(lambda n: f"categoria-{n}")
+
+def make_category(name=None, slug=None):
+    n = _next()
+    return Category.objects.create(
+        name=name or f"Categoria {n}",
+        slug=slug or f"categoria-{n}",
+    )
 
 
-class ProductFactory(factory.django.DjangoModelFactory):
-    class Meta:
-        model = Product
+def make_product(name=None, slug=None, sku=None, price=None, stock=10, category=None, **extra):
+    n = _next()
+    defaults = {
+        "sku": sku or f"SKU{n}",
+        "name": name or f"Produto {n}",
+        "slug": slug or f"produto-{n}",
+        "price": price if price is not None else Decimal("29.90"),
+        "stock": stock,
+        "category": category or make_category(),
+    }
+    defaults.update(extra)
+    return Product.objects.create(**defaults)
 
-    sku = factory.Sequence(lambda n: f"SKU{n}")
-    name = factory.Sequence(lambda n: f"Produto {n}")
-    slug = factory.Sequence(lambda n: f"produto-{n}")
-    price = factory.fuzzy.FuzzyDecimal(10.00, 100.00, precision=2)
-    stock = 10
-    category = factory.SubFactory(CategoryFactory)
+
+def make_affiliate(user=None):
+    """Cria (ou reusa) o perfil de afiliado de um usuário."""
+    user = user or make_user(role=CustomUser.Role.AFILIADO)
+    profile, _ = AffiliateProfile.objects.get_or_create(user=user)
+    return profile
 
 
 def create_order(user, product=None, with_referral=False, qty=2):
     """Cria Order + OrderItem + Transaction (ManualPayment) para um teste."""
     if product is None:
-        product = ProductFactory(stock=10)
+        product = make_product(stock=10)
     order = Order.objects.create(user=user, status=Order.Status.AWAITING_PAYMENT)
     OrderItem.objects.create(
         order=order,
@@ -75,9 +82,7 @@ def create_order(user, product=None, with_referral=False, qty=2):
     if with_referral:
         from apps.affiliate.models import Referral
 
-        affil, _ = AffiliateProfile.objects.get_or_create(
-            user=UserFactory(role=CustomUser.Role.AFILIADO)
-        )
+        affil = make_affiliate(make_user(role=CustomUser.Role.AFILIADO))
         Referral.objects.create(
             affiliate=affil,
             referred=user,
@@ -89,24 +94,6 @@ def create_order(user, product=None, with_referral=False, qty=2):
 
     Transaction.objects.create(order=order, user=user, provider="manual", amount=order.total)
     return order
-
-
-@pytest.fixture
-def user(db):
-    return UserFactory()
-
-
-@pytest.fixture
-def client_user(user, client):
-    client.force_login(user)
-    return client
-
-
-@pytest.fixture
-def affiliate_profile(db):
-    user = UserFactory(role=CustomUser.Role.AFILIADO)
-    profile, _ = AffiliateProfile.objects.get_or_create(user=user)
-    return profile
 
 
 # ---------------------------------------------------------------------------
@@ -168,9 +155,11 @@ class FakeAsaasApi:
         if method == "POST" and url.endswith("/creditCards/tokenizeCreditCard"):
             return FakeResponse({"creditCardToken": self.card_token, "creditCardBrand": "VISA"})
         if method == "GET" and "subscriptions/" in url and url.endswith("/payments"):
-            data = [] if self.empty_subscription_payments else [
-                {"id": self.payment_id, "status": "PENDING", "value": 79.9}
-            ]
+            data = (
+                []
+                if self.empty_subscription_payments
+                else [{"id": self.payment_id, "status": "PENDING", "value": 79.9}]
+            )
             return FakeResponse({"data": data})
         if method == "GET" and f"payments/{self.payment_id}/pixQrCode" in url:
             return FakeResponse(
@@ -183,21 +172,32 @@ class FakeAsaasApi:
         raise AssertionError(f"Chamada inesperada: {method} {url}")
 
 
-@pytest.fixture
-def asaas(monkeypatch):
+@contextmanager
+def mock_asaas():
+    """Context manager: instala o `FakeAsaasApi` em `requests.request`.
+
+    Útil quando apenas alguns métodos da classe precisam do mock (ex.: checkout).
+    Uso: `with mock_asaas() as fake: ...`
+    """
     fake = FakeAsaasApi()
-    monkeypatch.setattr("requests.request", fake)
-    return fake
+    patcher = mock.patch("requests.request", fake)
+    patcher.start()
+    try:
+        yield fake
+    finally:
+        patcher.stop()
 
 
-@pytest.fixture
-def activation():
-    from django.test import override_settings
+class AsaasMockMixin:
+    """Instala o `FakeAsaasApi` em `requests.request` para o teste inteiro.
 
-    with override_settings(
-        PAYMENT_PROVIDER="asaas",
-        ASAAS_API_KEY="teste-key",
-        ASAAS_SANDBOX=True,
-        ASAAS_WEBHOOK_TOKEN="segredo",
-    ):
-        yield
+    Substitui as fixtures `asaas`/`monkeypatch` do pytest: `self.asaas` fica
+    disponível na classe. Combine com `@override_settings(PAYMENT_PROVIDER="asaas", ...)`.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.asaas = FakeAsaasApi()
+        patcher = mock.patch("requests.request", self.asaas)
+        patcher.start()
+        self.addCleanup(patcher.stop)

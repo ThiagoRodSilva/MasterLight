@@ -2,27 +2,34 @@
 
 import json
 
-import pytest
+from django.test import TestCase, override_settings
 
 from apps.affiliate.models import Referral
 from apps.checkout.models import Order
 from apps.payments.models import Transaction
 from apps.payments.services import AsaasGateway
-from conftest import create_order
+from apps.tests.helpers import AsaasMockMixin, create_order, make_user
 
-pytestmark = [pytest.mark.django_db, pytest.mark.usefixtures("activation")]
+ASAAS_SETTINGS = {
+    "PAYMENT_PROVIDER": "asaas",
+    "ASAAS_API_KEY": "teste-key",
+    "ASAAS_SANDBOX": True,
+    "ASAAS_WEBHOOK_TOKEN": "segredo",
+}
 
 
-class TestAsaasEndToEnd:
-    def _pay(self, asaas, order):
+@override_settings(**ASAAS_SETTINGS)
+class TestAsaasEndToEnd(AsaasMockMixin, TestCase):
+    def _pay(self, order):
         """Gera cobrança asaas e dispara webhook CONFIRMED."""
         AsaasGateway().charge(order, billing_type="PIX")
-        payload = json.dumps({"event": "PAYMENT_CONFIRMED", "payment": {"id": asaas.payment_id}})
+        payload = json.dumps({"event": "PAYMENT_CONFIRMED", "payment": {"id": self.asaas.payment_id}})
         AsaasGateway().webhook(payload, {"x-webhook-token": "segredo"})
 
-    def test_paid_transaction_approves_referral(self, asaas, user):
+    def test_paid_transaction_approves_referral(self):
+        user = make_user()
         order = create_order(user, with_referral=True)
-        self._pay(asaas, order)
+        self._pay(order)
 
         tx = order.transactions.get(provider="asaas")
         tx.refresh_from_db()

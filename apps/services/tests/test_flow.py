@@ -3,7 +3,7 @@
 import json
 from decimal import Decimal
 
-import pytest
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from apps.accounts.models import CustomUser
@@ -11,12 +11,18 @@ from apps.checkout.models import Order, OrderItem
 from apps.payments.models import Transaction
 from apps.payments.services import AsaasGateway
 from apps.services.models import Service, ServiceCategory, ServiceRequest
-from conftest import UserFactory
+from apps.tests.helpers import AsaasMockMixin, make_user
 
-pytestmark = [pytest.mark.django_db, pytest.mark.usefixtures("activation")]
+ASAAS_SETTINGS = {
+    "PAYMENT_PROVIDER": "asaas",
+    "ASAAS_API_KEY": "teste-key",
+    "ASAAS_SANDBOX": True,
+    "ASAAS_WEBHOOK_TOKEN": "segredo",
+}
 
 
-class TestApprovalCreatesOrderAndPays:
+@override_settings(**ASAAS_SETTINGS)
+class TestApprovalCreatesOrderAndPays(AsaasMockMixin, TestCase):
     def _make_quoted_request(self, cliente, provider):
         category = ServiceCategory.objects.create(name="Elétrica", slug="eletrica")
         service = Service.objects.create(
@@ -36,13 +42,13 @@ class TestApprovalCreatesOrderAndPays:
         )
         return sr
 
-    def test_approve_creates_service_order_and_pix(self, asaas, client):
-        provider = UserFactory(role=CustomUser.Role.PRESTADOR)
-        cliente = UserFactory(role=CustomUser.Role.CLIENTE)
+    def test_approve_creates_service_order_and_pix(self):
+        provider = make_user(role=CustomUser.Role.PRESTADOR)
+        cliente = make_user(role=CustomUser.Role.CLIENTE)
         sr = self._make_quoted_request(cliente, provider)
 
-        client.force_login(cliente)
-        response = client.post(reverse("services-request-approve", kwargs={"pk": sr.pk}))
+        self.client.force_login(cliente)
+        response = self.client.post(reverse("services-request-approve", kwargs={"pk": sr.pk}))
 
         sr.refresh_from_db()
         assert response.status_code == 302
@@ -60,17 +66,17 @@ class TestApprovalCreatesOrderAndPays:
         tx = Transaction.objects.get(order=order)
         assert tx.provider == "asaas"
 
-    def test_paid_webhook_approves_service_request(self, asaas, client):
-        provider = UserFactory(role=CustomUser.Role.PRESTADOR)
-        cliente = UserFactory(role=CustomUser.Role.CLIENTE)
+    def test_paid_webhook_approves_service_request(self):
+        provider = make_user(role=CustomUser.Role.PRESTADOR)
+        cliente = make_user(role=CustomUser.Role.CLIENTE)
         sr = self._make_quoted_request(cliente, provider)
 
-        client.force_login(cliente)
-        client.post(reverse("services-request-approve", kwargs={"pk": sr.pk}))
+        self.client.force_login(cliente)
+        self.client.post(reverse("services-request-approve", kwargs={"pk": sr.pk}))
         sr.refresh_from_db()
         order = sr.order
 
-        payload = json.dumps({"event": "PAYMENT_CONFIRMED", "payment": {"id": asaas.payment_id}})
+        payload = json.dumps({"event": "PAYMENT_CONFIRMED", "payment": {"id": self.asaas.payment_id}})
         AsaasGateway().webhook(payload, {"x-webhook-token": "segredo"})
 
         order.refresh_from_db()
