@@ -543,6 +543,52 @@ def get_gateway() -> PaymentGateway:
     return cls()
 
 
+def prepare_card_payload(post, user, address=None) -> tuple[dict, dict]:
+    """Valida dados de cartão do POST e monta `card`/`holder` para tokenização.
+
+    Levanta `ValueError` com mensagem amigável se faltar CPF/endereço do titular
+    (o Asaas exige `cpfCnpj`, `postalCode` e `addressNumber`) ou se a validade
+    estiver no passado. O CPF é sanitizado apenas com dígitos.
+    """
+    cpf = "".join(ch for ch in (post.get("card_cpf") or user.cpf or "") if ch.isdigit())
+    if not cpf:
+        raise ValueError("Informe o CPF do titular do cartão.")
+    if address is None or not (address.zip_code or "").strip() or not (address.number or "").strip():
+        raise ValueError("Cadastre um endereço com CEP e número para pagar com cartão.")
+
+    try:
+        month = int(post.get("card_expiry_month") or 0)
+    except (TypeError, ValueError):
+        month = 0
+    try:
+        year = int(post.get("card_expiry_year") or 0)
+    except (TypeError, ValueError):
+        year = 0
+    if month < 1 or month > 12:
+        raise ValueError("Mês de validade do cartão inválido.")
+    from datetime import date
+
+    if date(year, month, 1) <= date.today().replace(day=1):
+        raise ValueError("Cartão de crédito vencido.")
+
+    holder = {
+        "name": user.get_full_name() or user.email,
+        "email": user.email,
+        "cpf_cnpj": cpf,
+        "phone": user.telefone,
+        "postal_code": address.zip_code,
+        "address_number": address.number,
+    }
+    card = {
+        "holder_name": post.get("card_holder", ""),
+        "number": post.get("card_number", ""),
+        "expiry_month": f"{month:02d}",
+        "expiry_year": str(year),
+        "ccv": post.get("card_ccv", ""),
+    }
+    return card, holder
+
+
 def charge_order(order, billing_type: str = "PIX", credit_card_token: str = "", remote_ip: str = "") -> ChargeResult:
     """Cria transacao inicial e chama gateway configurado."""
     from .models import Transaction

@@ -319,7 +319,7 @@ class MaintenancePlanCreateView(SectionEnabledMixin, ClienteRequiredMixin, FormV
 
     def form_valid(self, form):
         from apps.checkout.models import Order, OrderItem
-        from apps.payments.services import get_gateway, subscribe_plan
+        from apps.payments.services import get_gateway, prepare_card_payload, subscribe_plan
 
         value = form.cleaned_data["value"]
         plan_type = form.cleaned_data["plan_type"]
@@ -329,24 +329,16 @@ class MaintenancePlanCreateView(SectionEnabledMixin, ClienteRequiredMixin, FormV
         billing_type = (self.request.POST.get("payment_method") or "PIX").upper()
         credit_card_token = ""
         remote_ip = self.request.META.get("REMOTE_ADDR", "")
-        holder = {}
         card = {}
-        if billing_type == "CREDIT_CARD":
-            holder = {
-                "name": self.request.user.get_full_name() or self.request.user.email,
-                "email": self.request.user.email,
-                "cpf_cnpj": self.request.user.cpf,
-                "phone": self.request.user.telefone,
-            }
-            card = {
-                "holder_name": self.request.POST.get("card_holder", ""),
-                "number": self.request.POST.get("card_number", ""),
-                "expiry_month": self.request.POST.get("card_expiry_month", ""),
-                "expiry_year": self.request.POST.get("card_expiry_year", ""),
-                "ccv": self.request.POST.get("card_ccv", ""),
-            }
+        holder = {}
         try:
             if billing_type == "CREDIT_CARD":
+                from apps.checkout.models import Address
+
+                address = (
+                    Address.objects.filter(user=self.request.user, is_active=True).first()
+                )
+                card, holder = prepare_card_payload(self.request.POST, self.request.user, address)
                 credit_card_token = get_gateway().tokenize_credit_card(
                     self.request.user, card, holder, remote_ip=remote_ip
                 )

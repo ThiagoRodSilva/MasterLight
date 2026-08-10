@@ -101,6 +101,44 @@ class TestSubscribeManual:
         assert resp.status_code == 302
         assert not MaintenancePlan.objects.filter(client=cliente).exists()
 
+    def test_credit_card_subscribe_asaas_with_cpf(self, client, cliente, asaas):
+        from apps.checkout.models import Address
+
+        prestador = UserFactory(role=CustomUser.Role.PRESTADOR)
+        Address.objects.create(
+            user=cliente,
+            street="Rua A",
+            number="10",
+            city="Cidade",
+            state="SP",
+            zip_code="01001000",
+            country="BR",
+        )
+        cliente.cpf = "12345678901"
+        cliente.telefone = "11999999999"
+        cliente.save(update_fields=["cpf", "telefone"])
+        client.force_login(cliente)
+        resp = client.post(
+            "/servicos/planos/assinar/",
+            {
+                "plan_type": "mensal",
+                "prestador": prestador.pk,
+                "payment_method": "CREDIT_CARD",
+                "card_holder": "Fulano",
+                "card_cpf": "12345678901",
+                "card_number": "4111111111111111",
+                "card_expiry_month": "12",
+                "card_expiry_year": "2035",
+                "card_ccv": "123",
+            },
+        )
+        assert resp.status_code == 302
+        plan = MaintenancePlan.objects.get(client=cliente)
+        tx = Transaction.objects.get(order=plan.order)
+        assert tx.status == Transaction.Status.PENDING
+        assert tx.provider == "asaas"
+        assert plan.asaas_subscription_id == "sub_0001"
+
     def test_paid_transaction_schedules_first_visit(self, cliente):
 
         plan = _make_plan(cliente)

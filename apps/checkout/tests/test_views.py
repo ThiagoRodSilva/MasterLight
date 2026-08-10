@@ -103,6 +103,71 @@ class TestCheckoutView:
             order = Order.objects.filter(user=user).latest("created_at")
             assert order.status == Order.Status.CANCELED
 
+    @pytest.mark.usefixtures("activation")
+    def test_checkout_credit_card_asaas_creates_transaction(self, client_user, user, asaas):
+        from apps.checkout.models import Address
+        from apps.payments.models import Transaction
+
+        Address.objects.create(
+            user=user,
+            street="Rua A",
+            number="10",
+            city="Cidade",
+            state="SP",
+            zip_code="01001000",
+            country="BR",
+        )
+        user.cpf = "12345678901"
+        user.telefone = "11999999999"
+        user.save(update_fields=["cpf", "telefone"])
+        product = ProductFactory(stock=10)
+        self._with_cart(client_user, product, qty=1)
+        response = client_user.post(
+            reverse("checkout"),
+            {
+                "payment_method": "CREDIT_CARD",
+                "card_holder": "Fulano",
+                "card_cpf": "12345678901",
+                "card_number": "4111111111111111",
+                "card_expiry_month": "12",
+                "card_expiry_year": "2035",
+                "card_ccv": "123",
+            },
+        )
+        assert response.status_code == 302
+        order = Order.objects.filter(user=user).latest("created_at")
+        tx = Transaction.objects.get(order=order)
+        assert tx.status == Transaction.Status.PENDING
+        assert tx.provider == "asaas"
+
+    @pytest.mark.usefixtures("activation")
+    def test_checkout_credit_card_missing_cpf_cancels_order(self, client_user, user, asaas):
+        from apps.checkout.models import Address
+
+        Address.objects.create(
+            user=user,
+            street="Rua A",
+            number="10",
+            city="Cidade",
+            state="SP",
+            zip_code="01001000",
+            country="BR",
+        )
+        product = ProductFactory(stock=10)
+        self._with_cart(client_user, product, qty=1)
+        client_user.post(
+            reverse("checkout"),
+            {
+                "payment_method": "CREDIT_CARD",
+                "card_number": "4111111111111111",
+                "card_expiry_month": "12",
+                "card_expiry_year": "2035",
+                "card_ccv": "123",
+            },
+        )
+        order = Order.objects.filter(user=user).latest("created_at")
+        assert order.status == Order.Status.CANCELED
+
 
 class TestReferralCreation:
     def test_checkout_creates_referral_with_cookie(self, user, client, affiliate_profile):

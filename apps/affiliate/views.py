@@ -4,10 +4,11 @@ from django.contrib import messages
 from django.db.models import ObjectDoesNotExist
 from django.http import Http404
 from django.shortcuts import redirect
-from django.views.generic import ListView, TemplateView, View
+from django.views.generic import FormView, ListView, TemplateView, View
 
 from apps.core.mixins import AffiliateRequiredMixin, SectionEnabledMixin
 
+from .forms import PixKeyForm
 from .models import PayoutRequest, Referral
 from .services import create_payout_request
 
@@ -68,11 +69,39 @@ class PayoutRequestView(SectionEnabledMixin, AffiliateRequiredMixin, View):
             raise Http404("Perfil de afiliado não encontrado.") from exc
         try:
             create_payout_request(profile)
-        except ValueError:
-            messages.error(request, "Saldo insuficiente para saque.")
+        except ValueError as exc:
+            messages.error(request, str(exc) or "Saldo insuficiente para saque.")
         else:
             messages.success(request, "Solicitação de saque criada.")
         return redirect("affiliate-dashboard")
 
     def get(self, request):
+        return redirect("affiliate-dashboard")
+
+
+class PixKeyUpdateView(SectionEnabledMixin, AffiliateRequiredMixin, FormView):
+    """Cadastra/atualiza a chave Pix do afiliado para recebimento de saques."""
+
+    section_flag = "affiliates_enabled"
+    form_class = PixKeyForm
+    success_url = "/afiliados/painel/"
+
+    def _get_profile(self):
+        try:
+            return self.request.user.affiliate_profile
+        except ObjectDoesNotExist as exc:
+            raise Http404("Perfil de afiliado não encontrado.") from exc
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["instance"] = self._get_profile()
+        return kwargs
+
+    def form_valid(self, form):
+        form.save()
+        messages.success(self.request, "Chave Pix cadastrada com sucesso.")
+        return super().form_valid(form)
+
+    def form_invalid(self, form):
+        messages.error(self.request, "Verifique a chave Pix informada.")
         return redirect("affiliate-dashboard")

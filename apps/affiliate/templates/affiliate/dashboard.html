@@ -7,7 +7,24 @@
   <div class="alert alert-warning">
     Cadastre sua <strong>chave Pix</strong> para receber os saques. Isso será obrigatório ao solicitar o pagamento.
   </div>
+  {% else %}
+  <div class="alert alert-success">
+    Chave Pix cadastrada. Você pode alterá-la abaixo.
+  </div>
   {% endif %}
+
+  <div class="card mb-4 p-3 form-panel--medium">
+    <h2 class="h5 mb-2">Chave Pix para saque</h2>
+    <form method="post" action="{% url 'affiliate-pix-key' %}">
+      {% csrf_token %}
+      <div class="input-group">
+        <input class="form-control" type="text" name="pix_key" value="{{ profile.pix_key|default:'' }}"
+               placeholder="CPF/CNPJ, e-mail, telefone com DDD ou chave aleatória" maxlength="120">
+        <button class="btn btn-brand" type="submit">Salvar chave</button>
+      </div>
+    </form>
+    <div class="text-muted small mt-2">O saque fica bloqueado enquanto nenhuma chave Pix estiver cadastrada.</div>
+  </div>
 
   <div class="row g-3 mb-4">
     <div class="col-md-4"><div class="card text-bg-dark p-3"><small>Saldo disponível</small><h3 class="m-0">R$ {{ profile.balance|floatformat:2 }}</h3></div></div>

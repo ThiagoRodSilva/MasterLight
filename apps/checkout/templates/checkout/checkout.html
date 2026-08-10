@@ -22,6 +22,8 @@
         <div class="row g-2">
           <div class="col-12"><label class="form-label small">Titular do cartão</label>
             <input class="form-control" type="text" name="card_holder" autocomplete="cc-name" required></div>
+          <div class="col-12"><label class="form-label small">CPF do titular</label>
+            <input class="form-control" type="text" name="card_cpf" inputmode="numeric" maxlength="14" placeholder="000.000.000-00"></div>
           <div class="col-12"><label class="form-label small">Número</label>
             <input class="form-control" type="text" name="card_number" inputmode="numeric" autocomplete="cc-number" required pattern="[\d ]{13,19}"></div>
           <div class="col-6"><label class="form-label small">Validade (MM)</label>

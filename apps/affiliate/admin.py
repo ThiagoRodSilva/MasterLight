@@ -17,7 +17,7 @@ class ReferralInline(admin.TabularInline):
 
 @admin.register(AffiliateProfile)
 class AffiliateProfileAdmin(admin.ModelAdmin):
-    list_display = ("user", "code", "commission_rate", "balance", "is_active")
+    list_display = ("user", "code", "pix_key", "commission_rate", "balance", "is_active")
     search_fields = ("code", "user__email")
     readonly_fields = ("code",)
     date_hierarchy = "created_at"

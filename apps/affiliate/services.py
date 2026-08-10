@@ -55,6 +55,8 @@ def create_payout_request(profile):
     amount = None
     payout = None
     with db_transaction.atomic():
+        if not (profile.pix_key or "").strip():
+            raise ValueError("Cadastre uma chave Pix para realizar o saque.")
         locked = AffiliateProfile.objects.select_for_update().filter(pk=profile.pk).first()
         if locked is None or locked.balance is None or locked.balance <= Decimal(0):
             raise ValueError("Saldo insuficiente para saque.")

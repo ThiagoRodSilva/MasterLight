@@ -47,6 +47,45 @@ class TestAffiliateDashboard:
         assert response.status_code == 404
 
 
+class TestPixKeyView:
+    def test_pix_key_requires_afiliado(self, user, client):
+        client.force_login(user)
+        response = client.post(reverse("affiliate-pix-key"), {"pix_key": "email@ex.com"})
+        assert response.status_code in (302, 403)
+
+    def test_pix_key_saved(self, affiliate_profile, client):
+        client.force_login(affiliate_profile.user)
+        response = client.post(reverse("affiliate-pix-key"), {"pix_key": "email@exemplo.com"})
+        assert response.status_code == 302
+        affiliate_profile.refresh_from_db()
+        assert affiliate_profile.pix_key == "email@exemplo.com"
+
+    def test_pix_key_blank_rejected(self, affiliate_profile, client):
+        client.force_login(affiliate_profile.user)
+        response = client.post(reverse("affiliate-pix-key"), {"pix_key": "   "})
+        assert response.status_code == 302
+        affiliate_profile.refresh_from_db()
+        assert affiliate_profile.pix_key == ""
+
+    def test_pix_key_updated(self, affiliate_profile, client):
+        affiliate_profile.pix_key = "12345678901"
+        affiliate_profile.save(update_fields=["pix_key"])
+        client.force_login(affiliate_profile.user)
+        client.post(reverse("affiliate-pix-key"), {"pix_key": "11999999999"})
+        affiliate_profile.refresh_from_db()
+        assert affiliate_profile.pix_key == "11999999999"
+
+    def test_pix_key_blocked_when_affiliates_disabled(self, affiliate_profile, client):
+        from apps.core.models import SiteSettings
+
+        settings = SiteSettings.load()
+        settings.affiliates_enabled = False
+        settings.save(update_fields=["affiliates_enabled"])
+        client.force_login(affiliate_profile.user)
+        response = client.post(reverse("affiliate-pix-key"), {"pix_key": "email@ex.com"})
+        assert response.status_code == 404
+
+
 class TestPayoutView:
     def test_payout_zero_saldo_locked(self, affiliate_profile, client):
         client.force_login(affiliate_profile.user)

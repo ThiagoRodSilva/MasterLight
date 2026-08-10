@@ -79,15 +79,23 @@ class TestApproveReferral:
 
 
 class TestCreatePayoutRequest:
+    def test_requires_pix_key(self, affiliate_profile):
+        affiliate_profile.balance = 100
+        affiliate_profile.save(update_fields=["balance"])
+        with pytest.raises(ValueError, match="chave Pix"):
+            create_payout_request(affiliate_profile)
+
     def test_insufficient_balance_raises(self, affiliate_profile):
         affiliate_profile.balance = 0
-        affiliate_profile.save(update_fields=["balance"])
+        affiliate_profile.pix_key = "email@exemplo.com"
+        affiliate_profile.save(update_fields=["balance", "pix_key"])
         with pytest.raises(ValueError):
             create_payout_request(affiliate_profile)
 
     def test_payout_zeroes_balance(self, affiliate_profile):
         affiliate_profile.balance = 100
-        affiliate_profile.save(update_fields=["balance"])
+        affiliate_profile.pix_key = "email@exemplo.com"
+        affiliate_profile.save(update_fields=["balance", "pix_key"])
         payout = create_payout_request(affiliate_profile)
         assert payout.amount == 100
         affiliate_profile.refresh_from_db()

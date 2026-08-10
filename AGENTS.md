@@ -8,6 +8,7 @@ Django 5 "MasterLight" (codename PlataformaVendas) — empresa de **Elétrica** 
 - Tests: `venv/bin/pytest` (config em `pyproject.toml`, settings = `config.settings.dev`, CI exige `--cov-fail-under=70`). Root `conftest.py` tem factories compartilhadas (`UserFactory`, `ProductFactory`, `AffiliateProfileFactory`) + `create_order()` + mocks `FakeAsaasApi`/`asaas`/`activation`; testes por app em `apps/**/tests/`.
 - Lint: `venv/bin/ruff check .` (line-length 100). Ordem do CI: `ruff check .` → `makemigrations --check --dry-run` → `manage.py check` → `pytest --cov=apps --cov-fail-under=70`.
 - Primeira execução: `cp .env.example .env`; env vars lidas por django-environ em `config/settings/base.py`.
+- Social login (allauth Google/Facebook/Apple): `venv/bin/python manage.py bootstrap_social` sincroniza `Site` + `SocialApp` a partir do `.env`. Necessário porque `ACCOUNT_EMAIL_VERIFICATION="mandatory"` e o signup social espera o app registrado.
 
 ## Branding & estáticos (não óbvio)
 - **Nenhum CDN**: Bootstrap 5.3.3 é self-hosted em `static/vendor/bootstrap/`; CSS da marca em `static/css/styles.css`; logos em `static/img/{logo,favicon}.svg`. `base.html` faz `{% load static %}` + bloco `:root` inline injetando a paleta de `{{ BRAND_PALETTE }}`.
@@ -17,7 +18,7 @@ Django 5 "MasterLight" (codename PlataformaVendas) — empresa de **Elétrica** 
 
 ## Architecture
 - Settings split: `config/settings/{base,dev,prod}.py`. Envs de domínio em `base.py`.
-- **Seções públicas ligadas/desligadas por flag no DB**: `SiteSettings` (singleton, pk=1, editável no Admin) controla `store_enabled`/`services_enabled`/`affiliates_enabled` → quando off, a view devolve 404 (visto em `apps/shop/tests`). Se uma rota pública aparecer 404 "do nada", cheque `SiteSettings` primeiro — não é env var.
+- **Seções públicas ligadas/desligadas por flag no DB**: `SiteSettings` (singleton, pk=1, editável no Admin) controla `store_enabled`/`services_enabled`/`affiliates_enabled`/`maintenance_enabled`/`provider_registration_enabled` → quando off, a view devolve 404 (visto em `apps/shop/tests` e `apps/core/tests/test_sections.py`). `provider_registration_enabled` também some com a opção "Prestador (aprovado pelo admin)" do signup (`apps/accounts/forms.py`). Se uma rota pública aparecer 404 "do nada", cheque `SiteSettings` primeiro — não é env var.
 - Custom user: `apps.accounts.CustomUser`, `USERNAME_FIELD = "email"`. **Roles comparadas como strings cruas** (`"prestador"`, `"afiliado"`, `"cliente"`, `"admin"`) via mixins em `apps/core/mixins.py` — não os membros do enum.
 - `apps.core.models.BaseModel`: UUID `id`, `created_at`/`updated_at`, `is_active`. Todos os modelos de domínio herdam → **PKs UUID, `<uuid:pk>` em URLs**. Filtre `is_active=True` em querysets de leitura/listagem.
 - `Cart` em `apps/checkout` é **classe Python por sessão, não um model** — manter assim.
@@ -25,14 +26,13 @@ Django 5 "MasterLight" (codename PlataformaVendas) — empresa de **Elétrica** 
 - URL names são manualmente prefixados (ex.: `checkout-*`, `services-*`), sem namespaces `app_name`. Use `reverse_lazy("...")` com esses nomes.
 - Templates por app em `apps/<app>/templates/<app>/`; `templates/` global tem `base.html` + `partials/`. Forms com crispy-forms bootstrap5.
 
-## Services (fluxo)
-- Catálogo público `services-list`/`services-detail` (só `is_active=True`); cliente solicita orçamento em `services-request` escolhendo **um prestador** (`ServiceRequest.prestador`, setado pelo provider via self-service).
-- Abstração de gateway: `PaymentGateway` em `apps/payments/services.py` com `charge`/`refund`/`webhook` + dataclass `ChargeResult`. **Para adicionar provider**: subclassifique, registre no `_REGISTRY`, set `PAYMENT_PROVIDER` no env. Registrados: `"manual"` (dev, default) e `"asaas"` (Pix/cartão real).
+## Pagamentos, signals & afiliados
+- Abstração de gateway: `PaymentGateway` em `apps/payments/services.py` com `charge`/`refund`/`webhook`/`subscribe`/`tokenize_credit_card` + dataclass `ChargeResult`. **Para adicionar provider**: subclassifique, registre no `_REGISTRY`, set `PAYMENT_PROVIDER` no env. Registrados: `"manual"` (dev, default) e `"asaas"` (Pix/cartão real).
 - `AsaasGateway` usa `requests` (`/api/v3`), valida webhook por `x-webhook-token` contra `ASAAS_WEBHOOK_TOKEN` e guarda o id Asaas em `Transaction.external_id`; `CustomUser.asaas_customer_id` cacheia o customer. Em dev, sem `ASAAS_API_KEY`, use `PAYMENT_PROVIDER=manual`.
 - `charge_order(order, billing_type="PIX")` repassa o billing apenas ao Asaas; `CheckoutView.post` lê `payment_method` do form.
 - Business logic só em `services.py` (os `services.py` de `apps/payments` e `apps/affiliate`). Views são wrappers; services levantam `ValueError` para erros de domínio e usam `transaction.atomic()`.
 - Signals: payments imports em `PaymentsConfig.ready()`; **signals de `accounts` são ligados em `apps/core/apps.py`, não `accounts/apps.py`** — mantenha imports de signals no `apps.py` para evitar imports circulares. `Transaction` `post_save` (quando `status == "paid"`) chama `approve_referral` em `apps/affiliate/services.py`. `complete_service_request_on_paid` (post_save `Order`) é importado em `ServicesConfig.ready()` e marca a `ServiceRequest` como approved quando a `Order` vira `PAID`.
-- Fluxo afiliado: `?ref=CODE` cookie (`AffiliateReferralMiddleware`) → `Referral` no checkout → approved na transação paga. Landing pública em `/afiliados/` (`affiliate-landing`); dashboard em `/afiliados/painel/` (`affiliate-dashboard`). Cookie `ref` = `AFFILIATE_COOKIE_NAME`.
+- Fluxo afiliado: `?ref=CODE` cookie (`AffiliateReferralMiddleware`) → `Referral` no checkout → approved na transação paga. Landing pública em `/afiliados/` (`affiliate-landing`); dashboard em `/afiliados/painel/` (`affiliate-dashboard`). Cookie `ref` = `AFFILIATE_COOKIE_NAME`. O afiliado cadastra a chave Pix no painel (`AffiliateProfile.pix_key`, form no dashboard) e o saque é bloqueado sem ela.
 - Workaround de import circular: `django.apps.get_model("shop", "Product")` em `apps/checkout/views.py`.
 
 ## Services (fluxo)

@@ -71,9 +71,9 @@ docker compose up --build
 5. Variáveis de ambiente via `.env` (permissão 600).
 
 ## Próximos passos
-- Tokenização de cartão de crédito no front (Asaas SDK) para checkout com cartão.
-- Cadastro de chave Pix do afiliado (por ora alvo do payout via Admin).
-- Expansão de testes de cobertura >=70% no CI.
+- Asaas Checkout hosted (página de pagamento do Asaas) como alternativa ao checkout embutido.
+- Parcelamento (installments) e boleto no cartão.
+- Expansão de testes de cobertura >=70% no CI (hoje em 92%).
 
 ---
  Projeto baseado no plano de `PLANO.md`.
