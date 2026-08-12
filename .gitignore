@@ -178,3 +178,4 @@ PLANO.md
 #.idea/
 
 # End of https://www.toptal.com/developers/gitignore/api/django
+deploy/.env.prod

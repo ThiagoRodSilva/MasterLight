@@ -73,16 +73,13 @@ Pré-requisitos no hPanel:
 No servidor (SSH):
 ```bash
 cd ~/prot_02
-source ~/virtualenv/prot_02/3.12/bin/activate   # comando fornecido pelo hPanel
-pip install -r requirements.txt                  # PyMySQL, sem build tools
-cp .env.example .env && chmod 600 .env           # preencha os valores
-# Prod sempre usa config.settings.prod (o manage.py defaulta p/ dev):
-export DJANGO_SETTINGS_MODULE=config.settings.prod
-python manage.py migrate
-python manage.py collectstatic --noinput
-python manage.py bootstrap_social                # Site + SocialApp Google/FB
-mkdir -p tmp && touch tmp/restart.txt            # reinicia o Passenger
+cp deploy/.env.prod .env && chmod 600 .env   # preencha SECRET_KEY, Asaas, social e SMTP
+./deploy/setup_prod.sh ~/virtualenv/prot_02/3.12   # caminho do venv que o hPanel exibe
+# (ou rode `bash deploy/setup_prod.sh` apontando o venv correto)
 ```
+O `deploy/setup_prod.sh` instala deps, roda `migrate`, `bootstrap_social`, `collectstatic`
+e reinicia o Passenger. Para superuser não-interativo, defina `SUPERUSER_EMAIL`/`SUPERUSER_PASSWORD`
+como variáveis de ambiente antes de executar.
 Variáveis necessárias no `.env` de produção: `DJANGO_DEBUG=False`, `DJANGO_ALLOWED_HOSTS`, `DJANGO_SECRET_KEY`, `DATABASE_URL`, `PAYMENT_PROVIDER`, `ASAAS_API_KEY`, `ASAAS_SANDBOX=False`, `ASAAS_WEBHOOK_TOKEN`, credenciais Google/Facebook/Apple e SMTP. O Apple gera o client secret JWT a partir de `APPLE_CLIENT_ID`/`APPLE_KEY_ID`/`APPLE_TEAM_ID`/`APPLE_PRIVATE_KEY`.
 
 Estáticos vão via whitenoise (`collectstatic`); **media** é servido pelo próprio Django (`DJANGO_SERVE_MEDIA=True`, default) pois o shared não expõe alias para `MEDIA_ROOT`.
