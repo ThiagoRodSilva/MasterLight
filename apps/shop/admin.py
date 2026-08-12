@@ -16,7 +16,6 @@ class ProductVariantInline(admin.TabularInline):
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
     list_display = ("name", "slug", "is_active")
-    prepopulated_fields = {"slug": ("name",)}
 
 
 @admin.register(Product)
@@ -24,7 +23,6 @@ class ProductAdmin(admin.ModelAdmin):
     list_display = ("name", "sku", "price", "stock", "category", "featured", "is_active")
     list_filter = ("category", "featured")
     search_fields = ("name", "sku", "description")
-    prepopulated_fields = {"slug": ("name",)}
     date_hierarchy = "created_at"
     inlines = [ProductVariantInline, ProductImageInline]
 

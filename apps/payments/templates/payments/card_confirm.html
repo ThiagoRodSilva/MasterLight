@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-8 text-center">
+      <h1 class="mb-3">Pagamento com cartão</h1>
+      <p class="text-muted">Pedido <strong>#{{ order.pk|truncatechars:8 }}</strong> — total
+        <strong>R$ {{ order.total|floatformat:2 }}</strong></p>
+
+      <div class="alert alert-info">
+        Seu pagamento está sendo processado pela operadora do cartão.
+        Assim que for confirmado, o status do pedido é atualizado automaticamente.
+      </div>
+
+      {% include "payments/_status_poll.html" %}
+
+      <a href="{% url 'accounts-me' %}" class="btn btn-outline-dark">Meus pedidos</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

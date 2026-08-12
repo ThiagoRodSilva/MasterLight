@@ -1,9 +1,15 @@
 """Modelos base compartilhados (timestamps)."""
 
+import secrets
 import uuid
 
 from django.db import models
 from django.utils import timezone
+
+
+def random_slug(length: int = 8) -> str:
+    """Gera um slug aleatório (hex) para URLs não adivinháveis."""
+    return secrets.token_hex(length)
 
 
 class BaseModel(models.Model):
@@ -16,6 +22,22 @@ class BaseModel(models.Model):
 
     class Meta:
         abstract = True
+
+
+class RandomSlugMixin(models.Model):
+    """Preenche o slug automático quando vazio.
+
+    Requer que o modelo tenha um campo `slug`. Em updates o slug existente
+    é preservado (URLs estáveis); apenas a criação gera um valor aleatório.
+    """
+
+    class Meta:
+        abstract = True
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = random_slug()
+        super().save(*args, **kwargs)
 
 
 class SiteSettings(models.Model):

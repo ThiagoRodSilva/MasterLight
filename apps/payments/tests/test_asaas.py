@@ -2,6 +2,8 @@
 
 import json
 from datetime import date, timedelta
+from decimal import Decimal
+from unittest import mock
 
 from django.test import TestCase, override_settings
 from django.urls import reverse
@@ -131,7 +133,25 @@ class TestAsaasCharge(AsaasMockMixin, TestCase):
         user = make_user()
         order = create_order(user, with_referral=False)
         with self.assertRaises(ValueError):
-            AsaasGateway().charge(order, billing_type="BOLETO")
+            AsaasGateway().charge(order, billing_type="CHEQUE")
+
+    def test_charge_boleto_creates_transaction_with_bank_slip(self):
+        user = make_user()
+        order = create_order(user, with_referral=False)
+        result = AsaasGateway().charge(order, billing_type="BOLETO")
+
+        assert result.ok is True
+        payload = json.loads(result.raw_payload)
+        assert payload["bankSlip"]["url"].startswith("https://boleto.asaas.com")
+        assert payload["bankSlip"]["barCode"] == "3419179001234567890"
+        tx = Transaction.objects.get(pk=result.external_id)
+        assert "bankSlip" in json.loads(tx.raw_payload)
+
+    def test_charge_boleto_redirects_to_boleto_confirm(self):
+        user = make_user()
+        order = create_order(user, with_referral=False)
+        result = AsaasGateway().charge(order, billing_type="BOLETO")
+        assert result.redirect_url == reverse("payments-boleto-confirm", args=[order.pk])
 
     def test_charge_pix_redirects_to_pix_confirm(self):
         user = make_user()
@@ -139,13 +159,13 @@ class TestAsaasCharge(AsaasMockMixin, TestCase):
         result = AsaasGateway().charge(order, billing_type="PIX")
         assert result.redirect_url == reverse("payments-pix-confirm", args=[order.pk])
 
-    def test_charge_credit_card_redirects_to_manual_confirm(self):
+    def test_charge_credit_card_redirects_to_card_confirm(self):
         user = make_user()
         order = create_order(user, with_referral=False)
         result = AsaasGateway().charge(
             order, billing_type="CREDIT_CARD", credit_card_token=self.asaas.card_token
         )
-        assert result.redirect_url == reverse("payments-manual-confirm", args=[order.pk])
+        assert result.redirect_url == reverse("payments-card-confirm", args=[order.pk])
 
     def test_customer_cpf_sanitized(self):
         user = make_user()
@@ -159,6 +179,56 @@ class TestAsaasCharge(AsaasMockMixin, TestCase):
         )
         assert customers_call["body"]["cpfCnpj"] == "12345678901"
 
+    def test_customer_gets_phone_and_no_notification(self):
+        user = make_user()
+        user.cpf = "12345678901"
+        user.telefone = "(11) 99999-9999"
+        user.save(update_fields=["cpf", "telefone"])
+        AsaasGateway().charge(create_order(user, with_referral=False), billing_type="PIX")
+        customers_call = next(
+            c
+            for c in self.asaas.calls
+            if c["method"] == "POST" and c["url"].endswith("/customers")
+        )
+        assert customers_call["body"]["mobilePhone"] == "11999999999"
+        assert customers_call["body"]["notificationDisabled"] is True
+
+    def test_charge_value_sent_as_decimal_string(self):
+        user = make_user()
+        order = create_order(user, with_referral=False, qty=2)
+        AsaasGateway().charge(order, billing_type="PIX")
+        payment_call = next(
+            c for c in self.asaas.calls if c["method"] == "POST" and c["url"].endswith("/payments")
+        )
+        assert payment_call["body"]["value"] == f"{order.total:.2f}"
+        assert isinstance(payment_call["body"]["value"], str)
+
+    def test_charge_sends_idempotency_key(self):
+        user = make_user()
+        order = create_order(user, with_referral=False)
+        AsaasGateway().charge(order, billing_type="PIX")
+        payment_call = next(
+            c for c in self.asaas.calls if c["method"] == "POST" and c["url"].endswith("/payments")
+        )
+        assert payment_call["headers"].get("X-Idempotency-Key") == f"order-{order.pk}"
+
+    def test_charge_retries_on_5xx(self):
+        self.asaas.fail_5xx = 2
+        user = make_user()
+        order = create_order(user, with_referral=False)
+        with mock.patch("apps.payments.gateways.asaas_client.time.sleep"):
+            result = AsaasGateway().charge(order, billing_type="PIX")
+        assert result.ok is True
+
+    def test_charge_pix_survives_missing_qr(self):
+        self.asaas.pix_missing = True
+        user = make_user()
+        order = create_order(user, with_referral=False)
+        result = AsaasGateway().charge(order, billing_type="PIX")
+        assert result.ok is True
+        tx = Transaction.objects.get(pk=result.external_id)
+        assert json.loads(tx.raw_payload)["pix"] == {}
+
 
 @override_settings(**ASAAS_SETTINGS)
 class TestAsaasWebhook(AsaasMockMixin, TestCase):
@@ -167,12 +237,58 @@ class TestAsaasWebhook(AsaasMockMixin, TestCase):
         order = create_order(user, with_referral=False)
         AsaasGateway().charge(order)
         tx = order.transactions.get(provider="asaas")
+        tx.refresh_from_db()
+        assert tx.status == Transaction.Status.PENDING
 
         payload = json.dumps({"event": "PAYMENT_CONFIRMED", "payment": {"id": self.asaas.payment_id}})
         AsaasGateway().webhook(payload, {"x-webhook-token": "segredo"})
 
         tx.refresh_from_db()
         assert tx.status == Transaction.Status.PAID
+
+    def test_webhook_received_marks_paid(self):
+        user = make_user()
+        order = create_order(user, with_referral=False)
+        AsaasGateway().charge(order)
+        tx = order.transactions.get(provider="asaas")
+        payload = json.dumps({"event": "PAYMENT_RECEIVED", "payment": {"id": self.asaas.payment_id}})
+        AsaasGateway().webhook(payload, {"x-webhook-token": "segredo"})
+        tx.refresh_from_db()
+        assert tx.status == Transaction.Status.PAID
+
+    def test_webhook_authorized_does_not_mark_paid(self):
+        user = make_user()
+        order = create_order(user, with_referral=False)
+        AsaasGateway().charge(order)
+        tx = order.transactions.get(provider="asaas")
+        payload = json.dumps({"event": "PAYMENT_AUTHORIZED", "payment": {"id": self.asaas.payment_id}})
+        AsaasGateway().webhook(payload, {"x-webhook-token": "segredo"})
+        tx.refresh_from_db()
+        assert tx.status == Transaction.Status.AUTHORIZED
+
+    def test_webhook_due_is_informational_and_keeps_pending(self):
+        user = make_user()
+        order = create_order(user, with_referral=False)
+        AsaasGateway().charge(order)
+        tx = order.transactions.get(provider="asaas")
+        payload = json.dumps({"event": "PAYMENT_DUE", "payment": {"id": self.asaas.payment_id}})
+        result = AsaasGateway().webhook(payload, {"x-webhook-token": "segredo"})
+        assert result.ok is True
+        assert "informativo" in result.message
+        tx.refresh_from_db()
+        assert tx.status == Transaction.Status.PENDING
+
+    def test_webhook_capture_cancelled_marks_failed(self):
+        user = make_user()
+        order = create_order(user, with_referral=False)
+        AsaasGateway().charge(order, billing_type="PIX")
+        tx = order.transactions.get(provider="asaas")
+        payload = json.dumps(
+            {"event": "PAYMENT_CREDIT_CARD_CAPTURE_CANCELLED", "payment": {"id": self.asaas.payment_id}}
+        )
+        AsaasGateway().webhook(payload, {"x-webhook-token": "segredo"})
+        tx.refresh_from_db()
+        assert tx.status == Transaction.Status.FAILED
 
     def test_webhook_invalid_token_raises(self):
         user = make_user()
@@ -233,6 +349,29 @@ class TestPixConfirmationView(AsaasMockMixin, TestCase):
         result = AsaasGateway().refund(str(uuid4()), amount=1)
         assert result.ok is False
 
+    def test_boleto_confirmation_shows_bank_slip(self):
+        user = make_user()
+        self.client.force_login(user)
+        order = create_order(user, with_referral=False)
+        AsaasGateway().charge(order, billing_type="BOLETO")
+
+        response = self.client.get(reverse("payments-boleto-confirm", kwargs={"order_pk": order.pk}))
+        assert response.status_code == 200
+        html = response.content.decode()
+        assert "boleto.asaas.com" in html
+        assert "3419179001234567890" in html
+
+    def test_boleto_confirmation_requires_own_order(self):
+        from apps.accounts.models import CustomUser
+
+        user = make_user()
+        self.client.force_login(user)
+        other = make_user(role=CustomUser.Role.AFILIADO)
+        order = create_order(other, with_referral=False)
+
+        response = self.client.get(reverse("payments-boleto-confirm", kwargs={"order_pk": order.pk}))
+        assert response.status_code == 404
+
 
 @override_settings(**ASAAS_SETTINGS)
 class TestAsaasSubscription(AsaasMockMixin, TestCase):
@@ -270,6 +409,82 @@ class TestAsaasSubscription(AsaasMockMixin, TestCase):
         assert payload["pix"] == {}
         tx = Transaction.objects.get(order=plan.order)
         assert tx.external_id == self.asaas.subscription_id
+
+    def test_subscribe_boleto_stores_bank_slip(self):
+        from apps.accounts.models import CustomUser
+
+        cliente = make_user(role=CustomUser.Role.CLIENTE)
+        plan = _make_plan(cliente)
+        result = AsaasGateway().subscribe(plan, billing_type="BOLETO")
+
+        assert result.ok is True
+        payload = json.loads(result.raw_payload)
+        assert payload["bankSlip"]["barCode"] == "3419179001234567890"
+        tx = Transaction.objects.get(order=plan.order)
+        assert "bankSlip" in json.loads(tx.raw_payload)
+        assert result.redirect_url == reverse("payments-boleto-confirm", args=[plan.order.pk])
+
+
+@override_settings(**ASAAS_SETTINGS)
+class TestAsaasPaymentLink(AsaasMockMixin, TestCase):
+    def test_create_payment_link_with_value_returns_url(self):
+        from apps.payments.services import create_payment_link
+
+        result = create_payment_link(
+            name="Orçamento — Instalação",
+            value=Decimal("99.90"),
+            description="Orçamento de Instalação",
+            billing_type="UNDEFINED",
+            charge_type="DETACHED",
+            external_reference="abc-123",
+        )
+
+        assert result.ok is True
+        assert result.url == self.asaas.payment_link_url
+        assert result.link_id == self.asaas.payment_link_id
+
+        link_call = next(
+            c
+            for c in self.asaas.calls
+            if c["method"] == "POST" and c["url"].endswith("/paymentLinks")
+        )
+        assert link_call["body"]["name"] == "Orçamento — Instalação"
+        assert link_call["body"]["value"] == "99.90"
+        assert link_call["body"]["billingType"] == "UNDEFINED"
+        assert link_call["body"]["chargeType"] == "DETACHED"
+        assert link_call["body"]["externalReference"] == "abc-123"
+
+    def test_create_payment_link_without_value(self):
+        from apps.payments.services import create_payment_link
+
+        result = create_payment_link(name="Valor aberto", billing_type="PIX")
+        assert result.ok is True
+        link_call = next(
+            c
+            for c in self.asaas.calls
+            if c["method"] == "POST" and c["url"].endswith("/paymentLinks")
+        )
+        assert "value" not in link_call["body"]
+        assert link_call["body"]["billingType"] == "PIX"
+
+    def test_create_payment_link_rejects_invalid_billing_type(self):
+        from apps.payments.services import create_payment_link
+
+        with self.assertRaises(ValueError):
+            create_payment_link(name="X", value=10, billing_type="DEPOSIT")
+
+    def test_create_payment_link_rejects_invalid_charge_type(self):
+        from apps.payments.services import create_payment_link
+
+        with self.assertRaises(ValueError):
+            create_payment_link(name="X", value=10, charge_type="AVULSA")
+
+    def test_create_payment_link_manual_provider_raises(self):
+        from apps.payments.services import create_payment_link
+
+        with override_settings(PAYMENT_PROVIDER="manual"):
+            with self.assertRaisesRegex(ValueError, "provider 'asaas'"):
+                create_payment_link(name="X", value=10)
 
 
 @override_settings(**ASAAS_SETTINGS)
@@ -349,3 +564,34 @@ class TestAsaasWebhookTokenEnforced(AsaasMockMixin, TestCase):
         with override_settings(ASAAS_WEBHOOK_TOKEN=""):
             with self.assertRaises(WebhookAuthError):
                 AsaasGateway().webhook(payload, {"x-webhook-token": "segredo"})
+
+
+@override_settings(**ASAAS_SETTINGS)
+class TestSyncPaymentsCommand(AsaasMockMixin, TestCase):
+    def test_command_reconciles_pending_transaction(self):
+        from django.core.management import call_command
+
+        user = make_user()
+        order = create_order(user, with_referral=False)
+        AsaasGateway().charge(order, billing_type="PIX")
+        tx = order.transactions.get(provider="asaas")
+        assert tx.status == Transaction.Status.PENDING
+
+        call_command("sync_payments")
+
+        tx.refresh_from_db()
+        assert tx.status == Transaction.Status.PAID
+
+    def test_command_preserves_unknown_status(self):
+        from django.core.management import call_command
+
+        self.asaas.customer_status = "CUSTOMER_REQUESTED_CANCELLATION"
+        user = make_user()
+        order = create_order(user, with_referral=False)
+        AsaasGateway().charge(order, billing_type="PIX")
+        tx = order.transactions.get(provider="asaas")
+
+        call_command("sync_payments")
+
+        tx.refresh_from_db()
+        assert tx.status == Transaction.Status.PENDING

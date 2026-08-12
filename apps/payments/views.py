@@ -4,7 +4,7 @@ import json
 import logging
 
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django.views import View
@@ -61,6 +61,57 @@ class PixConfirmationView(LoginRequiredMixin, TemplateView):
         ctx["transaction"] = tx
         ctx["pix"] = pix
         return ctx
+
+
+class CardConfirmationView(LoginRequiredMixin, TemplateView):
+    """Confirmação de pagamento com cartão de crédito (Asaas)."""
+
+    template_name = "payments/card_confirm.html"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["order"] = get_object_or_404(Order, pk=self.kwargs["order_pk"], user=self.request.user)
+        return ctx
+
+
+class BoletoConfirmationView(LoginRequiredMixin, TemplateView):
+    """Mostra o boleto bancário gerado no Asaas (link/linha digitável)."""
+
+    template_name = "payments/boleto_confirm.html"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        order = get_object_or_404(Order, pk=self.kwargs["order_pk"], user=self.request.user)
+        tx = order.transactions.filter(provider="asaas").order_by("-created_at").first()
+        bank_slip = {}
+        if tx and tx.raw_payload:
+            try:
+                payload = json.loads(tx.raw_payload)
+                bank_slip = payload.get("bankSlip") or {}
+            except (ValueError, TypeError):
+                bank_slip = {}
+        ctx["order"] = order
+        ctx["transaction"] = tx
+        ctx["bank_slip"] = bank_slip
+        return ctx
+
+
+class OrderStatusView(LoginRequiredMixin, View):
+    """Retorna o status do pedido em JSON (usado pelo polling das telas).
+
+    O usuário acessa apenas pedidos próprios; `paid` indica pagamento
+    confirmado para o frontend trocar a seção por uma de sucesso.
+    """
+
+    def get(self, request, order_pk):
+        order = get_object_or_404(Order, pk=order_pk, user=self.request.user)
+        return JsonResponse(
+            {
+                "order_status": order.status,
+                "paid": order.status == Order.Status.PAID,
+                "canceled": order.status == Order.Status.CANCELED,
+            }
+        )
 
 
 class ManualConfirmationView(LoginRequiredMixin, TemplateView):

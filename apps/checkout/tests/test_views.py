@@ -222,6 +222,22 @@ class TestCheckoutView(TestCase):
         assert tx.provider == "asaas"
 
     @override_settings(**ASAAS_SETTINGS)
+    def test_checkout_boleto_asaas_redirects_to_boleto_confirm(self):
+        from apps.payments.models import Transaction
+
+        user = self._login()
+        with mock_asaas() as _fake:
+            product = make_product(stock=10)
+            self._with_cart(product, qty=1)
+            response = self.client.post(reverse("checkout"), {"payment_method": "BOLETO"})
+        assert response.status_code == 302
+        order = Order.objects.filter(user=user).latest("created_at")
+        assert response.url == reverse("payments-boleto-confirm", kwargs={"order_pk": order.pk})
+        tx = Transaction.objects.get(order=order)
+        assert tx.provider == "asaas"
+        assert tx.status == Transaction.Status.PENDING
+
+    @override_settings(**ASAAS_SETTINGS)
     def test_checkout_credit_card_missing_cpf_cancels_order(self):
         from apps.checkout.models import Address
 

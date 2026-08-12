@@ -48,6 +48,10 @@ class CustomUser(AbstractUser):
     def is_afiliado(self) -> bool:
         return self.role == self.Role.AFILIADO
 
+    @property
+    def is_admin(self) -> bool:
+        return self.role == self.Role.ADMIN or self.is_superuser
+
 
 class PublicProfile(BaseModel):
     """Perfil publico opcional para prestadores/afiliados."""

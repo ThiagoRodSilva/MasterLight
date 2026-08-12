@@ -1,0 +1,528 @@
+"""Gateway real via API v3 do Asaas (Pix, cartão, boleto e assinaturas)."""
+
+import json
+import logging
+import uuid
+from datetime import date, timedelta
+from typing import Optional
+
+from django.conf import settings
+from django.urls import reverse_lazy
+
+from .asaas_client import AsaasApiClient
+from .base import ChargeResult, PaymentGateway, PaymentLinkResult, WebhookAuthError
+
+logger = logging.getLogger(__name__)
+
+
+class AsaasGateway(PaymentGateway):
+    """Gateway real via API v3 do Asaas (Pix e MultiCartão).
+
+    - `charge` cria cobrança e salva `Transaction.external_id` = id Asaas.
+    - `webhook` valida token em `x-webhook-token` e mapeia eventos
+      PAYMENT_CONFIRMED/RECEIVED -> paid, PAYMENT_OVERDUE/RESET -> failed.
+    - Ambiente sandbox/prod controlado por `ASAAS_SANDBOX`.
+    """
+
+    name = "asaas"
+
+    # Formas de pagamento aceitas pelo Asaas. DEBIT_CARD usa a mesma mecânica
+    # de token do cartão; UNDEFINED deixa o Asaas decidir e TRANSFER depende de
+    # transferência manual do cliente. Todos são aceitos no gateway, mas apenas
+    # Pix/Cartão/Boleto são expostos na UI.
+    _BILLING_TYPES = {"PIX", "CREDIT_CARD", "BOLETO", "DEBIT_CARD", "UNDEFINED", "TRANSFER"}
+    _TOKEN_BILLING_TYPES = {"CREDIT_CARD", "DEBIT_CARD"}
+
+    # Eventos informativos: cobrança criada/vencendo/cobrança em andamento não
+    # alteram o status financeiro (respondem 200 sem transição).
+    _INFORMATIONAL_EVENTS = {
+        "payment_due",
+        "payment_dunning",
+        "payment_restored",
+        "payment_received_in_cash_undone",
+    }
+    _AUTHORIZED_EVENTS = {"payment_authorized"}
+    _PAID_EVENTS = {"payment_confirmed", "payment_received"}
+    _FAILED_EVENTS = {
+        "payment_overdue",
+        "payment_deleted",
+        "payment_failed",
+        "payment_credit_card_capture_cancelled",
+    }
+    _REFUNDED_EVENTS = {"payment_refunded", "payment_refund_requested"}
+
+    def __init__(self):
+        self.client = AsaasApiClient()
+
+    def _ensure_customer(self, user) -> str:
+        """Reutiliza (e salva) o customer_id do Asaas no usuario.
+
+        Busca por e-mail para não duplicar customer (dev/prod reuso), e envia
+        CPF/telefone quando existirem. `notificationDisabled` evita e-mails
+        automáticos do Asaas fora do fluxo da plataforma.
+        """
+        cached = getattr(user, "asaas_customer_id", "")
+        if cached:
+            return cached
+        cpf = self.client._sanitize_digits(user.cpf)
+        phone = "".join(ch for ch in (user.telefone or "") if ch.isdigit())
+
+        if user.email:
+            try:
+                result = self.client._api("GET", "customers", params={"email": user.email})
+            except ValueError:
+                result = {}
+            rows = result.get("data") if isinstance(result, dict) else None
+            if rows:
+                existing = rows[0]
+                user.asaas_customer_id = existing["id"]
+                user.save(update_fields=["asaas_customer_id"])
+                return existing["id"]
+
+        full_name = user.get_full_name() or user.username or user.email
+        body = {
+            "name": full_name,
+            "email": user.email,
+            "externalReference": str(user.pk),
+            "notificationDisabled": True,
+        }
+        if cpf:
+            body["cpfCnpj"] = cpf
+        if phone:
+            body["mobilePhone"] = phone[:11]
+        customer = self.client._api(
+            "POST", "customers", body, idempotency_key=f"customer-{user.pk}"
+        )
+        customer_id = customer["id"]
+        user.asaas_customer_id = customer_id
+        user.save(update_fields=["asaas_customer_id"])
+        return customer_id
+
+    def _fetch_pix(self, payment_id: str) -> dict:
+        return self.client._api("GET", f"payments/{payment_id}/pixQrCode")
+
+    def _confirmation_url(self, billing_type: str, order_pk) -> str:
+        """Escolhe a página de confirmação conforme a forma de pagamento."""
+        if billing_type in ("CREDIT_CARD", "DEBIT_CARD"):
+            name = "payments-card-confirm"
+        elif billing_type == "BOLETO":
+            name = "payments-boleto-confirm"
+        else:
+            # PIX, UNDEFINED e TRANSFER caem na página do PIX; o polling de
+            # status funciona para qualquer cobrança.
+            name = "payments-pix-confirm"
+        return str(reverse_lazy(name, kwargs={"order_pk": order_pk}))
+
+    def fetch_payment(self, external_id: str) -> dict:
+        """Consulta a cobrança atual no Asaas (reconciliação)."""
+        return self.client.fetch_payment(external_id)
+
+    def tokenize_credit_card(self, user, card: dict, holder: dict, remote_ip: str = "") -> str:
+        """Gera `creditCardToken` no Asaas (tokenização de cartão).
+
+        O token fica vinculado ao customer; cobranças seguintes do mesmo
+        cliente podem reusá-lo sem trafegar dados do cartão novamente.
+        """
+        customer = self._ensure_customer(user)
+        body = {
+            "customer": customer,
+            "creditCard": {
+                "holderName": card.get("holder_name", ""),
+                "number": card.get("number", "").strip(),
+                "expiryMonth": str(card.get("expiry_month", "")).strip(),
+                "expiryYear": str(card.get("expiry_year", "")).strip(),
+                "ccv": card.get("ccv", "").strip(),
+            },
+            "creditCardHolderInfo": {
+                "name": holder.get("name", ""),
+                "email": holder.get("email", ""),
+                "cpfCnpj": holder.get("cpf_cnpj", ""),
+                "postalCode": holder.get("postal_code", ""),
+                "addressNumber": holder.get("address_number", ""),
+                "phone": holder.get("phone", ""),
+            },
+            "remoteIp": remote_ip,
+        }
+        result = self.client._api(
+            "POST", "creditCards/tokenizeCreditCard", body, idempotency_key=f"cardtoken-{user.pk}"
+        )
+        token = result.get("creditCardToken") or result.get("credit_card_token")
+        if not token:
+            raise ValueError("Falha ao tokenizar cartão: resposta sem creditCardToken.")
+        return token
+
+    def create_payment_link(
+        self,
+        *,
+        name: str,
+        value=None,
+        description: str = "",
+        billing_type: str = "UNDEFINED",
+        charge_type: str = "DETACHED",
+        due_date_limit_days: Optional[int] = None,
+        max_installment_count: Optional[int] = None,
+        subscription_cycle: str = "",
+        end_date=None,
+        external_reference: str = "",
+    ) -> PaymentLinkResult:
+        """Gera link de pagamento avulso (tela hospedada do Asaas).
+
+        Sem customer: o pagador preenche os dados na página do Asaas
+        (`url` retornada). A confirmação chega via webhook com
+        `payment.paymentLink` — ainda sem reconcilição local nesta etapa.
+        """
+        normalized = (billing_type or "UNDEFINED").upper()
+        if normalized not in ("UNDEFINED", "BOLETO", "CREDIT_CARD", "PIX"):
+            raise ValueError(f"billing_type inválido para link: {billing_type}.")
+        charge = (charge_type or "DETACHED").upper()
+        if charge not in ("DETACHED", "INSTALLMENT", "RECURRENT"):
+            raise ValueError(f"charge_type inválido: {charge_type}.")
+
+        body: dict = {"name": name, "billingType": normalized, "chargeType": charge}
+        if value is not None:
+            body["value"] = self.client._money(value)
+        if description:
+            body["description"] = description
+        if normalized == "BOLETO" and due_date_limit_days:
+            body["dueDateLimitDays"] = due_date_limit_days
+        if charge == "INSTALLMENT" and max_installment_count:
+            body["maxInstallmentCount"] = max_installment_count
+        if charge == "RECURRENT" and subscription_cycle:
+            body["subscriptionCycle"] = subscription_cycle
+        if end_date:
+            body["endDate"] = end_date.isoformat() if hasattr(end_date, "isoformat") else str(end_date)
+        if external_reference:
+            body["externalReference"] = external_reference
+
+        link = self.client._api(
+            "POST",
+            "paymentLinks",
+            body,
+            idempotency_key=f"paymentlink-{external_reference or uuid.uuid4()}",
+        )
+        return PaymentLinkResult(
+            ok=True,
+            url=str(link.get("url") or ""),
+            link_id=str(link.get("id") or ""),
+            message="Link de pagamento criado.",
+        )
+
+    def charge(
+        self,
+        order,
+        billing_type: str = "PIX",
+        credit_card_token: str = "",
+        remote_ip: str = "",
+    ) -> ChargeResult:
+        """Gera cobranca (Pix/cartao/boleto/etc.) no Asaas e salva Transaction."""
+        from apps.payments.models import Transaction
+
+        normalized = (billing_type or "PIX").upper()
+        if normalized not in self._BILLING_TYPES:
+            raise ValueError(
+                f"billing_type inválido: {billing_type} (use {', '.join(sorted(self._BILLING_TYPES))})."
+            )
+
+        customer = self._ensure_customer(order.user)
+        due_date = date.today() + timedelta(days=1)
+        body = {
+            "customer": customer,
+            "billingType": normalized,
+            "value": self.client._money(order.total),
+            "dueDate": due_date.isoformat(),
+        }
+        if normalized in self._TOKEN_BILLING_TYPES:
+            if not credit_card_token:
+                raise ValueError(f"{normalized} exige um creditCardToken (tokenize primeiro).")
+            body["creditCardToken"] = credit_card_token
+            if remote_ip:
+                body["remoteIp"] = remote_ip
+
+        payment = self.client._api("POST", "payments", body, idempotency_key=f"order-{order.pk}")
+        extras: dict = {}
+        if normalized == "PIX":
+            try:
+                extras["pix"] = self._fetch_pix(payment["id"])
+            except ValueError:
+                # QR pode não estar imediatamente disponível no sandbox; segue sem
+                # ele e o status é atualizado via webhook/reconciliação.
+                logger.warning("Asaas: QR Pix indisponível para o pagamento %s", payment.get("id"))
+                extras["pix"] = {}
+        elif normalized == "BOLETO":
+            extras["bankSlip"] = payment.get("bankSlip") or {}
+
+        raw = json.dumps({"payment": payment, **extras})
+        tx = Transaction.objects.create(
+            order=order,
+            user=order.user,
+            provider=self.name,
+            external_id=payment["id"],
+            amount=order.total,
+            status=Transaction.Status.PENDING,
+            raw_payload=raw,
+        )
+        redirect_url = self._confirmation_url(normalized, order.pk)
+        logger.info(
+            "Asaas: cobrança %s criada para o pedido %s (%s)",
+            payment.get("id"), order.pk, normalized,
+        )
+        return ChargeResult(
+            ok=True,
+            redirect_url=redirect_url,
+            external_id=str(tx.pk),
+            message=f"Cobrança {normalized} criada para análise.",
+            status=Transaction.Status.PENDING,
+            raw_payload=raw,
+        )
+
+    def subscribe(
+        self,
+        plan,
+        billing_type: str = "PIX",
+        credit_card_token: str = "",
+        remote_ip: str = "",
+    ) -> ChargeResult:
+        """Cria assinatura recorrente no Asaas e mapeia a 1ª cobrança."""
+        from apps.payments.models import Transaction
+
+        normalized = (billing_type or "PIX").upper()
+        if normalized not in self._BILLING_TYPES:
+            raise ValueError(
+                f"billing_type inválido: {billing_type} (use {', '.join(sorted(self._BILLING_TYPES))})."
+            )
+
+        cycle_map = {
+            "mensal": "MONTHLY",
+            "trimestral": "QUARTERLY",
+            "anual": "YEARLY",
+        }
+        cycle = cycle_map.get(plan.plan_type, "MONTHLY")
+        customer = self._ensure_customer(plan.client)
+        body = {
+            "customer": customer,
+            "billingType": normalized,
+            "value": self.client._money(plan.value),
+            "nextDueDate": plan.next_due_date.isoformat(),
+            "cycle": cycle,
+        }
+        if normalized in self._TOKEN_BILLING_TYPES:
+            if not credit_card_token:
+                raise ValueError(f"{normalized} exige um creditCardToken (tokenize primeiro).")
+            body["creditCardToken"] = credit_card_token
+            if remote_ip:
+                body["remoteIp"] = remote_ip
+        subscription = self.client._api(
+            "POST", "subscriptions", body, idempotency_key=f"plan-{plan.pk}"
+        )
+        subscription_id = subscription["id"]
+
+        # Primeira cobranca da assinatura: usa o id do payment para que o
+        # webhook existente (mapeado por Transaction.external_id) o encontre.
+        external_payment_id = subscription_id
+        first_payment = None
+        try:
+            payments = self.client._api("GET", f"subscriptions/{subscription_id}/payments")
+        except ValueError:
+            payments = {}
+        rows = payments.get("data") if isinstance(payments, dict) else None
+        if rows:
+            first_payment = rows[0]
+            external_payment_id = first_payment.get("id") or subscription_id
+
+        extras: dict = {}
+        if normalized == "PIX":
+            try:
+                extras["pix"] = self._fetch_pix(external_payment_id)
+            except ValueError:
+                # Cobrança ainda não possui Pix disponível (ex.: cartão sem emissão
+                # imediata); segue sem QR, o status é atualizado via webhook.
+                extras["pix"] = {}
+        elif normalized == "BOLETO":
+            extras["bankSlip"] = (first_payment or {}).get("bankSlip") or {}
+
+        raw = json.dumps(
+            {"subscription": subscription, "first_payment": external_payment_id, **extras}
+        )
+        tx = Transaction.objects.create(
+            order=plan.order,
+            user=plan.client,
+            provider=self.name,
+            external_id=external_payment_id,
+            amount=plan.value,
+            status=Transaction.Status.PENDING,
+            raw_payload=raw,
+        )
+
+        plan.asaas_subscription_id = subscription_id
+        plan.save(update_fields=["asaas_subscription_id", "updated_at"])
+
+        redirect_url = self._confirmation_url(normalized, plan.order.pk)
+        logger.info(
+            "Asaas: assinatura %s criada para o plano %s (%s)",
+            subscription_id, plan.pk, normalized,
+        )
+        return ChargeResult(
+            ok=True,
+            redirect_url=redirect_url,
+            external_id=str(tx.pk),
+            message="Assinatura criada. Aguardando o primeiro pagamento.",
+            status=Transaction.Status.PENDING,
+            raw_payload=raw,
+            subscription_id=subscription_id,
+        )
+
+    def refund(self, transaction_id, amount) -> ChargeResult:
+        from apps.payments.models import Transaction
+
+        tx = Transaction.objects.filter(pk=transaction_id).first()
+        if tx is None or not tx.external_id:
+            return ChargeResult(ok=False, redirect_url="/", message="Tx não encontrada.")
+        try:
+            self.client._api(
+                "POST", f"payments/{tx.external_id}/refund", {"value": self.client._money(amount)}
+            )
+        except ValueError:
+            return ChargeResult(ok=False, redirect_url="/", message="Falha no reembolso.")
+        tx.status = Transaction.Status.REFUNDED
+        tx.save(update_fields=["status", "updated_at"])
+        return ChargeResult(
+            ok=True,
+            redirect_url="/",
+            external_id=str(tx.pk),
+            message="Reembolso solicitado.",
+        )
+
+    def _create_subscription_transaction(self, payment, external_id):
+        """Cria Transaction para uma cobrança de assinatura (renovação).
+
+        Renovações chegam via webhook com um `payment.id` novo, ainda sem
+        `Transaction` local. O payload traz `payment.subscription`; mapeamos
+        para o `MaintenancePlan.asaas_subscription_id` e abrimos a transação
+        pendente ligada ao pedido do plano. Retorna None se não encontrar plano.
+        """
+        from apps.payments.models import Transaction
+        from apps.services.models import MaintenancePlan
+
+        subscription_id = payment.get("subscription") if isinstance(payment, dict) else None
+        if not subscription_id:
+            return None
+        plan = (
+            MaintenancePlan.objects.filter(
+                asaas_subscription_id=str(subscription_id), is_active=True
+            )
+            .select_related("order", "client")
+            .first()
+        )
+        if plan is None or plan.order is None:
+            return None
+        return Transaction.objects.create(
+            order=plan.order,
+            user=plan.client,
+            provider=self.name,
+            external_id=external_id,
+            amount=payment.get("value") or plan.value,
+            status=Transaction.Status.PENDING,
+            raw_payload=json.dumps(payment),
+        )
+
+    def webhook(self, payload, headers) -> ChargeResult:
+        """Processa webhook Asaas: autentica token e atualiza status."""
+        from apps.payments.models import Transaction
+
+        if isinstance(payload, (bytes, bytearray)):
+            try:
+                payload_str = payload.decode("utf-8")
+            except UnicodeDecodeError as exc:
+                raise ValueError("Payload deve estar em UTF-8.") from exc
+        else:
+            payload_str = payload or ""
+
+        try:
+            data = json.loads(payload_str or "{}")
+        except (ValueError, TypeError) as exc:
+            raise ValueError("Payload inválido: não é JSON válido.") from exc
+
+        token = str(headers.get("x-webhook-token") or "")
+        expected = getattr(settings, "ASAAS_WEBHOOK_TOKEN", "")
+        if not expected or token != expected:
+            raise WebhookAuthError("Assinatura de webhook Asaas inválida.")
+
+        payment = data.get("payment") if isinstance(data, dict) else None
+        if not isinstance(payment, dict) or not payment.get("id"):
+            raise ValueError("Payload deve conter 'payment.id'.")
+
+        external_id = str(payment.get("id"))
+        event = str(data.get("event") or "").lower()
+        tx = Transaction.objects.filter(external_id=external_id).first()
+
+        if event == "payment_created":
+            # Cobrança criada (ex.: nova fatura da assinatura). Abre a transação
+            # pendente quando ainda não existe; nenhum ajuste de status além disso.
+            if tx is None:
+                tx = self._create_subscription_transaction(payment, external_id)
+                if tx is None:
+                    raise ValueError("Transação não encontrada.")
+                logger.info("Asaas webhook: transação criada %s", external_id)
+                return ChargeResult(
+                    ok=True,
+                    redirect_url="/",
+                    external_id=str(tx.pk),
+                    message="Transação aguardando pagamento.",
+                    status=tx.status,
+                    raw_payload=payload_str,
+                )
+            return ChargeResult(
+                ok=True,
+                redirect_url="/",
+                external_id=str(tx.pk),
+                message="Transação aguardando pagamento.",
+                status=tx.status,
+                raw_payload=payload_str,
+            )
+
+        if tx is None:
+            # Renovação de assinatura: cobrança nova com id desconhecido, mas
+            # pertencente a uma assinatura registrada. Abre a transação antes de
+            # aplicar o status do evento financeiro.
+            tx = self._create_subscription_transaction(payment, external_id)
+            if tx is None:
+                raise ValueError("Transação não encontrada.")
+            logger.info("Asaas webhook: renovação rastreada %s", external_id)
+
+        if event in self._INFORMATIONAL_EVENTS:
+            tx.raw_payload = payload_str
+            tx.save(update_fields=["raw_payload", "updated_at"])
+            return ChargeResult(
+                ok=True,
+                redirect_url="/",
+                external_id=str(tx.pk),
+                message=f"Evento informativo '{event}' processado sem transição.",
+                status=tx.status,
+                raw_payload=payload_str,
+            )
+
+        if event in self._AUTHORIZED_EVENTS:
+            new_status = Transaction.Status.AUTHORIZED
+        elif event in self._PAID_EVENTS:
+            new_status = Transaction.Status.PAID
+        elif event in self._FAILED_EVENTS:
+            new_status = Transaction.Status.FAILED
+        elif event in self._REFUNDED_EVENTS:
+            new_status = Transaction.Status.REFUNDED
+        else:
+            raise ValueError(f"Evento de webhook '{event}' não mapeado.")
+
+        if tx.status != new_status:
+            previous = tx.status
+            tx.status = new_status
+            tx.raw_payload = payload_str
+            tx.save(update_fields=["status", "raw_payload", "updated_at"])
+            logger.info("Asaas webhook: %s -> %s (%s)", previous, new_status, external_id)
+        return ChargeResult(
+            ok=True,
+            redirect_url="/",
+            external_id=str(tx.pk),
+            message=f"Transação atualizada para {tx.status}.",
+            status=tx.status,
+            raw_payload=payload_str,
+        )

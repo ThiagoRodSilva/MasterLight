@@ -23,6 +23,9 @@
       {% endif %}
 
       <p class="small text-muted">Assim que o pagamento for confirmado, o status do pedido é atualizado automaticamente.</p>
+
+      {% include "payments/_status_poll.html" %}
+
       <a href="{% url 'accounts-me' %}" class="btn btn-outline-dark">Meus pedidos</a>
     </div>
   </div>

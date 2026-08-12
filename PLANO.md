@@ -188,4 +188,47 @@ apps/<app>/
 
 ---
 
-_Última atualização: todos os Sprints 1–6 concluídos e plano de reparo da seção 6 executado em 08/ago (145 testes verdes, coverage 92%)._
+## Refatoração — Fases A/B/C
+
+> Plano aprovado em 11/ago. Estado base: 223 testes verdes, coverage 95%, `ruff` limpo. Trabalho atual não commitado (~1.052 linhas) pode ser tocado. Zero mudança de schema esperada.
+
+### Princípios-guia
+- Lógica de negócio só em `services.py`; views finas (AGENTS.md).
+- Pipeline do repo como critério de verde: `venv/bin/ruff check .` → `makemigrations --check --dry-run` → `manage.py check` → `coverage run manage.py test apps` (fail-under 70).
+- Commit por fase (somente se solicitado).
+
+### Fase A — DRY: orquestração "pedido + cobrança"
+- **Problema**: bloco "montar cartão → tokenizar → charge → cancelar em erro" duplicado em `checkout/views.py:132-153`, `services/views.py:224-251`, `services/views.py:386-440`.
+- **Novo em `apps/payments/services.py`**:
+  - `BillingParams` (dataclass): `billing_type`, `credit_card_token`, `remote_ip`.
+  - `resolve_billing(request, user, address=None) -> BillingParams` — lê `payment_method` do POST; se `CREDIT_CARD`, roda `prepare_card_payload` + tokenize.
+  - `charge_with_rollback(order, request, params, *, subscription_plan=None) -> ChargeResult | None` — chama `subscribe_plan`/`charge_order`; em **erro cancela a Order** e registra `messages.error`; `None` em falha.
+- Views refatoradas mantêm criação de Order/items/Referral/plan; só o fluxo de pagamento/cancelamento é unificado.
+- **Testes**: unit tests do service (card ok, card vencido, gateway raise, `ok=False` cancela Order). Suíte existente verde **sem alterar asserts**.
+
+### Fase B — Split de `apps/payments/services.py` (914 linhas → pacote `gateways/`)
+- Estrutura: `gateways/__init__.py` (re-exports + `_REGISTRY` + `get_gateway`), `base.py` (interface + dataclasses + `WebhookAuthError`), `manual.py`, `asaas_client.py` (HTTP/retry `_api`), `asaas.py`.
+- `services.py` mantém orquestração (`charge_order`, `subscribe_plan`, `create_payment_link`, `webhook_handler`, `prepare_card_payload`, novos services) **+ re-exports** (`AsaasGateway`, `ManualGateway`, ...) para não quebrar ~10 pontos de import (testes, admin, `sync_payments`).
+- **Correção estrutural**: unificar assinatura `charge(order, billing_type="PIX", credit_card_token="", remote_ip="")` e `subscribe(...)` na base + Manual + Asaas; remover `if gateway.name == "asaas"` de `charge_order`/`subscribe_plan`.
+- **Testes**: suíte completa verde; atualizar só imports se re-export não cobrir.
+
+### Fase C — Qualidade e CI
+1. Mockar `time.sleep` no teste de retry (patch em `apps.payments.gateways.asaas_client.time.sleep`) — zerar `time.sleep` real (`services.py:299,304`); medir antes/depois.
+2. Propriedade `CustomUser.is_admin`; trocar `if not self.request.user.role == "admin"` em `services/views.py:153,168,454,465`.
+3. `MaintenancePlanListView` → `TemplateView` (sem `get_queryset` retornando `[]`).
+4. Mover `_descriptions` (`services/views.py:324`) para constante de classe em `MaintenancePlan`.
+5. Remover `from datetime import date` local em `prepare_card_payload` (`payments/services.py:823`).
+6. **Opcional**: consolidar registro de signals de `Transaction` (`payments/signals.py` + `services/signals.py`).
+
+### Ordem de execução & rollback
+1. A → suíte + novos testes.
+2. C-fáceis (2–5) → `ruff` + suíte.
+3. B por último → suíte completa + grep de imports órfãos (`payments.services`).
+
+Risco baixo: cada fase começa/termina verde; regressão isola via `git stash` por arquivos.
+
+> ✅ Executado em 11/ago. Fases A, B e C (itens 1–5) concluídas; item 6 (signals) não executado por opção. Suíte completa: **229 testes verdes**, coverage **95%** (meta 70%), `ruff check .` limpo, `makemigrations --check` sem diff, `manage.py check` ok. Fase B criou o pacote `apps/payments/gateways/` (`base.py`, `manual.py`, `asaas_client.py`, `asaas.py`) com re-exports em `services.py`; assinatura `charge`/`subscribe` unificada (sem `if gateway.name`). Fase A adicionou `resolve_billing`/`charge_with_rollback`/`BillingParams` e eliminou a triplicação de cobrança em `CheckoutView`/`ServiceRequestApproveView`/`MaintenancePlanCreateView`.
+
+---
+
+_Última atualização: Todos os Sprints 1–6 e plano de reparo da seção 6 executados (08/ago); refatoração A/B/C executada em 11/ago (229 testes verdes, coverage 95%)._

@@ -16,6 +16,7 @@ from .views import (
     ServiceRequestApproveView,
     ServiceRequestCancelView,
     ServiceRequestCreateView,
+    ServiceRequestPayLinkView,
     ServiceUpdateView,
 )
 
@@ -38,6 +39,11 @@ urlpatterns = [
         "minhas-solicitacoes/<uuid:pk>/aprovar/",
         ServiceRequestApproveView.as_view(),
         name="services-request-approve",
+    ),
+    path(
+        "minhas-solicitacoes/<uuid:pk>/link-pagamento/",
+        ServiceRequestPayLinkView.as_view(),
+        name="services-request-paylink",
     ),
     path(
         "minhas-solicitacoes/<uuid:pk>/cancelar/",

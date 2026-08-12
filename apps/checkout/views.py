@@ -12,7 +12,7 @@ from django.views.generic import CreateView
 
 from apps.affiliate.models import AffiliateProfile, Referral
 from apps.core.models import SiteSettings
-from apps.payments.services import charge_order, get_gateway, prepare_card_payload
+from apps.payments.services import charge_with_rollback
 
 from .models import Address, Cart, Order, OrderItem
 
@@ -129,35 +129,18 @@ class CheckoutView(LoginRequiredMixin, View):
                 order.address = address
                 order.save(update_fields=["address", "updated_at"])
 
-            billing_type = (request.POST.get("payment_method") or "PIX").upper()
+            result = charge_with_rollback(
+                order,
+                request,
+                address=address,
+                fail_message="Falha ao iniciar pagamento.",
+            )
 
-            try:
-                credit_card_token = ""
-                remote_ip = request.META.get("REMOTE_ADDR", "")
-                if billing_type == "CREDIT_CARD":
-                    card, holder = prepare_card_payload(request.POST, request.user, address)
-                    credit_card_token = get_gateway().tokenize_credit_card(
-                        request.user, card, holder, remote_ip=remote_ip
-                    )
-
-                result = charge_order(
-                    order,
-                    billing_type=billing_type,
-                    credit_card_token=credit_card_token,
-                    remote_ip=remote_ip,
-                )
-            except ValueError as exc:
-                order.status = Order.Status.CANCELED
-                order.save(update_fields=["status", "updated_at"])
-                messages.error(request, str(exc) or "Falha ao iniciar pagamento.")
-                return redirect("checkout-cart")
-
+        if result is None:
+            return redirect("checkout-cart")
         cart.clear()
-        if result.ok:
-            messages.success(request, "Pedido criado. Aguardando confirmação do pagamento.")
-            return redirect(result.redirect_url)
-        messages.error(request, result.message or "Falha ao iniciar pagamento.")
-        return redirect("checkout-cart")
+        messages.success(request, "Pedido criado. Aguardando confirmação do pagamento.")
+        return redirect(result.redirect_url)
 
 
 class AddressCreateView(LoginRequiredMixin, CreateView):

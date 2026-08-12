@@ -16,10 +16,7 @@
           <p class="text-muted small mb-2">{{ r.created_at|date:"d/m/Y H:i" }}</p>
           <div class="d-flex gap-2">
             {% if r.status == "quoted" %}
-            <form method="post" action="{% url 'services-request-approve' r.pk %}">
-              {% csrf_token %}
-              <button class="btn btn-dark btn-sm" type="submit">Aprovar e pagar via Pix</button>
-            </form>
+            <a href="{% url 'services-request-approve' r.pk %}" class="btn btn-dark btn-sm">Aprovar e pagar</a>
             {% endif %}
             {% if r.status == "pending" or r.status == "quoted" %}
             <form method="post" action="{% url 'services-request-cancel' r.pk %}">

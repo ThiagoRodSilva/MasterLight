@@ -9,7 +9,7 @@ from .models import MaintenancePlan, Service, ServiceRequest
 class ServiceForm(forms.ModelForm):
     class Meta:
         model = Service
-        fields = ["name", "slug", "category", "description", "base_price", "image", "is_active"]
+        fields = ["name", "category", "description", "base_price", "image", "is_active"]
 
 
 class ServiceRequestForm(forms.ModelForm):

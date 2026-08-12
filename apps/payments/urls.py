@@ -1,6 +1,13 @@
 from django.urls import path
 
-from .views import ManualConfirmationView, PixConfirmationView, WebhookView
+from .views import (
+    BoletoConfirmationView,
+    CardConfirmationView,
+    ManualConfirmationView,
+    OrderStatusView,
+    PixConfirmationView,
+    WebhookView,
+)
 
 urlpatterns = [
     path("webhook/", WebhookView.as_view(), name="payments-webhook"),
@@ -13,5 +20,20 @@ urlpatterns = [
         "pix/<uuid:order_pk>/",
         PixConfirmationView.as_view(),
         name="payments-pix-confirm",
+    ),
+    path(
+        "cartao/<uuid:order_pk>/",
+        CardConfirmationView.as_view(),
+        name="payments-card-confirm",
+    ),
+    path(
+        "boleto/<uuid:order_pk>/",
+        BoletoConfirmationView.as_view(),
+        name="payments-boleto-confirm",
+    ),
+    path(
+        "status/<uuid:order_pk>/",
+        OrderStatusView.as_view(),
+        name="payments-status",
     ),
 ]

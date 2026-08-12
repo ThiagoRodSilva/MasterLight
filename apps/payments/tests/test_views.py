@@ -157,3 +157,53 @@ class TestManualConfirmationView(TestCase):
         order = create_order(other, with_referral=False)
         response = self.client.get(reverse("payments-manual-confirm", kwargs={"order_pk": order.pk}))
         assert response.status_code == 404
+
+
+class TestCardConfirmationView(TestCase):
+    def setUp(self):
+        self.user = make_user()
+        self.client.force_login(self.user)
+        self.order = create_order(self.user, with_referral=False)
+
+    def _url(self, order=None):
+        return reverse("payments-card-confirm", kwargs={"order_pk": (order or self.order).pk})
+
+    def test_card_confirm_200_for_owner(self):
+        response = self.client.get(self._url())
+        assert response.status_code == 200
+
+    def test_card_confirm_404_other_user(self):
+        other = make_affiliate().user
+        order = create_order(other, with_referral=False)
+        response = self.client.get(self._url(order))
+        assert response.status_code == 404
+
+    def test_card_confirm_requires_login(self):
+        self.client.logout()
+        response = self.client.get(self._url())
+        assert response.status_code in (302, 403)
+
+
+class TestOrderStatusView(TestCase):
+    def test_status_json_for_owner(self):
+        user = make_user()
+        self.client.force_login(user)
+        order = create_order(user, with_referral=False)
+        response = self.client.get(reverse("payments-status", kwargs={"order_pk": order.pk}))
+        assert response.status_code == 200
+        data = response.json()
+        assert data["paid"] is False
+        assert data["order_status"] == "awaiting_payment"
+
+    def test_status_404_other_user(self):
+        user = make_user()
+        self.client.force_login(user)
+        other = make_affiliate().user
+        order = create_order(other, with_referral=False)
+        response = self.client.get(reverse("payments-status", kwargs={"order_pk": order.pk}))
+        assert response.status_code == 404
+
+    def test_status_requires_login(self):
+        order = create_order(make_user(), with_referral=False)
+        response = self.client.get(reverse("payments-status", kwargs={"order_pk": order.pk}))
+        assert response.status_code in (302, 403)

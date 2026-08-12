@@ -19,18 +19,20 @@ class TestServiceSelfService(TestCase):
 
     def test_provider_can_create_service_and_is_provider(self):
         self.client.force_login(self.provider)
+        create_page = self.client.get(reverse("services-create"))
+        assert "slug" not in create_page.context["form"].fields
         response = self.client.post(
             reverse("services-create"),
             {
                 "name": "Instalação de lâmpada",
-                "slug": "instalacao-lampada",
                 "category": self.category.pk,
                 "description": "teste",
                 "base_price": "50.00",
             },
         )
         assert response.status_code == 302
-        service = Service.objects.get(slug="instalacao-lampada")
+        service = Service.objects.get(name="Instalação de lâmpada")
+        assert service.slug
         assert service.created_by == self.provider
         assert self.provider in service.providers.all()
 
@@ -52,7 +54,6 @@ class TestServiceSelfService(TestCase):
             reverse("services-update", kwargs={"slug": service.slug}),
             {
                 "name": "Serviço X atualizado",
-                "slug": service.slug,
                 "category": self.category.pk,
                 "description": "",
                 "base_price": "20.00",
@@ -62,6 +63,7 @@ class TestServiceSelfService(TestCase):
         assert response.status_code == 302
         service.refresh_from_db()
         assert service.name == "Serviço X atualizado"
+        assert service.slug == "servico-x"
 
     def test_non_owner_cannot_edit_service(self):
         owner = make_user(role=CustomUser.Role.PRESTADOR)

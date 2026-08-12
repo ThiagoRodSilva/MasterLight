@@ -12,7 +12,6 @@ from .models import (
 @admin.register(ServiceCategory)
 class ServiceCategoryAdmin(admin.ModelAdmin):
     list_display = ("name", "slug", "icon", "is_active")
-    prepopulated_fields = {"slug": ("name",)}
 
 
 @admin.register(Service)
@@ -20,7 +19,6 @@ class ServiceAdmin(admin.ModelAdmin):
     list_display = ("name", "category", "base_price", "created_by", "is_active")
     list_filter = ("category", "is_active")
     search_fields = ("name",)
-    prepopulated_fields = {"slug": ("name",)}
     filter_horizontal = ("providers",)
 
 

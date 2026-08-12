@@ -2,12 +2,12 @@
 
 from django.db import models
 
-from apps.core.models import BaseModel
+from apps.core.models import BaseModel, RandomSlugMixin
 
 
-class Category(BaseModel):
+class Category(BaseModel, RandomSlugMixin):
     name = models.CharField(max_length=80)
-    slug = models.SlugField(unique=True)
+    slug = models.SlugField(unique=True, editable=False)
 
     class Meta:
         verbose_name = "Categoria de Produto"
@@ -18,10 +18,10 @@ class Category(BaseModel):
         return self.name
 
 
-class Product(BaseModel):
+class Product(BaseModel, RandomSlugMixin):
     sku = models.CharField(max_length=40, unique=True, db_index=True)
     name = models.CharField(max_length=160)
-    slug = models.SlugField(unique=True)
+    slug = models.SlugField(unique=True, editable=False)
     description = models.TextField(blank=True, default="")
     price = models.DecimalField(max_digits=12, decimal_places=2)
     stock = models.PositiveIntegerField(default=0)

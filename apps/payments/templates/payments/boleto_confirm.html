@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-8 text-center">
+      <h1 class="mb-3">Pague com boleto</h1>
+      <p class="text-muted">Pedido <strong>#{{ order.pk|truncatechars:8 }}</strong> — total
+        <strong>R$ {{ order.total|floatformat:2 }}</strong></p>
+
+      {% if bank_slip %}
+        <p class="small text-muted">Acesse ou imprima o boleto pelo link abaixo:</p>
+        {% if bank_slip.url %}
+        <a href="{{ bank_slip.url }}" target="_blank" rel="noopener" class="btn btn-brand mb-3">Ver boleto</a>
+        {% elif bank_slip.pdf %}
+        <a href="{{ bank_slip.pdf }}" target="_blank" rel="noopener" class="btn btn-brand mb-3">Baixar boleto (PDF)</a>
+        {% else %}
+        <div class="alert alert-warning">Boleto ainda não disponível no momento.</div>
+        {% endif %}
+
+        {% if bank_slip.barCode %}
+        <p class="small text-muted mb-1">Linha digitável:</p>
+        <div class="input-group mb-3 mx-auto" style="max-width: 480px;">
+          <input type="text" class="form-control" value="{{ bank_slip.barCode }}" id="boleto-copy" readonly>
+          <button class="btn btn-dark" type="button" id="copy-btn">Copiar</button>
+        </div>
+        {% endif %}
+
+        {% if bank_slip.identification %}
+        <p class="small text-muted">Identificação: {{ bank_slip.identification }}</p>
+        {% endif %}
+      {% else %}
+        <div class="alert alert-warning">Boleto indisponível no momento.</div>
+      {% endif %}
+
+      <p class="small text-muted">Assim que o pagamento for confirmado, o status do pedido é atualizado automaticamente.</p>
+
+      {% include "payments/_status_poll.html" %}
+
+      <a href="{% url 'accounts-me' %}" class="btn btn-outline-dark">Meus pedidos</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  document.getElementById('copy-btn')?.addEventListener('click', function () {
+    const el = document.getElementById('boleto-copy');
+    if (!el) return;
+    el.select();
+    navigator.clipboard?.writeText(el.value);
+    this.textContent = 'Copiado!';
+  });
+</script>
+{% endblock %}

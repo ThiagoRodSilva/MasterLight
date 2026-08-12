@@ -134,34 +134,82 @@ class FakeAsaasApi:
         self.card_token = "tok_0001"
         self.fail_next = None
         self.empty_subscription_payments = False
+        self.pix_missing = False
+        self.fail_5xx = 0
+        self.customer_status = "CONFIRMED"
+        self.payment_link_id = "pl_0001"
+        self.payment_link_url = "https://www.asaas.com/c/291089675759"
 
-    def __call__(self, method, url, headers, json, timeout):
-        self.calls.append({"method": method, "url": url, "body": json})
+    def __call__(self, method, url, headers, json, params=None, timeout=None):
+        self.calls.append(
+            {"method": method, "url": url, "body": json, "headers": headers, "params": params}
+        )
         if self.fail_next:
             status, detail = self.fail_next
             self.fail_next = None
             return FakeResponse({"errors": [detail]}, status_code=status)
+        if self.fail_5xx:
+            self.fail_5xx -= 1
+            return FakeResponse({"errors": [{"description": "erro interno"}]}, status_code=502)
         if method == "POST" and url.endswith("/customers"):
             return FakeResponse({"id": self.customer_id})
+        if method == "GET" and url.endswith("/customers"):
+            return FakeResponse({"data": []})
         if method == "POST" and url.endswith("/payments"):
+            if json and json.get("billingType") == "BOLETO":
+                return FakeResponse(
+                    {
+                        "id": self.payment_id,
+                        "status": "PENDING",
+                        "bankSlip": {
+                            "url": "https://boleto.asaas.com/emissao/123456",
+                            "barCode": "3419179001234567890",
+                            "identification": "00000000000000000000000000000000000000000000000",
+                        },
+                    }
+                )
             if json and json.get("billingType") == "CREDIT_CARD":
                 return FakeResponse({"id": self.payment_id, "status": "PENDING"})
             return FakeResponse({"id": self.payment_id, "status": "PENDING"})
+        if method == "GET" and f"payments/{self.payment_id}" in url and not url.endswith("pixQrCode"):
+            return FakeResponse({"id": self.payment_id, "status": self.customer_status})
         if method == "POST" and url.endswith("/gerarCobranca"):
             return FakeResponse({"id": self.payment_id, "status": "PENDING"})
         if method == "POST" and url.endswith("/subscriptions"):
             self.subscription_id = "sub_0001"
             return FakeResponse({"id": self.subscription_id})
+        if method == "POST" and url.endswith("/paymentLinks"):
+            return FakeResponse(
+                {
+                    "id": self.payment_link_id,
+                    "url": self.payment_link_url,
+                    "value": (json or {}).get("value"),
+                    "billingType": (json or {}).get("billingType"),
+                    "active": True,
+                }
+            )
         if method == "POST" and url.endswith("/creditCards/tokenizeCreditCard"):
             return FakeResponse({"creditCardToken": self.card_token, "creditCardBrand": "VISA"})
         if method == "GET" and "subscriptions/" in url and url.endswith("/payments"):
             data = (
                 []
                 if self.empty_subscription_payments
-                else [{"id": self.payment_id, "status": "PENDING", "value": 79.9}]
+                else [
+                    {
+                        "id": self.payment_id,
+                        "status": "PENDING",
+                        "value": 79.9,
+                        "bankSlip": {
+                            "url": "https://boleto.asaas.com/emissao/123456",
+                            "barCode": "3419179001234567890",
+                        },
+                    }
+                ]
             )
             return FakeResponse({"data": data})
         if method == "GET" and f"payments/{self.payment_id}/pixQrCode" in url:
+            if self.pix_missing:
+                return FakeResponse({"errors": [{"description": "pix indisponivel"}]}, status_code=404)
             return FakeResponse(
                 {"encodedImage": "base64png", "payload": "00020126580014BR.GOV.BCB.PIX"}
             )

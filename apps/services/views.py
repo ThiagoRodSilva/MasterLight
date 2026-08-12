@@ -6,11 +6,21 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
-from django.shortcuts import get_object_or_404, redirect
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
-from django.views.generic import CreateView, DeleteView, DetailView, FormView, ListView, UpdateView
+from django.views import View
+from django.views.generic import (
+    CreateView,
+    DeleteView,
+    DetailView,
+    FormView,
+    ListView,
+    TemplateView,
+    UpdateView,
+)
 
 from apps.core.mixins import (
     ClienteRequiredMixin,
@@ -148,7 +158,7 @@ class ProviderServiceRequestListView(ProviderRequiredMixin, ListView):
 
     def get_queryset(self):
         qs = ServiceRequest.objects.all()
-        if not self.request.user.role == "admin":
+        if not self.request.user.is_admin:
             qs = qs.filter(service__providers=self.request.user) | qs.filter(
                 service__created_by=self.request.user
             )
@@ -163,7 +173,7 @@ class ServiceQuoteView(ProviderRequiredMixin, UpdateView):
 
     def get_queryset(self):
         qs = ServiceRequest.objects.filter(status="pending")
-        if not self.request.user.role == "admin":
+        if not self.request.user.is_admin:
             qs = qs.filter(service__providers=self.request.user) | qs.filter(
                 service__created_by=self.request.user
             )
@@ -178,15 +188,24 @@ class ServiceQuoteView(ProviderRequiredMixin, UpdateView):
         return reverse_lazy("services-provider-requests")
 
 
-class ServiceRequestApproveView(ClienteRequiredMixin, UpdateView):
-    model = ServiceRequest
-    fields: list = []
+class ServiceRequestApproveView(ClienteRequiredMixin, View):
+    """Permite ao cliente aprovar o orçamento escolhendo a forma de pagamento."""
+
+    template_name = "services/request_approve.html"
 
     def get_queryset(self):
         return ServiceRequest.objects.filter(cliente=self.request.user, status="quoted")
 
+    def get_object(self):
+        return get_object_or_404(self.get_queryset(), pk=self.kwargs["pk"])
+
+    def get(self, request, *args, **kwargs):
+        service_request = self.get_object()
+        return render(request, self.template_name, {"service_request": service_request})
+
     def post(self, request, *args, **kwargs):
         from apps.checkout.models import Order, OrderItem
+        from apps.payments.services import charge_with_rollback
 
         service_request = self.get_object()
         with transaction.atomic():
@@ -210,22 +229,47 @@ class ServiceRequestApproveView(ClienteRequiredMixin, UpdateView):
             service_request.order = order
             service_request.save(update_fields=["order", "updated_at"])
 
-            from apps.payments.services import charge_order
+            result = charge_with_rollback(
+                order, request, fail_message="Falha ao gerar cobrança."
+            )
 
-            try:
-                result = charge_order(order, billing_type="PIX")
-            except ValueError as exc:
-                order.status = Order.Status.CANCELED
-                order.save(update_fields=["status", "updated_at"])
-                messages.error(request, str(exc) or "Falha ao gerar cobrança.")
-                return redirect("services-my-requests")
-
-            if result.ok:
-                return redirect(result.redirect_url)
-            order.status = Order.Status.CANCELED
-            order.save(update_fields=["status", "updated_at"])
-            messages.error(request, result.message or "Falha ao gerar cobrança.")
+        if result is None:
             return redirect("services-my-requests")
+        return redirect(result.redirect_url)
+
+
+class ServiceRequestPayLinkView(ClienteRequiredMixin, View):
+    """Gera um link de pagamento avulso no Asaas para um orçamento.
+
+    Retorna a URL da tela hospedada do Asaas em JSON; o frontend abre essa
+    URL em uma nova aba. Não cria Order/Transaction (cobrança avulsa).
+    """
+
+    def get_queryset(self):
+        return ServiceRequest.objects.filter(cliente=self.request.user, status="quoted")
+
+    def get_object(self):
+        return get_object_or_404(self.get_queryset(), pk=self.kwargs["pk"])
+
+    def post(self, request, *args, **kwargs):
+        from apps.payments.services import create_payment_link
+
+        service_request = self.get_object()
+        try:
+            result = create_payment_link(
+                name=f"Orçamento — {service_request.service.name}",
+                description=(
+                    f"Orçamento de {service_request.service.name} "
+                    f"(solicitação {service_request.pk})"
+                ),
+                value=service_request.final_price or service_request.service.base_price,
+                billing_type="UNDEFINED",
+                charge_type="DETACHED",
+                external_reference=str(service_request.pk),
+            )
+        except ValueError as exc:
+            return JsonResponse({"error": str(exc) or "Falha ao gerar link."}, status=400)
+        return JsonResponse({"url": result.url, "link_id": result.link_id})
 
 
 class ServiceRequestCancelView(ClienteRequiredMixin, UpdateView):
@@ -264,20 +308,10 @@ class MyServiceRequestListView(LoginRequiredMixin, ListView):
 # --------------------------------------------------------------------------
 # Manutenção elétrica (planos recorrentes)
 
-_descriptions = {
-    "mensal": _("Uma visita por mês, com acompanhamento contínuo."),
-    "trimestral": _("Uma visita a cada 3 meses. Melhor custo-benefício."),
-    "anual": _("Visitas para o ano inteiro, com desconto no ciclo."),
-}
 
-
-class MaintenancePlanListView(SectionEnabledMixin, ListView):
+class MaintenancePlanListView(SectionEnabledMixin, TemplateView):
     section_flag = "maintenance_enabled"
     template_name = "services/plan_list.html"
-    context_object_name = "plans"
-
-    def get_queryset(self):
-        return []
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -287,7 +321,7 @@ class MaintenancePlanListView(SectionEnabledMixin, ListView):
                 "value": t.value,
                 "label": t.label,
                 "price": prices.get(t.value, 0),
-                "description": _descriptions[t.value],
+                "description": MaintenancePlan.DESCRIPTIONS[t.value],
             }
             for t in MaintenancePlan.PlanType
         ]
@@ -319,29 +353,15 @@ class MaintenancePlanCreateView(SectionEnabledMixin, ClienteRequiredMixin, FormV
 
     def form_valid(self, form):
         from apps.checkout.models import Order, OrderItem
-        from apps.payments.services import get_gateway, prepare_card_payload, subscribe_plan
+        from apps.payments.services import resolve_billing, subscribe_plan
 
         value = form.cleaned_data["value"]
         plan_type = form.cleaned_data["plan_type"]
         prestador = form.cleaned_data["prestador"]
         next_due = timezone.localdate() + timedelta(days=MaintenancePlan.cycle_days_for(plan_type))
 
-        billing_type = (self.request.POST.get("payment_method") or "PIX").upper()
-        credit_card_token = ""
-        remote_ip = self.request.META.get("REMOTE_ADDR", "")
-        card = {}
-        holder = {}
         try:
-            if billing_type == "CREDIT_CARD":
-                from apps.checkout.models import Address
-
-                address = (
-                    Address.objects.filter(user=self.request.user, is_active=True).first()
-                )
-                card, holder = prepare_card_payload(self.request.POST, self.request.user, address)
-                credit_card_token = get_gateway().tokenize_credit_card(
-                    self.request.user, card, holder, remote_ip=remote_ip
-                )
+            params = resolve_billing(self.request, self.request.user)
             with transaction.atomic():
                 order = Order.objects.create(
                     user=self.request.user,
@@ -365,9 +385,9 @@ class MaintenancePlanCreateView(SectionEnabledMixin, ClienteRequiredMixin, FormV
                 )
                 result = subscribe_plan(
                     plan,
-                    billing_type=billing_type,
-                    credit_card_token=credit_card_token,
-                    remote_ip=remote_ip,
+                    billing_type=params.billing_type,
+                    credit_card_token=params.credit_card_token,
+                    remote_ip=params.remote_ip,
                 )
         except ValueError as exc:
             messages.error(self.request, str(exc) or "Falha ao criar a assinatura.")
@@ -394,7 +414,7 @@ class MaintenanceVisitListView(ProviderRequiredMixin, ListView):
 
     def get_queryset(self):
         qs = MaintenanceVisit.objects.filter(completed_at__isnull=True)
-        if not self.request.user.role == "admin":
+        if not self.request.user.is_admin:
             qs = qs.filter(plan__prestador=self.request.user)
         return qs.select_related("plan", "plan__client", "plan__prestador")
 
@@ -405,7 +425,7 @@ class MaintenanceVisitCompleteView(ProviderRequiredMixin, UpdateView):
 
     def get_queryset(self):
         qs = MaintenanceVisit.objects.filter(pk=self.kwargs["pk"])
-        if not self.request.user.role == "admin":
+        if not self.request.user.is_admin:
             qs = qs.filter(plan__prestador=self.request.user)
         return qs
 

@@ -4,12 +4,12 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from apps.accounts.models import CustomUser
-from apps.core.models import BaseModel
+from apps.core.models import BaseModel, RandomSlugMixin
 
 
-class ServiceCategory(BaseModel):
+class ServiceCategory(BaseModel, RandomSlugMixin):
     name = models.CharField(max_length=80, verbose_name="nome")
-    slug = models.SlugField(unique=True, verbose_name="slug")
+    slug = models.SlugField(unique=True, verbose_name="slug", editable=False)
     icon = models.CharField(max_length=60, blank=True, default="", verbose_name="ícone")
 
     class Meta:
@@ -21,9 +21,9 @@ class ServiceCategory(BaseModel):
         return self.name
 
 
-class Service(BaseModel):
+class Service(BaseModel, RandomSlugMixin):
     name = models.CharField(max_length=160, verbose_name="nome")
-    slug = models.SlugField(unique=True, verbose_name="slug")
+    slug = models.SlugField(unique=True, verbose_name="slug", editable=False)
     description = models.TextField(blank=True, default="", verbose_name="descrição")
     base_price = models.DecimalField(
         max_digits=12, decimal_places=2, default=0, verbose_name="preço base"
@@ -67,6 +67,12 @@ class MaintenancePlan(BaseModel):
         MONTHLY = "mensal", _("Mensal")
         QUARTERLY = "trimestral", _("Trimestral")
         ANNUAL = "anual", _("Anual")
+
+    DESCRIPTIONS = {
+        "mensal": _("Uma visita por mês, com acompanhamento contínuo."),
+        "trimestral": _("Uma visita a cada 3 meses. Melhor custo-benefício."),
+        "anual": _("Visitas para o ano inteiro, com desconto no ciclo."),
+    }
 
     plan_type = models.CharField(
         max_length=20,

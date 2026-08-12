@@ -1,11 +1,12 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="container py-5">
-  <h1>Finalizar pedido</h1>
-  <p>Total: <strong>R$ {{ cart.total|floatformat:2 }}</strong></p>
-  <form method="post">
-    {% csrf_token %}
-    <div class="card mb-3 p-3 form-panel--narrow">
+  <div class="auth-panel">
+    <h1 class="mb-2">Aprovar orçamento</h1>
+    <p class="mb-1">{{ service_request.service.name }}</p>
+    <p class="mb-3">Orçamento: <strong>R$ {{ service_request.final_price|floatformat:2 }}</strong></p>
+    <form method="post">
+      {% csrf_token %}
       <h6 class="mb-2">Forma de pagamento</h6>
       <div class="form-check">
         <input class="form-check-input" type="radio" name="payment_method" id="pm_pix" value="PIX" checked>
@@ -40,9 +41,18 @@
             <input class="form-control" type="text" name="card_ccv" inputmode="numeric" maxlength="4" autocomplete="cc-csc" required pattern="[0-9]{3,4}"></div>
         </div>
       </div>
-    </div>
-    <button class="btn btn-dark">Confirmar e pagar</button>
-  </form>
+      <button class="btn btn-brand w-100" type="submit">Aprovar e pagar</button>
+    </form>
+
+    {% if PAYLINK_ENABLED %}
+    <hr class="my-3">
+    <p class="small text-muted text-center mb-2">Prefere pagar pela tela do Asaas?</p>
+    <form id="paylink-form" method="post" action="{% url 'services-request-paylink' service_request.pk %}">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-outline-brand w-100">Pagar com link do Asaas (nova aba)</button>
+    </form>
+    {% endif %}
+  </div>
 </div>
 {% endblock %}
 
@@ -60,6 +70,30 @@
   }
   document.querySelectorAll('input[name="payment_method"]').forEach((radio) => {
     radio.addEventListener('change', toggleCardFields);
+  });
+
+  document.getElementById('paylink-form')?.addEventListener('submit', function (event) {
+    event.preventDefault();
+    const form = event.target;
+    const button = form.querySelector('button');
+    button.disabled = true;
+    fetch(form.action, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value,
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+    })
+      .then(function (response) { return response.json(); })
+      .then(function (data) {
+        if (data.url) {
+          window.open(data.url, '_blank', 'noopener');
+        } else {
+          alert(data.error || 'Falha ao gerar o link de pagamento.');
+        }
+      })
+      .catch(function () { alert('Falha ao gerar o link de pagamento.'); })
+      .finally(function () { button.disabled = false; });
   });
 </script>
 {% endblock %}
