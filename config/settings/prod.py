@@ -10,7 +10,7 @@ DEBUG = False  # noqa: F811
 # DJANGO_ALLOWED_HOSTS no .env da Hostinger quando necessário.
 ALLOWED_HOSTS = env.list(  # noqa: F405 (definido em .base)
     "DJANGO_ALLOWED_HOSTS",
-    default=["masterlightoficial.com", "www.masterlightoficial.com"],
+    default=["masterlightoficial.com.br", "www.masterlightoficial.com.br"],
 )
 CSRF_TRUSTED_ORIGINS = [f"https://{host}" for host in ALLOWED_HOSTS if host != "*"]
 

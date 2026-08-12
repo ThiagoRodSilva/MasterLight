@@ -66,14 +66,14 @@ docker compose up --build
 ## Deploy Hostinger (hospedagem compartilhada — Passenger)
 
 Pré-requisitos no hPanel:
-1. Crie o banco MySQL (`Sites → masterlightoficial.com → Databases`) e monte `DATABASE_URL=mysql://usuario:senha@host:3306/nome_do_banco`.
+1. Crie o banco MySQL (`Sites → masterlightoficial.com.br → Databases`) e monte `DATABASE_URL=mysql://usuario:senha@host:3306/nome_do_banco`.
 2. Registre o app Python (`Advanced → Python` / sessão "Python"): Python 3.12, **Application root** = `~/prot_02` (fora de `public_html`), **startup file** = `passenger_wsgi.py`, **entry point** = `application`. Anote o comando de ativação do virtualenv que o painel exibe.
 3. Habilite o SSL (Let's Encrypt) para o domínio e o `www`.
 
 No servidor (SSH):
 ```bash
 cd ~/prot_02
-cp deploy/.env.prod .env && chmod 600 .env   # preencha SECRET_KEY, Asaas, social e SMTP
+cp deploy/.env.prod .env && chmod 600 .env   # arquivo gitignored: envie separadamente no upload
 ./deploy/setup_prod.sh ~/virtualenv/prot_02/3.12   # caminho do venv que o hPanel exibe
 # (ou rode `bash deploy/setup_prod.sh` apontando o venv correto)
 ```

@@ -10,7 +10,7 @@
 # Ex.: ./deploy/setup_prod.sh ~/virtualenv/prot_02/3.12
 #
 # Opcoes para criar o superuser nao-interativamente:
-#   SUPERUSER_EMAIL=admin@masterlightoficial.com SUPERUSER_PASSWORD='...' ./deploy/setup_prod.sh
+#   SUPERUSER_EMAIL=admin@masterlightoficial.com.br SUPERUSER_PASSWORD='...' ./deploy/setup_prod.sh
 #
 set -euo pipefail
 
@@ -26,9 +26,9 @@ echo "==> Ativando venv do hPanel: $VENV_PATH"
 # shellcheck disable=SC1091
 source "$VENV_PATH/bin/activate"
 
-echo "==> Instalando dependencias (PyMySQL, sem build tools)"
+echo "==> Instalando dependencias (requirements-prod.txt, sem dev-tools)"
 python -m pip install --upgrade pip
-pip install -r requirements.txt
+pip install -r requirements-prod.txt
 
 export DJANGO_SETTINGS_MODULE=config.settings.prod
 
@@ -53,4 +53,4 @@ mkdir -p tmp
 touch tmp/restart.txt
 
 echo ""
-echo "Deploy concluido. Teste em https://masterlightoficial.com"
+echo "Deploy concluido. Teste em https://masterlightoficial.com.br"
