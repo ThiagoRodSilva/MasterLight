@@ -63,12 +63,29 @@ Docker (opcional):
 docker compose up --build
 ```
 
-## Deploy Hostinger (Passenger/Python)
-1. `git pull` no servidor.
-2. `pip install -r requirements.txt`.
-3. `python manage.py migrate` e `python manage.py collectstatic --noinput`.
-4. Reinicie o Passenger.
-5. Variáveis de ambiente via `.env` (permissão 600).
+## Deploy Hostinger (hospedagem compartilhada — Passenger)
+
+Pré-requisitos no hPanel:
+1. Crie o banco MySQL (`Sites → masterlightoficial.com → Databases`) e monte `DATABASE_URL=mysql://usuario:senha@host:3306/nome_do_banco`.
+2. Registre o app Python (`Advanced → Python` / sessão "Python"): Python 3.12, **Application root** = `~/prot_02` (fora de `public_html`), **startup file** = `passenger_wsgi.py`, **entry point** = `application`. Anote o comando de ativação do virtualenv que o painel exibe.
+3. Habilite o SSL (Let's Encrypt) para o domínio e o `www`.
+
+No servidor (SSH):
+```bash
+cd ~/prot_02
+source ~/virtualenv/prot_02/3.12/bin/activate   # comando fornecido pelo hPanel
+pip install -r requirements.txt                  # PyMySQL, sem build tools
+cp .env.example .env && chmod 600 .env           # preencha os valores
+# Prod sempre usa config.settings.prod (o manage.py defaulta p/ dev):
+export DJANGO_SETTINGS_MODULE=config.settings.prod
+python manage.py migrate
+python manage.py collectstatic --noinput
+python manage.py bootstrap_social                # Site + SocialApp Google/FB
+mkdir -p tmp && touch tmp/restart.txt            # reinicia o Passenger
+```
+Variáveis necessárias no `.env` de produção: `DJANGO_DEBUG=False`, `DJANGO_ALLOWED_HOSTS`, `DJANGO_SECRET_KEY`, `DATABASE_URL`, `PAYMENT_PROVIDER`, `ASAAS_API_KEY`, `ASAAS_SANDBOX=False`, `ASAAS_WEBHOOK_TOKEN`, credenciais Google/Facebook/Apple e SMTP. O Apple gera o client secret JWT a partir de `APPLE_CLIENT_ID`/`APPLE_KEY_ID`/`APPLE_TEAM_ID`/`APPLE_PRIVATE_KEY`.
+
+Estáticos vão via whitenoise (`collectstatic`); **media** é servido pelo próprio Django (`DJANGO_SERVE_MEDIA=True`, default) pois o shared não expõe alias para `MEDIA_ROOT`.
 
 ## Próximos passos
 - Asaas Checkout hosted (página de pagamento do Asaas) como alternativa ao checkout embutido.

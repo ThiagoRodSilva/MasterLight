@@ -1,0 +1,360 @@
+/* ============================================================
+   Componentes base — UI Kit MasterLight
+   Estratégia aditiva: nenhuma classe existente é redefinida.
+   Depende dos tokens de static/css/tokens.css.
+   ============================================================ */
+
+/* ---- Botões: variantes extras ---- */
+
+.btn-brand-ghost {
+  --bs-btn-color: var(--brand-dark);
+  --bs-btn-bg: transparent;
+  --bs-btn-border-color: transparent;
+  --bs-btn-hover-bg: var(--brand-100);
+  --bs-btn-hover-border-color: transparent;
+  --bs-btn-hover-color: var(--brand-dark);
+  --bs-btn-active-bg: var(--brand-200);
+  --bs-btn-active-border-color: transparent;
+  --bs-btn-active-color: var(--brand-dark);
+  --bs-btn-focus-shadow-rgb: 255, 193, 7;
+  --bs-btn-disabled-color: var(--color-muted);
+  --bs-btn-disabled-bg: transparent;
+  --bs-btn-disabled-border-color: transparent;
+}
+
+.btn-soft-dark {
+  --bs-btn-color: var(--brand-light);
+  --bs-btn-bg: var(--brand-dark);
+  --bs-btn-border-color: var(--brand-dark);
+  --bs-btn-hover-bg: var(--brand-800);
+  --bs-btn-hover-border-color: var(--brand-800);
+  --bs-btn-hover-color: var(--brand-light);
+  --bs-btn-active-bg: var(--brand-900);
+  --bs-btn-active-border-color: var(--brand-900);
+  --bs-btn-active-color: var(--brand-light);
+  --bs-btn-focus-shadow-rgb: 17, 17, 17;
+  --bs-btn-disabled-color: var(--brand-light);
+  --bs-btn-disabled-bg: var(--color-muted);
+  --bs-btn-disabled-border-color: var(--color-muted);
+}
+
+.btn-loading {
+  position: relative;
+  pointer-events: none;
+  opacity: 0.75;
+}
+
+.btn-loading::before {
+  content: "";
+  display: inline-block;
+  width: 0.875rem;
+  height: 0.875rem;
+  margin-inline-end: 0.5rem;
+  vertical-align: -0.125em;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: var(--radius-full);
+  animation: btn-spin 0.6s linear infinite;
+}
+
+@keyframes btn-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---- Cards: variantes ---- */
+
+.card-elevated {
+  box-shadow: var(--shadow-md);
+}
+
+.card-outlined {
+  box-shadow: none;
+}
+
+.card-filled {
+  background-color: var(--brand-100);
+  border-color: transparent;
+}
+
+.card-interactive {
+  transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.card-interactive:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.card-interactive:focus-visible {
+  outline: 2px solid var(--brand-primary);
+  outline-offset: 2px;
+  box-shadow: var(--shadow-lg);
+}
+
+/* ---- Formulários: foco e checados com a cor da marca ---- */
+
+.form-control:not(.is-invalid):not(.was-validated .form-control),
+.form-select:not(.is-invalid):not(.was-validated .form-select:invalid),
+.form-check-input:focus {
+  border-color: var(--brand-primary);
+}
+
+.form-control:focus,
+.form-select:focus,
+.form-check-input:focus {
+  box-shadow: 0 0 0 0.25rem rgba(255, 193, 7, 0.25);
+}
+
+.form-check-input:checked {
+  background-color: var(--brand-primary);
+  border-color: var(--brand-primary);
+}
+
+.form-control-brand,
+.form-select-brand {
+  padding-block: 0.625rem;
+  border-radius: var(--radius-md);
+  border-color: rgba(17, 17, 17, 0.2);
+}
+
+.form-control-brand::placeholder {
+  color: var(--color-muted);
+}
+
+/* ---- Badges ---- */
+
+.badge-brand {
+  background-color: var(--brand-primary);
+  color: var(--brand-dark);
+}
+
+.badge-soft {
+  background-color: var(--brand-100);
+  color: var(--brand-700);
+}
+
+.badge-soft-success {
+  background-color: var(--color-success-100);
+  color: var(--color-success);
+}
+
+.badge-soft-danger {
+  background-color: var(--color-danger-100);
+  color: var(--color-danger);
+}
+
+.badge-soft-warning {
+  background-color: var(--color-warning-100);
+  color: var(--color-warning);
+}
+
+.badge-soft-info {
+  background-color: var(--color-info-100);
+  color: var(--color-info);
+}
+
+.badge-dot {
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: var(--radius-full);
+  background-color: var(--color-muted);
+}
+
+.badge-dot-success {
+  background-color: var(--color-success);
+}
+
+.badge-dot-danger {
+  background-color: var(--color-danger);
+}
+
+.badge-dot-warning {
+  background-color: var(--color-warning);
+}
+
+/* ---- Alerts ---- */
+
+.alert-brand {
+  background-color: var(--brand-100);
+  border-color: var(--brand-300);
+  color: var(--brand-700);
+}
+
+/* ---- Chips (filtros de categoria) ---- */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.4rem 0.875rem;
+  border: 1px solid rgba(17, 17, 17, 0.15);
+  border-radius: var(--radius-full);
+  background-color: var(--brand-light);
+  color: var(--brand-dark);
+  text-decoration: none;
+  line-height: 1.4;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.chip:hover,
+.chip.is-active {
+  background-color: var(--brand-primary);
+  border-color: var(--brand-primary);
+  color: var(--brand-dark);
+}
+
+.chip:focus-visible {
+  outline: 2px solid var(--brand-primary);
+  outline-offset: 2px;
+}
+
+/* ---- Tabelas ---- */
+
+.table-brand thead th {
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.table-brand tbody tr:hover {
+  background-color: var(--brand-50);
+}
+
+/* ---- Paginação ---- */
+
+.pagination-brand .page-link {
+  border-radius: var(--radius-md);
+  color: var(--brand-dark);
+  margin-inline-end: 0.25rem;
+}
+
+.pagination-brand .page-item.active .page-link {
+  background-color: var(--brand-primary);
+  border-color: var(--brand-primary);
+  color: var(--brand-dark);
+  font-weight: 600;
+}
+
+.pagination-brand .page-item:last-child .page-link {
+  margin-inline-end: 0;
+}
+
+/* ---- Avatares ---- */
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--radius-full);
+  background-color: var(--brand-200);
+  color: var(--brand-800);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+
+.avatar-sm {
+  width: 2rem;
+  height: 2rem;
+  font-size: 0.75rem;
+}
+
+.avatar-lg {
+  width: 3.5rem;
+  height: 3.5rem;
+  font-size: 1.1rem;
+}
+
+.avatar-group {
+  display: inline-flex;
+}
+
+.avatar-group .avatar + .avatar {
+  margin-inline-start: -0.75rem;
+  box-shadow: 0 0 0 2px var(--brand-light);
+}
+
+.avatar-status {
+  position: absolute;
+  right: 0.125rem;
+  bottom: 0.125rem;
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 2px solid var(--brand-light);
+  border-radius: var(--radius-full);
+  background-color: var(--color-success);
+}
+
+/* ---- Empty states ---- */
+
+.empty-state {
+  padding-block: var(--space-8);
+  text-align: center;
+  color: var(--color-muted);
+}
+
+.empty-state .empty-title {
+  font-weight: 600;
+  color: var(--brand-dark);
+  margin-block-end: var(--space-1);
+}
+
+/* ---- Skeleton loaders ---- */
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  background-color: var(--brand-100);
+  color: transparent;
+  user-select: none;
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, var(--brand-50), transparent);
+  transform: translateX(-100%);
+  animation: skeleton-shimmer 1.4s infinite;
+}
+
+@keyframes skeleton-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* ---- Acessibilidade ---- */
+
+:focus-visible {
+  outline: 2px solid var(--brand-primary);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

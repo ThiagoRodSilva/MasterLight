@@ -5,8 +5,14 @@ import os
 from .base import *  # noqa: F401,F403
 
 DEBUG = False  # noqa: F811
-ALLOWED_HOSTS = ["*"]  # ajuste via env DJANGO_ALLOWED_HOSTS na Hostinger
-CSRF_TRUSTED_ORIGINS = [f"https://{h}" for h in ALLOWED_HOSTS if h != "*"]
+
+# Domínios de produção (sobrescrevem o default de base.py). Defina via
+# DJANGO_ALLOWED_HOSTS no .env da Hostinger quando necessário.
+ALLOWED_HOSTS = env.list(  # noqa: F405 (definido em .base)
+    "DJANGO_ALLOWED_HOSTS",
+    default=["masterlightoficial.com", "www.masterlightoficial.com"],
+)
+CSRF_TRUSTED_ORIGINS = [f"https://{host}" for host in ALLOWED_HOSTS if host != "*"]
 
 # Sentry / logs
 LOGGING = {

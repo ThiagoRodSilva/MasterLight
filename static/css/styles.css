@@ -1,16 +1,9 @@
-:root {
-  --brand-light: #fff;
-  --brand-dark: #111;
-  --brand-primary: #ffc107;
-  --brand-primary-alt: #ffd600;
-}
-
 html {
   font-synthesis-weight: none;
 }
 
 body {
-  font-family: var(--bs-body-font-family);
+  font-family: var(--font-sans);
   background-color: var(--brand-light);
   color: var(--brand-dark);
 }
@@ -116,7 +109,7 @@ a:hover {
 .stat-card {
   background-color: var(--brand-light);
   border: 1px solid rgba(17, 17, 17, 0.125);
-  border-radius: var(--bs-border-radius);
+  border-radius: var(--radius-md);
 }
 
 .stat-card--brand {
@@ -135,5 +128,67 @@ a:hover {
 
 .card-hover:hover {
   transform: translateY(-4px);
-  box-shadow: 0 0.5rem 1rem rgba(17, 17, 17, 0.15);
+  box-shadow: var(--shadow-md);
+}
+
+/* ==== Utilitários da Fase 1 (design tokens) ==== */
+
+.shadow-brand {
+  box-shadow: var(--shadow-brand) !important;
+}
+
+.shadow-sm-custom {
+  box-shadow: var(--shadow-sm) !important;
+}
+
+.shadow-md-custom {
+  box-shadow: var(--shadow-md) !important;
+}
+
+.shadow-lg-custom {
+  box-shadow: var(--shadow-lg) !important;
+}
+
+.radius-sm {
+  border-radius: var(--radius-sm) !important;
+}
+
+.radius-md {
+  border-radius: var(--radius-md) !important;
+}
+
+.radius-lg {
+  border-radius: var(--radius-lg) !important;
+}
+
+.radius-xl {
+  border-radius: var(--radius-xl) !important;
+}
+
+.radius-full {
+  border-radius: var(--radius-full) !important;
+}
+
+.bg-brand-50 {
+  background-color: var(--brand-50) !important;
+}
+
+.bg-brand-100 {
+  background-color: var(--brand-100) !important;
+}
+
+.bg-brand-200 {
+  background-color: var(--brand-200) !important;
+}
+
+.text-brand-dark {
+  color: var(--brand-700) !important;
+}
+
+.text-brand-darker {
+  color: var(--brand-800) !important;
+}
+
+.text-muted-brand {
+  color: var(--color-muted) !important;
 }
