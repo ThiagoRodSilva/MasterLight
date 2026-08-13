@@ -4,6 +4,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 from apps.core.models import BaseModel
+from apps.core.validators import validate_image_url
 
 
 class CustomUser(AbstractUser):
@@ -30,7 +31,7 @@ class CustomUser(AbstractUser):
     )
     telefone = models.CharField(max_length=20, blank=True, default="")
     cpf = models.CharField(max_length=14, blank=True, default="")
-    avatar = models.ImageField(upload_to="avatars/", blank=True, null=True)
+    avatar = models.URLField(blank=True, null=True, validators=[validate_image_url])
     asaas_customer_id = models.CharField(max_length=64, blank=True, default="", db_index=True)
 
     # configuracoes herdadadas do AbstractUser

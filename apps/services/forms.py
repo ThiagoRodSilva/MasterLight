@@ -11,6 +11,10 @@ class ServiceForm(forms.ModelForm):
         model = Service
         fields = ["name", "category", "description", "base_price", "image", "is_active"]
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["image"].help_text = "Cole o link direto da imagem — .jpg, .png, .webp, etc."
+
 
 class ServiceRequestForm(forms.ModelForm):
     class Meta:

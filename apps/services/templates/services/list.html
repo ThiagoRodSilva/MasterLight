@@ -12,7 +12,7 @@
     {% for s in services %}
     <div class="col-md-4">
       <a href="{% url 'services-detail' s.slug %}" class="card card-hover text-decoration-none text-dark h-100">
-        {% if s.image %}<img src="{{ s.image.url }}" class="card-img-top">{% endif %}
+        {% if s.image %}<img src="{{ s.image }}" class="card-img-top">{% endif %}
         <div class="card-body">
           <h5 class="card-title">{{ s.name }}</h5>
           <p class="text-muted small">{{ s.category|default:"Geral" }}</p>

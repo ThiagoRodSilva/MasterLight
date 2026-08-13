@@ -2,7 +2,7 @@
 {% block content %}
 <div class="container py-5">
   <div class="card">
-    {% if item.image %}<img src="{{ item.image.url }}" class="card-img-top">{% endif %}
+    {% if item.image %}<img src="{{ item.image }}" class="card-img-top">{% endif %}
     <div class="card-body">
       <h1 class="card-title">{{ item.title }}</h1>
       {% if item.category %}<span class="badge text-bg-warning mb-3">{{ item.category }}</span>{% endif %}

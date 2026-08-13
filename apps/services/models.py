@@ -5,6 +5,7 @@ from django.utils.translation import gettext_lazy as _
 
 from apps.accounts.models import CustomUser
 from apps.core.models import BaseModel, RandomSlugMixin
+from apps.core.validators import validate_image_url
 
 
 class ServiceCategory(BaseModel, RandomSlugMixin):
@@ -51,7 +52,7 @@ class Service(BaseModel, RandomSlugMixin):
         related_name="created_services",
         verbose_name="criado por",
     )
-    image = models.ImageField(upload_to="services/", blank=True, null=True, verbose_name="imagem")
+    image = models.URLField(blank=True, null=True, validators=[validate_image_url], verbose_name="imagem")
 
     class Meta:
         ordering = ["name"]

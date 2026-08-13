@@ -3,6 +3,7 @@
 from django.db import models
 
 from apps.core.models import BaseModel, RandomSlugMixin
+from apps.core.validators import validate_image_url
 
 
 class Category(BaseModel, RandomSlugMixin):
@@ -68,7 +69,7 @@ class ProductImage(BaseModel):
         on_delete=models.CASCADE,
         related_name="images",
     )
-    image = models.ImageField(upload_to="products/")
+    image = models.URLField(validators=[validate_image_url])
     alt = models.CharField(max_length=160, blank=True, default="")
     order = models.PositiveIntegerField(default=0)
 

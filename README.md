@@ -94,28 +94,26 @@ Estáticos vão via whitenoise (`collectstatic`); **media** é servido pelo pró
 
 ## Deploy Vercel (serverless)
 
-A Vercel detecta o `manage.py` e usa o entrypoint WSGI (`config/wsgi.py`, definido por `WSGI_APPLICATION`). O settings é o `config.settings.vercel` (selecionado pela env `DJANGO_SETTINGS_MODULE`). Estáticos são coletados e servidos pelo CDN da Vercel; **media** vai para o Cloudflare R2 (bucket público, S3-compatible); banco é o **Vercel Postgres** (Neon) via `DATABASE_URL`.
+A Vercel detecta o `manage.py` e usa o entrypoint WSGI (`config/wsgi.py`, definido por `WSGI_APPLICATION`). O settings é o `config.settings.vercel` (selecionado pela env `DJANGO_SETTINGS_MODULE`). Estáticos são coletados e servidos pelo CDN da Vercel; banco é o **Vercel Postgres** (Neon) via `DATABASE_URL`. Não há upload de arquivos: imagens (produtos, serviços, portfólio, avatar) são **links** (`URLField`) preenchidos pelo prestador/admin.
 
 ### Arquivos de deploy
-- `config/settings/vercel.py` — settings de produção Vercel (R2, Postgres, ALLOWED_HOSTS com `.vercel.app`, `SERVE_MEDIA=False`).
+- `config/settings/vercel.py` — settings de produção Vercel (Postgres, ALLOWED_HOSTS com `.vercel.app`, `SERVE_MEDIA=False`).
 - `vercel.json` — `maxDuration=60` + `excludeFiles` da function; cron de reconciliação (`/pagamentos/reconciliar`).
 - `build.py` — build command: roda `migrate` + `bootstrap_social` (idempotentes) em todo deploy (configurado em `[tool.vercel.scripts]` no `pyproject.toml`).
 - `deploy/migrate_to_vercel.sh` — migração única de dados MySQL → Postgres.
-- `deploy/migrate_media_to_r2.sh` — migração única de `media/` → bucket R2.
 
 ### Configuração no dashboard (uma vez)
 1. Importe o repositório; adicione a integração **Vercel Postgres** (injeta `DATABASE_URL`).
 2. Defina as env vars (obrigatória: `DJANGO_SETTINGS_MODULE=config.settings.vercel`):
    `DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS=masterlightoficial.com.br,www.masterlightoficial.com.br,.vercel.app`,
    `DJANGO_SITE_DOMAIN=masterlightoficial.com.br`, `DJANGO_SITE_NAME=MasterLight`,
-   `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, `R2_ENDPOINT_URL`, `R2_PUBLIC_DOMAIN`,
    `PAYMENT_PROVIDER`, `ASAAS_API_KEY`, `ASAAS_SANDBOX=False`, `ASAAS_WEBHOOK_TOKEN`, `MANUAL_WEBHOOK_TOKEN`,
    sociais (Google/Facebook/Apple — `APPLE_PRIVATE_KEY` **inline**, nunca path), SMTP (`DJANGO_EMAIL_*`), e `CRON_SECRET` (cron).
-3. Domínio: apex + `www` para a Vercel; `media` → custom domain do bucket R2.
+3. Domínio: apex + `www` para a Vercel.
 4. No painel do Asaas, atualize o webhook para `https://masterlightoficial.com.br/pagamentos/webhook/`.
-5. Suba os dados e a media (scripts acima) após o primeiro build.
+5. Suba os dados após o primeiro build.
 
-> Filesystem é efêmero/read-only na Vercel: nunca grave `media/` localmente em produção; todo upload vai para o R2.
+> Filesystem é efêmero/read-only na Vercel: sem uploads — as imagens são URLs externas (`URLField` com validação de extensão).
 
 ## Próximos passos
 - Asaas Checkout hosted (página de pagamento do Asaas) como alternativa ao checkout embutido.

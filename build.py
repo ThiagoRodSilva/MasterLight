@@ -1,6 +1,6 @@
 """Build command da Vercel ([tool.vercel.scripts] build).
 
-Roda com as env vars do projeto (DATABASE_URL, R2, sociais). Migrate e
+Roda com as env vars do projeto (DATABASE_URL, sociais). Migrate e
 bootstrap_social sao idempotentes: seguros em todo deploy.
 """
 

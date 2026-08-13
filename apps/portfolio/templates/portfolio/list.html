@@ -16,7 +16,7 @@
     {% for item in items %}
     <div class="col-md-4">
       <a href="{% url 'portfolio-detail' item.pk %}" class="card card-hover text-decoration-none text-dark h-100">
-        {% if item.image %}<img src="{{ item.image.url }}" class="card-img-top">{% endif %}
+        {% if item.image %}<img src="{{ item.image }}" class="card-img-top">{% endif %}
         <div class="card-body">
           <h5 class="card-title">{{ item.title }}</h5>
           {% if item.category %}<span class="badge text-bg-warning">{{ item.category }}</span>{% endif %}

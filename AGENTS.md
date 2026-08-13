@@ -63,7 +63,7 @@ Django 5 "MasterLight" (codename PlataformaVendas) — empresa de **Elétrica** 
 - Entrypoint WSGI `config/wsgi.py` (detectado pelo `manage.py`); settings `config.settings.vercel` via env `DJANGO_SETTINGS_MODULE` (obrigatória no projeto Vercel — sem ela cai em prod.py Hostinger).
 - `vercel.json`: `maxDuration=60` + `excludeFiles` para a function `config/wsgi.py`; cron `0 * * * *` em `/pagamentos/reconciliar` (autenticado por `Authorization: Bearer <CRON_SECRET>`).
 - Build command em `pyproject.toml` (`[tool.vercel.scripts] build = "python build.py"`): roda `migrate` + `bootstrap_social` em todo deploy (idempotentes). Vercel roda `collectstatic` sozinho e serve estático do CDN.
-- **Media** = Cloudflare R2 (`STORAGES.default` S3Boto3Storage, `SERVE_MEDIA=False`, `MEDIA_URL=https://{R2_PUBLIC_DOMAIN}/`). Nunca usar filesystem p/ upload em prod. Config R2: `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, `R2_ENDPOINT_URL`, `R2_PUBLIC_DOMAIN`, `AWS_QUERYSTRING_AUTH=False`.
+- **Media** = não há upload: imagens (produtos/serviços/portfólio/avatar) são **links** via `URLField` com `validate_image_url` (`apps/core/validators.py`) — sem bucket R2, sem `django-storages`. `SERVE_MEDIA=False` na Vercel (filesystem efêmero/read-only).
 - **Banco** = Vercel Postgres (Neon) via `DATABASE_URL`; `psycopg[binary]` em requirements (PyMySQL fica só p/ fallback MySQL).
-- Migração única: `deploy/migrate_to_vercel.sh` (dumpdata/loaddata MySQL→Postgres) e `deploy/migrate_media_to_r2.sh` (aws cli profile `r2`).
+- Migração única: `deploy/migrate_to_vercel.sh` (dumpdata/loaddata MySQL→Postgres).
 - Testes de settings Vercel: `apps/core/tests/test_vercel_settings.py`; CI valida `manage.py check` com `config.settings.vercel`.

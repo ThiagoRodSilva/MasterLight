@@ -20,7 +20,7 @@
       {% for p in products %}
         <div class="col-md-3">
           <a href="{% url 'shop-detail' p.slug %}" class="card card-hover text-decoration-none text-dark h-100">
-            {% if p.cover %}<img src="{{ p.cover.image.url }}" class="card-img-top" alt="{{ p.cover.alt }}">{% endif %}
+            {% if p.cover %}<img src="{{ p.cover.image }}" class="card-img-top" alt="{{ p.cover.alt }}">{% endif %}
             <div class="card-body">
               <h6 class="card-title">{{ p.name }}</h6>
               <span class="badge bg-warning text-dark">R$ {{ p.price|floatformat:2 }}</span>
