@@ -5,6 +5,7 @@ from django.conf import settings
 from .asaas import AsaasGateway
 from .base import (
     ChargeResult,
+    CheckoutResult,
     PaymentGateway,
     PaymentLinkResult,
     WebhookAuthError,
@@ -28,6 +29,7 @@ __all__ = [
     "ManualGateway",
     "PaymentGateway",
     "ChargeResult",
+    "CheckoutResult",
     "PaymentLinkResult",
     "WebhookAuthError",
     "get_gateway",

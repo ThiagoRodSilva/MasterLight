@@ -3,6 +3,7 @@ from django.urls import path
 from .views import (
     BoletoConfirmationView,
     CardConfirmationView,
+    CheckoutCallbackView,
     ManualConfirmationView,
     OrderStatusView,
     PixConfirmationView,
@@ -32,6 +33,11 @@ urlpatterns = [
         "boleto/<uuid:order_pk>/",
         BoletoConfirmationView.as_view(),
         name="payments-boleto-confirm",
+    ),
+    path(
+        "checkout/<uuid:order_pk>/<str:outcome>/",
+        CheckoutCallbackView.as_view(),
+        name="payments-checkout-callback",
     ),
     path(
         "status/<uuid:order_pk>/",

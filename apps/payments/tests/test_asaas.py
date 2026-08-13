@@ -595,3 +595,187 @@ class TestSyncPaymentsCommand(AsaasMockMixin, TestCase):
 
         tx.refresh_from_db()
         assert tx.status == Transaction.Status.PENDING
+
+
+@override_settings(**ASAAS_SETTINGS)
+class TestAsaasCheckout(AsaasMockMixin, TestCase):
+    def test_create_checkout_creates_transaction_with_checkout_id(self):
+        user = make_user()
+        order = create_order(user, with_referral=False)
+        result = AsaasGateway().create_checkout(order)
+
+        assert result.ok is True
+        assert result.url == self.asaas.checkout_url
+        assert result.checkout_id == self.asaas.checkout_id
+
+        tx = Transaction.objects.get(order=order, provider="asaas")
+        assert tx.provider == "asaas"
+        assert tx.external_id == self.asaas.checkout_id
+        assert tx.status == Transaction.Status.PENDING
+        assert json.loads(tx.raw_payload)["checkout"]["id"] == self.asaas.checkout_id
+
+    def test_create_checkout_sends_items_customer_and_callback(self):
+        user = make_user()
+        user.cpf = "12345678901"
+        user.telefone = "11999999999"
+        user.save(update_fields=["cpf", "telefone"])
+        order = create_order(user, with_referral=False)
+        AsaasGateway().create_checkout(
+            order,
+            billing_types=["PIX", "CREDIT_CARD"],
+            callback_urls={
+                "successUrl": "https://exemplo.com/ok",
+                "cancelUrl": "https://exemplo.com/cancel",
+            },
+        )
+
+        checkout_call = next(
+            c for c in self.asaas.calls if c["method"] == "POST" and c["url"].endswith("/checkouts")
+        )
+        body = checkout_call["body"]
+        assert body["billingTypes"] == ["PIX", "CREDIT_CARD"]
+        assert body["chargeTypes"] == ["DETACHED"]
+        assert body["externalReference"] == str(order.pk)
+        assert body["items"][0]["name"] == order.items.first().name
+        assert body["items"][0]["quantity"] == order.items.first().qty
+        assert body["customerData"]["cpfCnpj"] == "12345678901"
+        assert body["customerData"]["phone"] == "11999999999"
+        assert body["callback"]["successUrl"] == "https://exemplo.com/ok"
+
+    def test_create_checkout_recurrent_sends_subscription(self):
+        from apps.accounts.models import CustomUser
+        from apps.checkout.models import OrderItem
+
+        cliente = make_user(role=CustomUser.Role.CLIENTE)
+        plan = _make_plan(cliente)
+        OrderItem.objects.create(
+            order=plan.order,
+            name="Plano mensal",
+            qty=1,
+            unit_price=plan.value,
+        )
+        plan.order.recompute_total()
+        result = AsaasGateway().create_checkout(
+            plan.order,
+            charge_type="RECURRENT",
+            cycle="mensal",
+            next_due_date=date.today() + timedelta(days=30),
+        )
+        assert result.ok is True
+        checkout_call = next(
+            c for c in self.asaas.calls if c["method"] == "POST" and c["url"].endswith("/checkouts")
+        )
+        assert checkout_call["body"]["chargeTypes"] == ["RECURRENT"]
+        assert checkout_call["body"]["subscription"]["cycle"] == "MONTHLY"
+
+    def test_create_checkout_rejects_invalid_billing(self):
+        user = make_user()
+        order = create_order(user, with_referral=False)
+        with self.assertRaises(ValueError):
+            AsaasGateway().create_checkout(order, billing_types=["CHEQUE"])
+
+    def test_manual_provider_raises_on_checkout(self):
+        from apps.payments.services import ManualGateway
+
+        with override_settings(PAYMENT_PROVIDER="manual"):
+            with self.assertRaisesRegex(ValueError, "provider 'asaas'"):
+                ManualGateway().create_checkout(None)
+
+    def test_checkout_paid_webhook_marks_paid(self):
+        user = make_user()
+        order = create_order(user, with_referral=False)
+        AsaasGateway().create_checkout(order)
+        tx = order.transactions.get(provider="asaas")
+
+        payload = json.dumps(
+            {"event": "CHECKOUT_PAID", "checkout": {"id": self.asaas.checkout_id}}
+        )
+        AsaasGateway().webhook(payload, {"x-webhook-token": "segredo"})
+
+        tx.refresh_from_db()
+        assert tx.status == Transaction.Status.PAID
+
+    def test_checkout_expired_webhook_marks_failed(self):
+        user = make_user()
+        order = create_order(user, with_referral=False)
+        AsaasGateway().create_checkout(order)
+        tx = order.transactions.get(provider="asaas")
+
+        payload = json.dumps(
+            {"event": "CHECKOUT_EXPIRED", "checkout": {"id": self.asaas.checkout_id}}
+        )
+        AsaasGateway().webhook(payload, {"x-webhook-token": "segredo"})
+
+        tx.refresh_from_db()
+        assert tx.status == Transaction.Status.FAILED
+
+    def test_checkout_webhook_fallback_by_external_reference(self):
+        user = make_user()
+        order = create_order(user, with_referral=False)
+        AsaasGateway().create_checkout(order)
+        tx = order.transactions.get(provider="asaas")
+        tx.external_id = ""
+        tx.save(update_fields=["external_id"])
+
+        payload = json.dumps(
+            {
+                "event": "CHECKOUT_PAID",
+                "checkout": {
+                    "id": self.asaas.checkout_id,
+                    "externalReference": str(order.pk),
+                },
+            }
+        )
+        AsaasGateway().webhook(payload, {"x-webhook-token": "segredo"})
+
+        tx.refresh_from_db()
+        assert tx.status == Transaction.Status.PAID
+
+
+@override_settings(**ASAAS_SETTINGS)
+class TestCheckoutCallbackView(AsaasMockMixin, TestCase):
+    def test_callback_success_renders(self):
+
+        user = make_user()
+        self.client.force_login(user)
+        order = create_order(user, with_referral=False)
+        response = self.client.get(
+            reverse(
+                "payments-checkout-callback",
+                kwargs={"order_pk": order.pk, "outcome": "success"},
+            )
+        )
+        assert response.status_code == 200
+        assert "Pagamento concluído" in response.content.decode()
+
+    def test_callback_requires_own_order(self):
+        from apps.accounts.models import CustomUser
+
+        user = make_user()
+        self.client.force_login(user)
+        other = make_user(role=CustomUser.Role.AFILIADO)
+        order = create_order(other, with_referral=False)
+        response = self.client.get(
+            reverse(
+                "payments-checkout-callback",
+                kwargs={"order_pk": order.pk, "outcome": "cancel"},
+            )
+        )
+        assert response.status_code == 404
+
+
+@override_settings(**ASAAS_SETTINGS)
+class TestSyncPaymentsSkipsCheckout(AsaasMockMixin, TestCase):
+    def test_command_skips_checkout_transactions(self):
+        from django.core.management import call_command
+
+        user = make_user()
+        order = create_order(user, with_referral=False)
+        AsaasGateway().create_checkout(order)
+        tx = order.transactions.get(provider="asaas")
+        assert tx.external_id == self.asaas.checkout_id
+
+        call_command("sync_payments")
+
+        tx.refresh_from_db()
+        assert tx.status == Transaction.Status.PENDING

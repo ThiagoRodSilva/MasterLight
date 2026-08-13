@@ -26,6 +26,15 @@ class PaymentLinkResult:
     message: str = ""
 
 
+@dataclass
+class CheckoutResult:
+    ok: bool
+    url: str
+    checkout_id: str = ""
+    message: str = ""
+    redirect_url: str = ""
+
+
 class PaymentGateway:
     """Interface abstrata gateway pagamento.
 
@@ -76,6 +85,23 @@ class PaymentGateway:
         raise NotImplementedError
 
     def refund(self, transaction_id, amount) -> ChargeResult:  # pragma: no cover
+        raise NotImplementedError
+
+    def create_checkout(
+        self,
+        order,
+        *,
+        billing_types: list[str] | None = None,
+        charge_type: str = "DETACHED",
+        callback_urls: dict | None = None,
+        cycle: str = "",
+        next_due_date=None,
+    ) -> CheckoutResult:
+        """Cria uma página de pagamento hospedada no provedor (Asaas Checkout).
+
+        Substitui o checkout embutido: o cliente é redirecionado para `url`.
+        Providers sem suporte devem levantar `NotImplementedError`/`ValueError`.
+        """
         raise NotImplementedError
 
     def webhook(self, payload, headers) -> ChargeResult:  # pragma: no cover

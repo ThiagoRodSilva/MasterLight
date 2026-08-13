@@ -1,125 +1,328 @@
-# MasterLight — Django
+# MasterLight
 
-Plataforma de loja de produtos + serviços + programa de afiliados, com autenticação social (allauth) e pagamentos via Asaas (Pix/cartão).
+Plataforma de **serviços elétricos + loja + afiliados** com assinatura de manutenção recorrente, autenticação social (Google/Facebook/Apple) e pagamentos Pix/cartão/boleto via Asaas.
+
+![CI](https://github.com/ThiagoRodSilva/MasterLight/actions/workflows/ci.yml/badge.svg)
+![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
+![Django](https://img.shields.io/badge/Django-5.0-092E20?logo=django&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-4169E1?logo=postgresql&logoColor=white)
+![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3-7952B3?logo=bootstrap&logoColor=white)
+
+> Paleta da marca: amarelo `#FFC107` · preto `#111` · branco.
+
+---
+
+## Sumário
+
+- [Visão geral](#visão-geral)
+- [Stack](#stack)
+- [Funcionalidades](#funcionalidades)
+- [Arquitetura](#arquitetura)
+- [Modelo de dados](#modelo-de-dados)
+- [Variáveis de ambiente](#variáveis-de-ambiente)
+- [Quickstart (dev)](#quickstart-dev)
+- [Pagamentos — Asaas](#pagamentos--asaas)
+- [Fluxos de negócio](#fluxos-de-negócio)
+- [Testes e qualidade](#testes-e-qualidade)
+- [Deploy](#deploy)
+- [Segurança](#segurança)
+- [FAQ / Troubleshooting](#faq--troubleshooting)
+- [Roadmap](#roadmap)
+
+---
+
+## Visão geral
+
+A MasterLight une três negócios em uma única plataforma Django:
+
+1. **Loja** — catálogo de produtos com categorias, variantes e imagens.
+2. **Serviços de elétrica** — prestadores se cadastram via self-service, clientes solicitam orçamento, aprovam com pagamento online e acompanham o status.
+3. **Afiliados** — divulgação com link `?ref=CODE`, comissão por venda e saque via Pix.
+4. **Assinatura de manutenção** — planos mensal/trimestral/anual com cobrança recorrente e agenda de visitas para o prestador.
+
+O público pode navegar em `/loja/`, `/servicos/` e `/afiliados/`. Seções são ligadas/desligadas por flags no banco (`SiteSettings`, editável no Admin).
 
 ## Stack
-- Python 3.12 · Django 5.0 · django-allauth · django-crispy-forms (Bootstrap 5)
-- DB: SQLite (dev) / MySQL (prod Hostinger) — via `DATABASE_URL`
-- Pagamentos: interface `PaymentGateway` — `ManualGateway` (dev) e `AsaasGateway` (Pix/MultiCartão, prod/sandbox)
-- Paleta: amarelo #FFC107 · preto #111 · branco
+
+| Camada | Tecnologia |
+|---|---|
+| Runtime | Python 3.12 (`.python-version`) · Django 5.0.7 |
+| Banco | PostgreSQL (Supabase) via `DATABASE_URL` — `psycopg[binary]` |
+| Auth | django-allauth (Google / Facebook / Apple) + login email/username |
+| Frontend | Bootstrap 5.3.3 self-hosted · django-crispy-forms · widget-tweaks |
+| Pagamentos | `PaymentGateway` abstrato — `ManualGateway` (dev) e `AsaasGateway` (Pix/cartão/boleto) |
+| Estáticos | Whitenoise (collectstatic no build) |
+| Testes | runner nativo Django + coverage (SQLite em memória) |
+| CI | GitHub Actions (ruff, migrations, check, testes) |
+
+## Funcionalidades
+
+- **Loja**: produtos com `ProductImage`/`ProductVariant`, categorias, busca (`?q=`), paginação, destaque (`featured`).
+- **Serviços**: `Service` + `ServiceCategory`, self-service de prestador (`services-my`), solicitação de orçamento (`services-request`), orçamento (`ServiceQuoteView`), aprovação que cria `Order` e cobra (`ServiceRequestApproveView`), link de pagamento avulso com reconciliação (`ServiceRequestPayLinkView`), cancelamento.
+- **Assinatura de manutenção**: `MaintenancePlan` (mensal/trimestral/anual), cobrança recorrente via `subscribe()` ou Checkout hosted `RECURRENT`, `MaintenanceVisit` pendentes/concluídas no dashboard do prestador.
+- **Afiliados**: landing pública (`affiliate-landing`), painel (`affiliate-dashboard`), cadastro de chave Pix, `Referral` por `?ref=` cookie, `PayoutRequest`.
+- **Checkout**: carrinho por sessão (classe Python, sem model), `Order`/`OrderItem`/`Address`, recompute de total e decremento de estoque.
+- **Pagamentos**: `Transaction` com `external_id` (id Asaas) e `raw_payload` (ex.: `bankSlip` do boleto); webhook valida `x-webhook-token`.
+- **Admin**: registro completo com `list_display`/`list_filter`/inlines + `SiteSettings` (flags de seção) e `ProviderApplication` (aprovação de prestador).
+
+## Arquitetura
+
+```
+config/
+├── settings/
+│   ├── base.py      # compartilhado (DB, auth, pagamentos, afiliados)
+│   ├── dev.py       # DEBUG + email console
+│   ├── test.py      # testes: SQLite em memória (offline)
+│   ├── prod.py      # Hostinger legado (HTTPS/HSTS, SMTP)
+│   └── vercel.py    # produção Vercel (serverless)
+└── urls.py          # montagem dos apps
+
+apps/
+├── core/        # BaseModel, mixins, SiteSettings, context processors, social_bootstrap
+├── accounts/    # CustomUser (roles), perfis, ProviderApplication, signup social
+├── portfolio/   # Portfólio do prestador
+├── services/    # Serviços, orçamentos, planos de manutenção
+├── shop/        # Produtos, categorias, variantes, imagens
+├── affiliate/   # Landing, painel, Referral, PayoutRequest
+├── checkout/    # Cart (sessão), Order, OrderItem, Address
+├── payments/    # Transaction, PaymentGateway, webhook, reconciliação
+└── tests/       # helpers/factories compartilhados
+```
+
+### Apps (visão por responsabilidade)
+
+| App | Responsabilidade |
+|---|---|
+| `apps.core` | `BaseModel` (UUID PK, timestamps, `is_active`), `SiteSettings`, mixins de role, branding, `bootstrap_social` |
+| `apps.accounts` | `CustomUser` (roles), `PublicProfile`, `ProviderApplication`, signals de perfil |
+| `apps.portfolio` | CRUD do portfólio do prestador (imagem por URL) |
+| `apps.services` | Categorias/serviços, orçamentos, self-service de prestador, planos de manutenção e visitas |
+| `apps.shop` | Produtos, variantes, imagens, listagem/detalhe/busca |
+| `apps.affiliate` | Landing pública, painel, `Referral`, `PayoutRequest` |
+| `apps.checkout` | Carrinho (sessão), `Order`, `OrderItem`, `Address` |
+| `apps.payments` | `Transaction`, `ManualGateway`/`AsaasGateway`, webhook, reconciliação |
+
+### Pontos-chave
+
+- **PKs UUID**: todos os modelos de domínio herdam `BaseModel` — URLs de detalhe/edição usam `<uuid:pk>`. Listagens públicas de `shop`/`services` usam `<slug:slug>` (slugs aleatórios auto-gerados por `RandomSlugMixin`).
+- **Roles** (`CustomUser.Role`): `cliente`, `prestador`, `afiliado`, `admin` — comparadas como strings cruas nos mixins (`ProviderRequiredMixin`, `AffiliateRequiredMixin`, `ClienteRequiredMixin`, `OwnerRequiredMixin`) e no `SectionEnabledMixin` (404 quando a seção está off).
+- **`Cart`** em `apps/checkout` é classe Python por sessão — não é model.
+- **Business logic** mora em `services.py` (camada de aplicação); views são wrappers. Services levantam `ValueError` para erros de domínio e usam `transaction.atomic()`.
+- **Gateway abstrato**: `PaymentGateway` em `apps/payments/services.py` com `charge`/`refund`/`webhook`/`subscribe`/`tokenize_credit_card` + `create_payment_link`; providers registrados em `_REGISTRY` e selecionados por `PAYMENT_PROVIDER`.
+
+### Mapa de URLs (raiz)
+
+| Prefixo | App | Público |
+|---|---|---|
+| `/` | `home` | ✅ |
+| `/admin/` | Django Admin | ❌ |
+| `/accounts/` | accounts (`me`, `u/<username>`) | parcial |
+| `/portfolio/` | portfolio | parcial |
+| `/servicos/` | services (loja de serviços, planos, visitas) | parcial |
+| `/loja/` | shop | ✅ |
+| `/afiliados/` | affiliate (landing + painel) | parcial |
+| `/carrinho/` | checkout | ❌ |
+| `/pagamentos/` | payments (webhook, confirmações, status) | parcial |
+| `/social/` | allauth (login social) | ✅ |
+
+> Cada app declara `urls.py` próprio (raiz `home` em `config/urls.py`) com **nomes de URL manualmente prefixados** (ex.: `checkout-*`, `services-*`, `shop-*`), sem `app_name`. Use `reverse("...")`/`reverse_lazy("...")` com esses nomes.
+
+## Modelo de dados
+
+| App | Modelo | Destaques |
+|---|---|---|
+| core | `SiteSettings` | singleton (pk=1), flags `store_enabled`/`services_enabled`/`affiliates_enabled`/`maintenance_enabled`/`provider_registration_enabled` |
+| accounts | `CustomUser` | `USERNAME_FIELD="email"`, `role`, `asaas_customer_id`, avatar (URL) |
+| accounts | `PublicProfile` / `ProviderApplication` | 1:1 user; aplicação de prestador com status |
+| portfolio | `PortfolioItem` | `image` (URL), `created_by` |
+| services | `ServiceCategory` / `Service` | `providers` M2M `CustomUser`, `created_by`; `image` (URL) |
+| services | `ServiceRequest` | `cliente`, `prestador`, `service`, `order` 1:1 `checkout.Order`, status `pending→quoted→approved→concluded/canceled` |
+| services | `MaintenancePlan` | `plan_type` (mensal/trimestral/anual), `value`, `next_due_date`, `order` 1:1, `asaas_subscription_id`, `cycle_days()` |
+| services | `MaintenanceVisit` | `plan`, `scheduled_at`, `completed_at`, `is_pending` |
+| shop | `Category` / `Product` | `sku` único, `stock`, `featured`, `cover`; `ProductVariant`, `ProductImage` (URL) |
+| affiliate | `AffiliateProfile` | `code` (p/ `?ref=`), `pix_key`, `commission_rate`, `balance` |
+| affiliate | `Referral` / `PayoutRequest` | status pending/approved/rejected/paid/canceled; saque via Pix |
+| checkout | `Order` / `OrderItem` / `Address` | status, `kind` (product/service/subscription), `recompute_total()`/`decrement_stock()` |
+| payments | `Transaction` | `provider`, `external_id`, `status`, `raw_payload` |
+
+## Variáveis de ambiente
+
+Todas lidas por `django-environ` de `.env` (gitignored) ou do ambiente. Veja `.env.example`.
+
+| Variável | Obrigatória | Descrição |
+|---|---|---|
+| `DJANGO_SECRET_KEY` | ✅ prod | Secret do Django |
+| `DJANGO_DEBUG` | — | `True` em dev (default `False`) |
+| `DJANGO_ALLOWED_HOSTS` | ✅ prod | Hosts permitidos (vírgula separado) |
+| `DATABASE_URL` | ✅ | Postgres do Supabase em **session mode (porta 5432)** |
+| `DJANGO_CONN_MAX_AGE` | — | Idade máxima da conexão (default `60`) |
+| `DJANGO_SITE_DOMAIN` / `DJANGO_SITE_NAME` | ✅ | Domínio/nome para `django.contrib.sites` + allauth |
+| `DJANGO_LANGUAGE_CODE` / `DJANGO_TIME_ZONE` | — | `pt-br` / `America/Sao_Paulo` |
+| `PAYMENT_PROVIDER` | — | `manual` (dev) ou `asaas` |
+| `ASAAS_API_KEY` / `ASAAS_SANDBOX` / `ASAAS_WEBHOOK_TOKEN` | se `asaas` | Credenciais Asaas |
+| `MANUAL_WEBHOOK_TOKEN` | se `manual` | Token do webhook manual |
+| `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` | p/ social | Google OAuth |
+| `FACEBOOK_CLIENT_ID`/`FACEBOOK_CLIENT_SECRET` | p/ social | Facebook OAuth |
+| `APPLE_CLIENT_ID`/`APPLE_TEAM_ID`/`APPLE_KEY_ID`/`APPLE_PRIVATE_KEY` | p/ social | Sign in with Apple |
+| `DJANGO_EMAIL_HOST`/`DJANGO_EMAIL_PORT`/`DJANGO_EMAIL_HOST_USER`/`DJANGO_EMAIL_HOST_PASSWORD`/`DJANGO_DEFAULT_FROM_EMAIL` | p/ prod | SMTP |
+| `CRON_SECRET` | na Vercel | Autoriza `/pagamentos/reconciliar` (cron) |
+
+### Sobre a `DATABASE_URL` do Supabase
+
+Use a string **session mode (porta 5432)** do Supavisor — necessária para `migrate` e prepared statements no build da Vercel:
+
+```
+postgresql://postgres.<ref>:<password>@aws-<region>.pooler.supabase.com:5432/postgres
+```
+
+Transaction mode (porta 6543) é recomendado apenas p/ serverless high-scale e exigiria `migrate` via 5432. Em `base.py`, quando o ENGINE é postgres, `DISABLE_SERVER_SIDE_CURSORS=True` é forçado automaticamente.
+
+## Quickstart (dev)
+
+```bash
+python -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env        # edite DATABASE_URL, chaves sociais etc.
+python manage.py migrate
+python manage.py bootstrap_social   # sincroniza Site + SocialApp (allauth)
+python manage.py createsuperuser
+python manage.py runserver
+```
+
+- O `manage.py` usa `config.settings.dev` por padrão.
+- **Testes não usam o banco de dev**: `config.settings.test` força SQLite em memória (ver [Testes](#testes-e-qualidade)).
+
+> **Docker (legado)**: o `docker-compose.yml` ainda provisiona MySQL. Com Supabase como banco padrão, o serviço `db` é dispensável — use apenas para subir a web se preferir.
 
 ## Pagamentos — Asaas
+
 1. Crie uma conta no Asaas (sandbox para testes).
-2. Em `.env`, defina:
+2. Em `.env`:
    - `PAYMENT_PROVIDER=asaas`
    - `ASAAS_API_KEY=<access_token de integração>`
    - `ASAAS_SANDBOX=True` (ou `False` em produção)
    - `ASAAS_WEBHOOK_TOKEN=<token do webhook no Asaas>`
 3. No painel do Asaas, cadastre a URL do webhook: `https://SEUDOMINIO/pagamentos/webhook/`.
-4. A cobrança cria um `Transaction` pendente; o webhook mapeia eventos (`PAYMENT_CONFIRMED` → pago, `PAYMENT_OVERDUE` → falha) e o signal aprova referência/credita comissão.
+4. A cobrança cria um `Transaction` pendente; o webhook mapeia eventos (`PAYMENT_CONFIRMED` → pago, `PAYMENT_OVERDUE` → falha) e o signal aprova a referência/credita comissão.
 
-> Em desenvolvimento, deixe `PAYMENT_PROVIDER=manual` para simular sem API real.
+Fluxos suportados pelo `AsaasGateway`:
 
-## Apps
-| App | Responsabilidade |
-|-----|------------------|
-| `apps.core` | BaseModel, mixins, utils, context processors (branding MasterLight) |
-| `apps.accounts` | `CustomUser` (role), perfis, signals -> cria `AffiliateProfile` |
-| `apps.portfolio` | CRUD de portfólio do prestador |
-| `apps.services` | Categorias/Serviços, self-service de prestadores e solicitação de orçamento |
-| `apps.shop` | Produtos, variantes, imagens, listagem/detalhe/busca |
-| `apps.affiliate` | Landing pública + dashboard, `Referral`, `PayoutRequest` |
-| `apps.checkout` | Carrinho (session), `Order`, `OrderItem`, `Address` |
-| `apps.payments` | `Transaction`, `ManualGateway`/`AsaasGateway`, webhook |
+| Tipo | Como | Confirmação |
+|---|---|---|
+| Pix | cobrança `PIX` | `payments-pix-confirm` (QR code) |
+| Cartão | tokenização via `tokenize_credit_card` | `payments-card-confirm` |
+| Boleto | cobrança `BOLETO`, guarda `bankSlip` em `raw_payload` | `payments-boleto-confirm` |
+| Checkout hosted | `create_checkout()` (`POST /checkouts`, página do Asaas) — **fluxo padrão com provider `asaas`** (loja, orçamento e assinatura), webhook `CHECKOUT_PAID`/`CHECKOUT_EXPIRED` | redireciona para a URL do Asaas; callback `payments-checkout-callback` |
+| Link avulso | `create_payment_link()` (`POST /paymentLinks`, tela hospedada) | nova aba; pago, o webhook `payment.paymentLink` **reconcilia**: cria `Order`+`Transaction` e aprova a `ServiceRequest` |
 
-## Fluxo afiliado (resumo)
-1. Visitante chega com `?ref=CODE` -> cookie 30 dias.
-2. Checkout lê cookie `ref`, cria `Referral` ligado ao afiliado.
-3. Pagamento aprovado -> signal atualiza saldo e status da referência.
-4. Afiliado solicita saque via painel; admin aprova/efetua.
+> Em desenvolvimento, deixe `PAYMENT_PROVIDER=manual` — nenhuma API real é chamada, apenas transações marcadas.
 
-## Fluxo de serviços
-1. **Prestador (self-service)**: cria o serviço em `/servicos/meus/` e vira provider daquele serviço automaticamente.
-2. **Cliente**: navega em `/servicos/`, vê o detalhe e escolhe **um prestador** ao solicitar orçamento.
-3. Prestador recebe a solicitação (status `pending`) em `/servicos/solicitacoes/` e envia orçamento (`final_price`).
-4. Cliente **aprova** o orçamento: o sistema cria `Order(kind=SERVICE)` + `OrderItem` e cobra via Asaas (Pix).
-5. Webhook confirma o pagamento -> signal marca a `ServiceRequest` como `approved` (a Order vira `PAID`).
-6. Cliente acompanha o status em `/servicos/minhas-solicitacoes/` e pode cancelar enquanto pendente.
+## Fluxos de negócio
 
-## Desenvolvimento
+### Serviços (orçamento)
 
-```bash
-python -m venv venv && source venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env
-python manage.py migrate
-python manage.py createsuperuser
-python manage.py runserver
-```
+1. **Prestador (self-service)**: cria o serviço em `/servicos/meus-servicos/` (`services-my`) e vira provider daquele serviço automaticamente (`ServiceCreateView`).
+2. **Cliente**: navega em `/servicos/`, vê o detalhe e escolhe **um prestador** ao solicitar orçamento (`services-request`).
+3. Prestador recebe a solicitação (`pending`) em `/servicos/prestador/solicitacoes/` (`services-provider-requests`) e envia orçamento (`final_price`) via `services-request-quote`.
+4. Cliente **aprova** o orçamento (`services-request-approve`): cria `Order(kind=SERVICE)` + `OrderItem(unit_price=final_price)`, roda `recompute_total()` e chama `checkout_or_charge` — com provider `asaas`, redireciona para o Checkout hosted; senão, para o checkout embutido.
+5. Webhook confirma o pagamento → signal `complete_service_request_on_paid` marca a `ServiceRequest` como `approved`.
+6. Cliente acompanha em `/servicos/minhas-solicitacoes/` (`services-my-requests`) e pode cancelar enquanto pendente (`services-request-cancel`).
 
-Docker (opcional):
+### Assinatura de manutenção
+
+1. Cliente assina em `/servicos/planos/` (`services-plan-list` → `services-plan-subscribe`): cria `Order(kind=SUBSCRIPTION, subscription=True)` + `OrderItem(plan=...)`.
+2. Com `PAYMENT_PROVIDER=asaas`, redireciona para o Checkout hosted `RECURRENT` (`create_checkout()`, `subscription.cycle` pelo `plan_type`) e o id da assinatura é capturado no webhook `CHECKOUT_PAID` (`_link_checkout_subscription`); com provider manual, `subscribe_plan(plan, "PIX")` cria `Transaction` PENDING e redireciona para `payments-manual-confirm`.
+3. Quando a `Transaction` vira `paid`, o signal `schedule_first_maintenance_visit` agenda a 1ª `MaintenanceVisit` (no `next_due_date`) e avança `next_due_date` por `plan.cycle_days()` (30/90/365).
+4. Prestador gerencia visitas em `/servicos/visitas/` (`services-visits`) e conclui com `services-visit-complete`.
+
+### Afiliados
+
+1. Visitante chega com `?ref=CODE` → cookie de 30 dias (`AffiliateReferralMiddleware`).
+2. Checkout lê o cookie, cria `Referral` ligado ao afiliado.
+3. Pagamento aprovado → signal `approve_referral` credita comissão no `AffiliateProfile.balance`.
+4. Afiliado cadastra a chave Pix no painel (`affiliate-pix-key`) — saque é bloqueado sem ela — e solicita saque em `affiliate-payout` (`PayoutRequest`). Admin aprova/efetua.
+
+## Testes e qualidade
 
 ```bash
-docker compose up --build
+# Lint (line-length 100)
+venv/bin/ruff check .
+
+# Migrations sem diff
+venv/bin/python manage.py makemigrations --check --dry-run
+
+# Django check
+venv/bin/python manage.py check
+
+# Testes (SQLite em memória, offline)
+DJANGO_SETTINGS_MODULE=config.settings.test venv/bin/python manage.py test apps
+
+# Cobertura (mínimo 70%; hoje ~95%)
+DJANGO_SETTINGS_MODULE=config.settings.test venv/bin/coverage run manage.py test apps
+venv/bin/coverage report --fail-under=70
 ```
 
-## Deploy Hostinger (hospedagem compartilhada — Passenger)
+- Helpers compartilhados em `apps/tests/helpers.py`: `make_user`/`make_product`/`make_category`/`make_affiliate`, `create_order()` e o mock `FakeAsaasApi` (`AsaasMockMixin` ou `mock_asaas()`).
+- Testes por app em `apps/**/tests/`.
+- CI (`.github/workflows/ci.yml`, Python 3.12): ruff → `makemigrations --check` → `manage.py check` (dev e vercel) → testes + cobertura.
 
-Pré-requisitos no hPanel:
-1. Crie o banco MySQL (`Sites → masterlightoficial.com.br → Databases`) e monte `DATABASE_URL=mysql://usuario:senha@host:3306/nome_do_banco`.
-2. Registre o app Python (`Advanced → Python` / sessão "Python"): Python 3.12, **Application root** = `~/prot_02` (fora de `public_html`), **startup file** = `passenger_wsgi.py`, **entry point** = `application`. Anote o comando de ativação do virtualenv que o painel exibe.
-3. Habilite o SSL (Let's Encrypt) para o domínio e o `www`.
+## Deploy
 
-No servidor (SSH):
-```bash
-cd ~/prot_02
-cp deploy/.env.prod .env && chmod 600 .env   # arquivo gitignored: envie separadamente no upload
-./deploy/setup_prod.sh ~/virtualenv/prot_02/3.12   # caminho do venv que o hPanel exibe
-# (ou rode `bash deploy/setup_prod.sh` apontando o venv correto)
-```
-O `deploy/setup_prod.sh` instala deps, valida a conexão MySQL (`DATABASE_URL`), roda `migrate`, `bootstrap_social`, `collectstatic`
-e reinicia o Passenger. Para superuser não-interativo, defina `SUPERUSER_EMAIL`/`SUPERUSER_PASSWORD`
-como variáveis de ambiente antes de executar.
+### Vercel (padrão atual)
 
-### Checklist de credenciais (preencha em `deploy/.env.prod` ANTES de rodar o setup)
-1. Banco: confirmar `DATABASE_URL` no hPanel e **rotacionar a senha do MySQL** que já está em `deploy/.env.prod` (está em texto plano e o arquivo transita por máquinas).
-2. Pagamentos: `PAYMENT_PROVIDER=asaas` exige `ASAAS_API_KEY` (produção) e `ASAAS_WEBHOOK_TOKEN` (cadastre a URL `https://masterlightoficial.com.br/pagamentos/webhook/` no Asaas). Sem essas chaves, **nenhuma cobrança funciona** — para colocar no ar sem pagamentos, use `PAYMENT_PROVIDER=manual`.
-3. SMTP: `DJANGO_EMAIL_HOST`/`USER`/`PASSWORD`/`DEFAULT_FROM_EMAIL` — sem isso emails (reset de senha, notificações) falham silenciosamente.
-4. Social login: Google/Facebook (`CLIENT_ID`/`SECRET`) e, se usar, Apple (`APPLE_CLIENT_ID`/`APPLE_KEY_ID`/`APPLE_TEAM_ID`/`APPLE_PRIVATE_KEY`). O Apple é lido das settings (não precisa de SocialApp no admin), mas exige `PyJWT` — já está em `requirements-prod.txt`.
-5. `DJANGO_SECRET_KEY`: manter o valor longo gerado; se reutilizar este arquivo, gere um novo (evite exposição em histórico).
+- Runtime **Python 3.12** pinned em `.python-version` (paridade com CI/Docker).
+- Entrypoint WSGI `config/wsgi.py`; settings `config.settings.vercel` via env `DJANGO_SETTINGS_MODULE` (obrigatória).
+- Build command `python build.py` (em `[tool.vercel.scripts]`): roda `migrate` + `bootstrap_social` em todo deploy (idempotentes). A Vercel roda `collectstatic` e serve estáticos do CDN.
+- `vercel.json`: `maxDuration=60` + `excludeFiles` para a function `config/wsgi.py`; cron `0 * * * *` em `/pagamentos/reconciliar` (autenticado por `Authorization: Bearer <CRON_SECRET>`).
 
-> Segurança de produção: com `SECURE_SSL_REDIRECT=True` e HSTS (1 ano), o site só responde por HTTPS — confirme o SSL do hPanel antes do primeiro acesso.
+**Configuração no dashboard (uma vez):**
 
-Estáticos vão via whitenoise (`collectstatic`); **media** é servido pelo próprio Django (`DJANGO_SERVE_MEDIA=True`, default) pois o shared não expõe alias para `MEDIA_ROOT`. `staticfiles/` não é versionado no git — regenerado pelo `collectstatic` no deploy.
-
-## Deploy Vercel (serverless)
-
-A Vercel detecta o `manage.py` e usa o entrypoint WSGI (`config/wsgi.py`, definido por `WSGI_APPLICATION`). O settings é o `config.settings.vercel` (selecionado pela env `DJANGO_SETTINGS_MODULE`). O runtime é **Python 3.12** (pinned em `.python-version`, paridade com CI/Docker). Estáticos são coletados e servidos pelo CDN da Vercel; banco é o **Vercel Postgres** (Neon) via `DATABASE_URL`. Não há upload de arquivos: imagens (produtos, serviços, portfólio, avatar) são **links** (`URLField`) preenchidos pelo prestador/admin.
-
-### Arquivos de deploy
-- `.python-version` — pin do runtime Python 3.12 usado na Vercel (paridade com CI/Docker).
-- `config/settings/vercel.py` — settings de produção Vercel (Postgres, ALLOWED_HOSTS com `.vercel.app`, `SERVE_MEDIA=False`).
-- `vercel.json` — `maxDuration=60` + `excludeFiles` da function; cron de reconciliação (`/pagamentos/reconciliar`).
-- `build.py` — build command: roda `migrate` + `bootstrap_social` (idempotentes) em todo deploy (configurado em `[tool.vercel.scripts]` no `pyproject.toml`).
-- `deploy/migrate_to_vercel.sh` — migração única de dados MySQL → Postgres.
-
-### Configuração no dashboard (uma vez)
-1. Importe o repositório; adicione a integração **Vercel Postgres** (injeta `DATABASE_URL`).
-2. Defina as env vars (obrigatória: `DJANGO_SETTINGS_MODULE=config.settings.vercel`):
+1. Importe o repositório; conecte o projeto ao repositório Git.
+2. Env vars (obrigatória: `DJANGO_SETTINGS_MODULE=config.settings.vercel`):
    `DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS=masterlightoficial.com.br,www.masterlightoficial.com.br,.vercel.app`,
-   `DJANGO_SITE_DOMAIN=masterlightoficial.com.br`, `DJANGO_SITE_NAME=MasterLight`,
-   `PAYMENT_PROVIDER`, `ASAAS_API_KEY`, `ASAAS_SANDBOX=False`, `ASAAS_WEBHOOK_TOKEN`, `MANUAL_WEBHOOK_TOKEN`,
-   sociais (Google/Facebook/Apple — `APPLE_PRIVATE_KEY` **inline**, nunca path), SMTP (`DJANGO_EMAIL_*`), e `CRON_SECRET` (cron).
+   `DJANGO_SITE_DOMAIN`, `DJANGO_SITE_NAME`, `DATABASE_URL` (Supabase session mode),
+   `PAYMENT_PROVIDER`, `ASAAS_*`, `MANUAL_WEBHOOK_TOKEN`, sociais e SMTP, `CRON_SECRET`.
 3. Domínio: apex + `www` para a Vercel.
-4. No painel do Asaas, atualize o webhook para `https://masterlightoficial.com.br/pagamentos/webhook/`.
-5. Suba os dados após o primeiro build.
+4. No Asaas, atualize o webhook para `https://SEUDOMINIO/pagamentos/webhook/`.
+5. Suba os dados após o primeiro build (ou carregue no Supabase diretamente).
 
-> Filesystem é efêmero/read-only na Vercel: sem uploads — as imagens são URLs externas (`URLField` com validação de extensão).
+> **Media**: não há upload. Imagens (produtos, serviços, portfólio, avatar) são **links** (`URLField` com `validate_image_url`) — sem bucket, sem `django-storages`. `SERVE_MEDIA=False` na Vercel (filesystem efêmero).
 
-## Próximos passos
-- Asaas Checkout hosted (página de pagamento do Asaas) como alternativa ao checkout embutido.
-- Parcelamento (installments) e boleto no cartão.
-- Expansão de testes de cobertura >=70% no CI (hoje em 92%).
+### Hostinger (legado)
+
+Hospedagem compartilhada via Passenger (`passenger_wsgi.py` → `config.settings.prod`). Referência: `deploy/setup_prod.sh` (instala deps, valida MySQL, migrate, `bootstrap_social`, collectstatic) e `deploy/.env.prod`. Este caminho é **legado** — o padrão atual é Supabase + Vercel.
+
+### Migração de dados MySQL → Postgres
+
+`deploy/migrate_to_vercel.sh` faz dumpdata/loaddata do MySQL (Hostinger) para o Postgres (Supabase).
+
+## Segurança
+
+- Produção roda com `SECURE_SSL_REDIRECT=True` e HSTS de 1 ano (`SECURE_HSTS_SECONDS`).
+- Secrets (chaves, senhas, tokens) vivem em `.env`/env vars — `.env` e `.env.local` são gitignored. Nunca commite chaves.
+- `SECRET_KEY` de produção deve ser único e nunca reutilizado entre ambientes.
+- Webhooks de pagamento validam token (`x-webhook-token`).
+
+## FAQ / Troubleshooting
+
+**Uma rota pública voltou 404 "do nada".** Cheque o `SiteSettings` no Admin (`pk=1`) — cada seção tem uma flag (`store_enabled`, `services_enabled`, ...). Quando off, a view devolve 404. Não é env var.
+
+**Login do admin falha na produção.** Confirme que a `DATABASE_URL` da Vercel aponta para o Supabase onde o usuário foi criado (session mode 5432).
+
+**Testes falham conectando no Postgres.** Use `DJANGO_SETTINGS_MODULE=config.settings.test` — os testes rodam em SQLite em memória e não tocam o banco de dev.
+
+**Conexão com o Supabase recusada.** Projetos free pausam após ~7 dias de inatividade — retome pelo dashboard. Se estiver usando transaction mode (6543), volte para 5432 (migrate/prepared statements).
+
+**Imagem não aparece.** As imagens são URLs externas (`URLField`). Valide a extensão (jpg/jpeg/png/gif/webp/avif/svg) e a acessibilidade da URL.
+
+## Roadmap
+
+- [x] Asaas Checkout hosted (página de pagamento do Asaas) substituindo o checkout embutido em loja, orçamento e assinatura.
+- [x] Reconciliação automática de `paymentLink` (link avulso agora cria `Order`+`Transaction` e aprova a solicitação no webhook).
+- [ ] Parcelamento (installments) e boleto no cartão.
+- [ ] `GET /checkouts/{id}` na reconciliação ativa (`sync_payments`) — hoje os checkouts são reconciliados apenas por webhook.
+- [ ] Expandir cobertura de testes além de 95% (meta mínima 70% no CI).
 
 ---
- Projeto baseado no plano de `PLANO.md`.
+
+Projeto baseado no plano de `PLANO.md`.

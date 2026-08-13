@@ -5,6 +5,13 @@
   <p>Total: <strong>R$ {{ cart.total|floatformat:2 }}</strong></p>
   <form method="post">
     {% csrf_token %}
+    {% if CHECKOUT_HOSTED %}
+    <div class="card mb-3 p-3 form-panel--narrow">
+      <h6 class="mb-2">Pagamento</h6>
+      <p class="mb-0 small">Você será direcionado para a página de pagamento segura do Asaas (Pix, cartão de crédito ou boleto).</p>
+    </div>
+    <button class="btn btn-brand">Pagar com Asaas</button>
+    {% else %}
     <div class="card mb-3 p-3 form-panel--narrow">
       <h6 class="mb-2">Forma de pagamento</h6>
       <div class="form-check">
@@ -42,11 +49,13 @@
       </div>
     </div>
     <button class="btn btn-dark">Confirmar e pagar</button>
+    {% endif %}
   </form>
 </div>
 {% endblock %}
 
 {% block extra_scripts %}
+{% if not CHECKOUT_HOSTED %}
 <script>
   const cardRadio = document.getElementById('pm_card');
   const cardFields = document.getElementById('card-fields');
@@ -62,4 +71,5 @@
     radio.addEventListener('change', toggleCardFields);
   });
 </script>
+{% endif %}
 {% endblock %}

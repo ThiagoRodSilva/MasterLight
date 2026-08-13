@@ -6,7 +6,7 @@ import uuid
 from django.conf import settings
 from django.urls import reverse_lazy
 
-from .base import ChargeResult, PaymentGateway, PaymentLinkResult, WebhookAuthError
+from .base import ChargeResult, CheckoutResult, PaymentGateway, PaymentLinkResult, WebhookAuthError
 
 
 class ManualGateway(PaymentGateway):
@@ -86,6 +86,18 @@ class ManualGateway(PaymentGateway):
         external_reference: str = "",
     ) -> PaymentLinkResult:
         raise ValueError("Link de pagamento requer o provider 'asaas'.")
+
+    def create_checkout(
+        self,
+        order,
+        *,
+        billing_types: list[str] | None = None,
+        charge_type: str = "DETACHED",
+        callback_urls: dict | None = None,
+        cycle: str = "",
+        next_due_date=None,
+    ) -> CheckoutResult:
+        raise ValueError("Checkout hospedado requer o provider 'asaas'.")
 
     def refund(self, transaction_id, amount) -> ChargeResult:
         from apps.payments.models import Transaction

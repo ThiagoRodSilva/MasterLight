@@ -183,74 +183,56 @@ class TestCheckoutView(TestCase):
             assert order.status == Order.Status.CANCELED
 
     @override_settings(**ASAAS_SETTINGS)
-    def test_checkout_credit_card_asaas_creates_transaction(self):
-        from apps.checkout.models import Address
-        from apps.payments.models import Transaction
-
-        user = self._login()
-        Address.objects.create(
-            user=user,
-            street="Rua A",
-            number="10",
-            city="Cidade",
-            state="SP",
-            zip_code="01001000",
-            country="BR",
-        )
-        user.cpf = "12345678901"
-        user.telefone = "11999999999"
-        user.save(update_fields=["cpf", "telefone"])
-        with mock_asaas() as _fake:
-            product = make_product(stock=10)
-            self._with_cart(product, qty=1)
-            response = self.client.post(
-                reverse("checkout"),
-                {
-                    "payment_method": "CREDIT_CARD",
-                    "card_holder": "Fulano",
-                    "card_cpf": "12345678901",
-                    "card_number": "4111111111111111",
-                    "card_expiry_month": "12",
-                    "card_expiry_year": "2035",
-                    "card_ccv": "123",
-                },
-            )
-        assert response.status_code == 302
-        order = Order.objects.filter(user=user).latest("created_at")
-        tx = Transaction.objects.get(order=order)
-        assert tx.status == Transaction.Status.PENDING
-        assert tx.provider == "asaas"
-
-    @override_settings(**ASAAS_SETTINGS)
-    def test_checkout_boleto_asaas_redirects_to_boleto_confirm(self):
+    def test_checkout_asaas_redirects_to_hosted_checkout(self):
         from apps.payments.models import Transaction
 
         user = self._login()
         with mock_asaas() as _fake:
             product = make_product(stock=10)
             self._with_cart(product, qty=1)
-            response = self.client.post(reverse("checkout"), {"payment_method": "BOLETO"})
+            response = self.client.post(reverse("checkout"), {"payment_method": "PIX"})
         assert response.status_code == 302
         order = Order.objects.filter(user=user).latest("created_at")
-        assert response.url == reverse("payments-boleto-confirm", kwargs={"order_pk": order.pk})
+        assert response.url == _fake.checkout_url
         tx = Transaction.objects.get(order=order)
         assert tx.provider == "asaas"
+        assert tx.external_id == _fake.checkout_id
         assert tx.status == Transaction.Status.PENDING
 
     @override_settings(**ASAAS_SETTINGS)
-    def test_checkout_credit_card_missing_cpf_cancels_order(self):
-        from apps.checkout.models import Address
+    def test_checkout_asaas_paid_webhook_confirms(self):
+        from apps.payments.models import Transaction
 
         user = self._login()
-        Address.objects.create(
-            user=user,
-            street="Rua A",
-            number="10",
-            city="Cidade",
-            state="SP",
-            zip_code="01001000",
-            country="BR",
+        with mock_asaas() as _fake:
+            product = make_product(stock=10)
+            self._with_cart(product, qty=1)
+            self.client.post(reverse("checkout"))
+        order = Order.objects.filter(user=user).latest("created_at")
+        tx = Transaction.objects.get(order=order)
+
+        import json
+
+        from apps.payments.services import AsaasGateway
+
+        payload = json.dumps(
+            {
+                "event": "CHECKOUT_PAID",
+                "checkout": {"id": _fake.checkout_id, "externalReference": str(order.pk)},
+            }
         )
+        AsaasGateway().webhook(payload, {"x-webhook-token": "segredo"})
+
+        tx.refresh_from_db()
+        order.refresh_from_db()
+        assert tx.status == Transaction.Status.PAID
+        assert order.status == Order.Status.PAID
+
+    @override_settings(**ASAAS_SETTINGS)
+    def test_checkout_credit_card_missing_cpf_still_checkout_hosted(self):
+        from apps.payments.models import Transaction
+
+        user = self._login()
         with mock_asaas() as _fake:
             product = make_product(stock=10)
             self._with_cart(product, qty=1)
@@ -265,7 +247,10 @@ class TestCheckoutView(TestCase):
                 },
             )
         order = Order.objects.filter(user=user).latest("created_at")
-        assert order.status == Order.Status.CANCELED
+        assert order.status == Order.Status.AWAITING_PAYMENT
+        tx = Transaction.objects.get(order=order)
+        assert tx.provider == "asaas"
+        assert tx.external_id == _fake.checkout_id
 
 
 class TestReferralCreation(TestCase):

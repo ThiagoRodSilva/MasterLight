@@ -147,3 +147,19 @@ class ManualConfirmationView(LoginRequiredMixin, TemplateView):
         ctx = super().get_context_data(**kwargs)
         ctx["order"] = get_object_or_404(Order, pk=self.kwargs["order_pk"], user=self.request.user)
         return ctx
+
+
+class CheckoutCallbackView(LoginRequiredMixin, TemplateView):
+    """Retorno do Asaas Checkout (successUrl/cancelUrl/expiredUrl).
+
+    A confirmação financeira vem via webhook `CHECKOUT_PAID`; esta página apenas
+    informa o usuário e aponta para o status do pedido (polling).
+    """
+
+    template_name = "payments/checkout_callback.html"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["order"] = get_object_or_404(Order, pk=self.kwargs["order_pk"], user=self.request.user)
+        ctx["outcome"] = self.kwargs.get("outcome", "success")
+        return ctx

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-8 text-center">
+      {% if outcome == "success" %}
+      <h1 class="mb-3">Pagamento concluído</h1>
+      <div class="alert alert-success">
+        Seu pagamento foi processado na página do Asaas. Estamos confirmando a transação — assim que o
+        webhook confirmar, o pedido <strong>#{{ order.pk|truncatechars:8 }}</strong> será atualizado.
+      </div>
+      {% elif outcome == "cancel" %}
+      <h1 class="mb-3">Pagamento cancelado</h1>
+      <div class="alert alert-warning">
+        Você cancelou o pagamento do pedido <strong>#{{ order.pk|truncatechars:8 }}</strong>.
+        Se desejar, tente novamente.
+      </div>
+      {% else %}
+      <h1 class="mb-3">Link expirado</h1>
+      <div class="alert alert-warning">
+        O link de pagamento do pedido <strong>#{{ order.pk|truncatechars:8 }}</strong> expirou.
+        Gere um novo pagamento para continuar.
+      </div>
+      {% endif %}
+      <a href="{% url 'payments-status' order.pk %}" class="btn btn-outline-dark me-2">Ver status</a>
+      <a href="{% url 'accounts-me' %}" class="btn btn-outline-dark">Meus pedidos</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

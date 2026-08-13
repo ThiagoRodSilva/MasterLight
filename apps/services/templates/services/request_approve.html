@@ -7,6 +7,13 @@
     <p class="mb-3">Orçamento: <strong>R$ {{ service_request.final_price|floatformat:2 }}</strong></p>
     <form method="post">
       {% csrf_token %}
+      {% if CHECKOUT_HOSTED %}
+      <div class="mb-3">
+        <h6 class="mb-2">Pagamento</h6>
+        <p class="small mb-0">Você será direcionado para a página de pagamento segura do Asaas (Pix, cartão de crédito ou boleto).</p>
+      </div>
+      <button class="btn btn-brand w-100" type="submit">Aprovar e pagar</button>
+      {% else %}
       <h6 class="mb-2">Forma de pagamento</h6>
       <div class="form-check">
         <input class="form-check-input" type="radio" name="payment_method" id="pm_pix" value="PIX" checked>
@@ -42,6 +49,7 @@
         </div>
       </div>
       <button class="btn btn-brand w-100" type="submit">Aprovar e pagar</button>
+      {% endif %}
     </form>
 
     {% if PAYLINK_ENABLED %}

@@ -139,6 +139,9 @@ class FakeAsaasApi:
         self.customer_status = "CONFIRMED"
         self.payment_link_id = "pl_0001"
         self.payment_link_url = "https://www.asaas.com/c/291089675759"
+        self.checkout_id = "chk_0001"
+        self.checkout_url = "https://asaas.com/checkoutSession/show?id=chk_0001"
+        self.checkout_subscription_id = "sub_0001"
 
     def __call__(self, method, url, headers, json, params=None, timeout=None):
         self.calls.append(
@@ -186,6 +189,25 @@ class FakeAsaasApi:
                     "value": (json or {}).get("value"),
                     "billingType": (json or {}).get("billingType"),
                     "active": True,
+                }
+            )
+        if method == "POST" and url.endswith("/checkouts"):
+            return FakeResponse(
+                {
+                    "id": self.checkout_id,
+                    "link": self.checkout_url,
+                    "status": "ACTIVE",
+                    "billingTypes": (json or {}).get("billingTypes"),
+                    "chargeTypes": (json or {}).get("chargeTypes"),
+                    "externalReference": (json or {}).get("externalReference"),
+                }
+            )
+        if method == "GET" and f"checkouts/{self.checkout_id}" in url:
+            return FakeResponse(
+                {
+                    "id": self.checkout_id,
+                    "status": "ACTIVE",
+                    "subscriptions": [{"id": self.checkout_subscription_id}],
                 }
             )
         if method == "POST" and url.endswith("/creditCards/tokenizeCreditCard"):

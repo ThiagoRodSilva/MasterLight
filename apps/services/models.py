@@ -212,6 +212,14 @@ class ServiceRequest(BaseModel):
         verbose_name="preço do orçamento",
     )
     notes = models.TextField(blank=True, default="", verbose_name="observações")
+    asaas_payment_link_id = models.CharField(
+        _("link de pagamento (Asaas)"),
+        max_length=120,
+        blank=True,
+        default="",
+        db_index=True,
+        help_text="Id do paymentLink avulso; usado para reconciliar o pagamento via webhook.",
+    )
 
     class Meta:
         ordering = ["-created_at"]

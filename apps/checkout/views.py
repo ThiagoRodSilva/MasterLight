@@ -12,7 +12,7 @@ from django.views.generic import CreateView
 
 from apps.affiliate.models import AffiliateProfile, Referral
 from apps.core.models import SiteSettings
-from apps.payments.services import charge_with_rollback
+from apps.payments.services import checkout_or_charge
 
 from .models import Address, Cart, Order, OrderItem
 
@@ -129,7 +129,7 @@ class CheckoutView(LoginRequiredMixin, View):
                 order.address = address
                 order.save(update_fields=["address", "updated_at"])
 
-            result = charge_with_rollback(
+            result = checkout_or_charge(
                 order,
                 request,
                 address=address,
@@ -140,7 +140,9 @@ class CheckoutView(LoginRequiredMixin, View):
             return redirect("checkout-cart")
         cart.clear()
         messages.success(request, "Pedido criado. Aguardando confirmação do pagamento.")
-        return redirect(result.redirect_url)
+        if "url" in result:
+            return redirect(result["url"])
+        return redirect(result["redirect_url"])
 
 
 class AddressCreateView(LoginRequiredMixin, CreateView):

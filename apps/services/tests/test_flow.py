@@ -42,7 +42,7 @@ class TestApprovalCreatesOrderAndPays(AsaasMockMixin, TestCase):
         )
         return sr
 
-    def test_approve_creates_service_order_and_pix(self):
+    def test_approve_creates_service_order_and_checkout(self):
         provider = make_user(role=CustomUser.Role.PRESTADOR)
         cliente = make_user(role=CustomUser.Role.CLIENTE)
         sr = self._make_quoted_request(cliente, provider)
@@ -52,6 +52,7 @@ class TestApprovalCreatesOrderAndPays(AsaasMockMixin, TestCase):
 
         sr.refresh_from_db()
         assert response.status_code == 302
+        assert response.url == self.asaas.checkout_url
         assert sr.order is not None
 
         order = sr.order
@@ -65,6 +66,7 @@ class TestApprovalCreatesOrderAndPays(AsaasMockMixin, TestCase):
 
         tx = Transaction.objects.get(order=order)
         assert tx.provider == "asaas"
+        assert tx.external_id == self.asaas.checkout_id
 
     def test_paid_webhook_approves_service_request(self):
         provider = make_user(role=CustomUser.Role.PRESTADOR)
@@ -76,7 +78,12 @@ class TestApprovalCreatesOrderAndPays(AsaasMockMixin, TestCase):
         sr.refresh_from_db()
         order = sr.order
 
-        payload = json.dumps({"event": "PAYMENT_CONFIRMED", "payment": {"id": self.asaas.payment_id}})
+        payload = json.dumps(
+            {
+                "event": "CHECKOUT_PAID",
+                "checkout": {"id": self.asaas.checkout_id, "externalReference": str(order.pk)},
+            }
+        )
         AsaasGateway().webhook(payload, {"x-webhook-token": "segredo"})
 
         order.refresh_from_db()
@@ -85,25 +92,7 @@ class TestApprovalCreatesOrderAndPays(AsaasMockMixin, TestCase):
         sr.refresh_from_db()
         assert sr.status == ServiceRequest.Status.APPROVED
 
-    def test_approve_with_boleto_redirects_to_boleto_confirm(self):
-        provider = make_user(role=CustomUser.Role.PRESTADOR)
-        cliente = make_user(role=CustomUser.Role.CLIENTE)
-        sr = self._make_quoted_request(cliente, provider)
-
-        self.client.force_login(cliente)
-        response = self.client.post(
-            reverse("services-request-approve", kwargs={"pk": sr.pk}),
-            {"payment_method": "BOLETO"},
-        )
-
-        sr.refresh_from_db()
-        assert response.status_code == 302
-        assert response.url == reverse("payments-boleto-confirm", kwargs={"order_pk": sr.order.pk})
-        tx = Transaction.objects.get(order=sr.order)
-        assert tx.provider == "asaas"
-        assert "bankSlip" in json.loads(tx.raw_payload)
-
-    def test_approve_page_renders_payment_options(self):
+    def test_approve_page_renders_hosted_info(self):
         provider = make_user(role=CustomUser.Role.PRESTADOR)
         cliente = make_user(role=CustomUser.Role.CLIENTE)
         sr = self._make_quoted_request(cliente, provider)
@@ -113,8 +102,8 @@ class TestApprovalCreatesOrderAndPays(AsaasMockMixin, TestCase):
         assert response.status_code == 200
         html = response.content.decode()
         assert "Aprovar orçamento" in html
-        assert "Boleto bancário" in html
-        assert "Cartão de crédito" in html
+        assert "Aprovar e pagar" in html
+        assert "Boleto bancário" not in html
         assert "Pagar com link do Asaas" in html
 
 
@@ -189,3 +178,88 @@ class TestApprovalPayLink(AsaasMockMixin, TestCase):
             response = self.client.post(reverse("services-request-paylink", kwargs={"pk": sr.pk}))
         assert response.status_code == 400
         assert response.json()["error"]
+
+    def test_paylink_persists_link_id(self):
+        provider = make_user(role=CustomUser.Role.PRESTADOR)
+        cliente = make_user(role=CustomUser.Role.CLIENTE)
+        sr = self._make_quoted_request(cliente, provider)
+
+        self.client.force_login(cliente)
+        self.client.post(reverse("services-request-paylink", kwargs={"pk": sr.pk}))
+
+        sr.refresh_from_db()
+        assert sr.asaas_payment_link_id == self.asaas.payment_link_id
+
+    def test_paylink_paid_webhook_reconciles_order_and_approves(self):
+        provider = make_user(role=CustomUser.Role.PRESTADOR)
+        cliente = make_user(role=CustomUser.Role.CLIENTE)
+        sr = self._make_quoted_request(cliente, provider)
+        sr.asaas_payment_link_id = self.asaas.payment_link_id
+        sr.save(update_fields=["asaas_payment_link_id", "updated_at"])
+
+        payload = json.dumps(
+            {
+                "event": "PAYMENT_CONFIRMED",
+                "payment": {
+                    "id": self.asaas.payment_id,
+                    "paymentLink": self.asaas.payment_link_id,
+                    "value": 99.9,
+                },
+            }
+        )
+        AsaasGateway().webhook(payload, {"x-webhook-token": "segredo"})
+
+        sr.refresh_from_db()
+        assert sr.order is not None
+        order = sr.order
+        assert order.status == Order.Status.PAID
+        assert order.kind == Order.Kind.SERVICE
+        assert order.total == Decimal("99.90")
+
+        tx = Transaction.objects.get(order=order)
+        assert tx.provider == "asaas"
+        assert tx.external_id == self.asaas.payment_id
+        assert tx.status == Transaction.Status.PAID
+
+        assert sr.status == ServiceRequest.Status.APPROVED
+
+    def test_paylink_paid_webhook_is_idempotent(self):
+        provider = make_user(role=CustomUser.Role.PRESTADOR)
+        cliente = make_user(role=CustomUser.Role.CLIENTE)
+        sr = self._make_quoted_request(cliente, provider)
+        sr.asaas_payment_link_id = self.asaas.payment_link_id
+        sr.save(update_fields=["asaas_payment_link_id", "updated_at"])
+
+        payload = json.dumps(
+            {
+                "event": "PAYMENT_CONFIRMED",
+                "payment": {
+                    "id": self.asaas.payment_id,
+                    "paymentLink": self.asaas.payment_link_id,
+                    "value": 99.9,
+                },
+            }
+        )
+        gateway = AsaasGateway()
+        gateway.webhook(payload, {"x-webhook-token": "segredo"})
+        gateway.webhook(payload, {"x-webhook-token": "segredo"})
+
+        sr.refresh_from_db()
+        assert sr.status == ServiceRequest.Status.APPROVED
+        assert Transaction.objects.filter(external_id=self.asaas.payment_id).count() == 1
+        assert Order.objects.filter(pk=sr.order_id).count() == 1
+
+    def test_paylink_paid_webhook_ignores_unknown_link(self):
+        provider = make_user(role=CustomUser.Role.PRESTADOR)
+        cliente = make_user(role=CustomUser.Role.CLIENTE)
+        self._make_quoted_request(cliente, provider)
+
+        payload = json.dumps(
+            {
+                "event": "PAYMENT_CONFIRMED",
+                "payment": {"id": self.asaas.payment_id, "paymentLink": "pl_desconhecida"},
+            }
+        )
+        with self.assertRaises(ValueError):
+            AsaasGateway().webhook(payload, {"x-webhook-token": "segredo"})
+        assert Order.objects.filter(user=cliente).count() == 0

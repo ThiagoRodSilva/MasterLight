@@ -205,7 +205,7 @@ class ServiceRequestApproveView(ClienteRequiredMixin, View):
 
     def post(self, request, *args, **kwargs):
         from apps.checkout.models import Order, OrderItem
-        from apps.payments.services import charge_with_rollback
+        from apps.payments.services import checkout_or_charge
 
         service_request = self.get_object()
         with transaction.atomic():
@@ -229,13 +229,13 @@ class ServiceRequestApproveView(ClienteRequiredMixin, View):
             service_request.order = order
             service_request.save(update_fields=["order", "updated_at"])
 
-            result = charge_with_rollback(
-                order, request, fail_message="Falha ao gerar cobrança."
-            )
+            result = checkout_or_charge(order, request, fail_message="Falha ao gerar cobrança.")
 
         if result is None:
             return redirect("services-my-requests")
-        return redirect(result.redirect_url)
+        if "url" in result:
+            return redirect(result["url"])
+        return redirect(result["redirect_url"])
 
 
 class ServiceRequestPayLinkView(ClienteRequiredMixin, View):
@@ -269,6 +269,9 @@ class ServiceRequestPayLinkView(ClienteRequiredMixin, View):
             )
         except ValueError as exc:
             return JsonResponse({"error": str(exc) or "Falha ao gerar link."}, status=400)
+        if result.link_id:
+            service_request.asaas_payment_link_id = result.link_id
+            service_request.save(update_fields=["asaas_payment_link_id", "updated_at"])
         return JsonResponse({"url": result.url, "link_id": result.link_id})
 
 
@@ -353,7 +356,11 @@ class MaintenancePlanCreateView(SectionEnabledMixin, ClienteRequiredMixin, FormV
 
     def form_valid(self, form):
         from apps.checkout.models import Order, OrderItem
-        from apps.payments.services import resolve_billing, subscribe_plan
+        from apps.payments.services import (
+            create_checkout_for_order,
+            resolve_billing,
+            subscribe_plan,
+        )
 
         value = form.cleaned_data["value"]
         plan_type = form.cleaned_data["plan_type"]
@@ -361,7 +368,6 @@ class MaintenancePlanCreateView(SectionEnabledMixin, ClienteRequiredMixin, FormV
         next_due = timezone.localdate() + timedelta(days=MaintenancePlan.cycle_days_for(plan_type))
 
         try:
-            params = resolve_billing(self.request, self.request.user)
             with transaction.atomic():
                 order = Order.objects.create(
                     user=self.request.user,
@@ -383,23 +389,37 @@ class MaintenancePlanCreateView(SectionEnabledMixin, ClienteRequiredMixin, FormV
                     prestador=prestador,
                     order=order,
                 )
-                result = subscribe_plan(
-                    plan,
-                    billing_type=params.billing_type,
-                    credit_card_token=params.credit_card_token,
-                    remote_ip=params.remote_ip,
-                )
+                if settings.PAYMENT_PROVIDER == "asaas":
+                    result = create_checkout_for_order(
+                        order,
+                        self.request,
+                        charge_type="RECURRENT",
+                        cycle=plan_type,
+                        next_due_date=next_due,
+                    )
+                    redirect_url = result.url
+                    error_msg = result.message or "Falha ao criar a assinatura."
+                else:
+                    params = resolve_billing(self.request, self.request.user)
+                    result = subscribe_plan(
+                        plan,
+                        billing_type=params.billing_type,
+                        credit_card_token=params.credit_card_token,
+                        remote_ip=params.remote_ip,
+                    )
+                    redirect_url = result.redirect_url
+                    error_msg = result.message or "Falha ao criar a assinatura."
         except ValueError as exc:
             messages.error(self.request, str(exc) or "Falha ao criar a assinatura.")
             return redirect("services-plan-list")
         if result.ok:
             messages.success(self.request, "Assinatura criada. Aguardando o primeiro pagamento.")
-            return redirect(result.redirect_url)
+            return redirect(redirect_url)
         order.status = Order.Status.CANCELED
         order.save(update_fields=["status", "updated_at"])
         plan.is_active = False
         plan.save(update_fields=["is_active", "updated_at"])
-        messages.error(self.request, result.message or "Falha ao criar a assinatura.")
+        messages.error(self.request, error_msg)
         return redirect("services-plan-list")
 
 

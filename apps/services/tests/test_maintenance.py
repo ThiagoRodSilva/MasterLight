@@ -106,7 +106,7 @@ class TestSubscribeManual(TestCase):
         assert not MaintenancePlan.objects.filter(client=cliente).exists()
 
     @override_settings(**ASAAS_SETTINGS)
-    def test_credit_card_subscribe_asaas_with_cpf(self):
+    def test_subscribe_asaas_creates_hosted_checkout(self):
         from apps.checkout.models import Address
 
         prestador = _make_prestador()
@@ -123,28 +123,55 @@ class TestSubscribeManual(TestCase):
         cliente.cpf = "12345678901"
         cliente.telefone = "11999999999"
         cliente.save(update_fields=["cpf", "telefone"])
-        with mock_asaas() as _fake:
+        with mock_asaas() as fake:
             self.client.force_login(cliente)
             resp = self.client.post(
                 "/servicos/planos/assinar/",
-                {
-                    "plan_type": "mensal",
-                    "prestador": prestador.pk,
-                    "payment_method": "CREDIT_CARD",
-                    "card_holder": "Fulano",
-                    "card_cpf": "12345678901",
-                    "card_number": "4111111111111111",
-                    "card_expiry_month": "12",
-                    "card_expiry_year": "2035",
-                    "card_ccv": "123",
-                },
+                {"plan_type": "mensal", "prestador": prestador.pk},
             )
         assert resp.status_code == 302
+        assert resp.url == fake.checkout_url
         plan = MaintenancePlan.objects.get(client=cliente)
         tx = Transaction.objects.get(order=plan.order)
         assert tx.status == Transaction.Status.PENDING
         assert tx.provider == "asaas"
-        assert plan.asaas_subscription_id == "sub_0001"
+        assert tx.external_id == fake.checkout_id
+        checkout_call = next(
+            c for c in fake.calls if c["method"] == "POST" and c["url"].endswith("/checkouts")
+        )
+        assert checkout_call["body"]["chargeTypes"] == ["RECURRENT"]
+        assert checkout_call["body"]["subscription"]["cycle"] == "MONTHLY"
+
+    @override_settings(**ASAAS_SETTINGS)
+    def test_subscribe_asaas_checkout_paid_links_subscription(self):
+        prestador = _make_prestador()
+        cliente = _make_cliente()
+        with mock_asaas() as fake:
+            self.client.force_login(cliente)
+            resp = self.client.post(
+                "/servicos/planos/assinar/",
+                {"plan_type": "trimestral", "prestador": prestador.pk},
+            )
+            assert resp.status_code == 302
+            plan = MaintenancePlan.objects.get(client=cliente)
+            tx = Transaction.objects.get(order=plan.order)
+
+            payload = json.dumps(
+                {
+                    "event": "CHECKOUT_PAID",
+                    "checkout": {
+                        "id": fake.checkout_id,
+                        "externalReference": str(plan.order.pk),
+                        "subscription": {"cycle": "QUARTERLY"},
+                    },
+                }
+            )
+            AsaasGateway().webhook(payload, {"x-webhook-token": "segredo"})
+
+            tx.refresh_from_db()
+            plan.refresh_from_db()
+        assert tx.status == Transaction.Status.PAID
+        assert plan.asaas_subscription_id == fake.checkout_subscription_id
 
     def test_paid_transaction_schedules_first_visit(self):
         cliente = _make_cliente()

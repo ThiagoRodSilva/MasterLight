@@ -33,9 +33,17 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         gateway = AsaasGateway()
-        qs = Transaction.objects.filter(
-            provider="asaas", status=Transaction.Status.PENDING, external_id__gt=""
-        ).order_by("-created_at")[: options["limit"]]
+        # Transações de Checkout hosted têm `external_id` = id do checkout (não
+        # um payment); são reconciliadas pelo webhook CHECKOUT_* — ignorar aqui.
+        qs = (
+            Transaction.objects.filter(
+                provider="asaas",
+                status=Transaction.Status.PENDING,
+                external_id__gt="",
+            )
+            .exclude(raw_payload__contains='"checkout"')
+            .order_by("-created_at")[: options["limit"]]
+        )
 
         updated = 0
         for tx in qs:
