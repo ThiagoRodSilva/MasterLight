@@ -5,7 +5,7 @@ Django 5 "MasterLight" (codename PlataformaVendas) — empresa de **Elétrica** 
 ## Commands
 - Use o venv explicitamente (`python`/`ruff`/`coverage` não estão no PATH do shell): `venv/bin/python`, `venv/bin/ruff`, `venv/bin/coverage`.
 - Dev server: `venv/bin/python manage.py runserver` (defaults para `config.settings.dev`, setado no `manage.py`).
-- Tests: `venv/bin/python manage.py test apps` (runner nativo Django, TestCase). Cobertura: `venv/bin/coverage run manage.py test apps && venv/bin/coverage report --fail-under=70` (config lida de `pyproject.toml`). Helpers compartilhados em `apps/tests/helpers.py`: `make_user`/`make_product`/`make_category`/`make_affiliate` + `create_order()` + mock `FakeAsaasApi` via `AsaasMockMixin` (classe) ou `mock_asaas()` (context manager). Testes por app em `apps/**/tests/`.
+- Tests: `DJANGO_SETTINGS_MODULE=config.settings.test venv/bin/python manage.py test apps` (runner nativo Django, TestCase; o settings `test` força SQLite em memória — isolado do banco de dev). Cobertura: `DJANGO_SETTINGS_MODULE=config.settings.test venv/bin/coverage run manage.py test apps && venv/bin/coverage report --fail-under=70` (config lida de `pyproject.toml`). Helpers compartilhados em `apps/tests/helpers.py`: `make_user`/`make_product`/`make_category`/`make_affiliate` + `create_order()` + mock `FakeAsaasApi` via `AsaasMockMixin` (classe) ou `mock_asaas()` (context manager). Testes por app em `apps/**/tests/`.
 - Lint: `venv/bin/ruff check .` (line-length 100). Ordem do CI: `ruff check .` → `makemigrations --check --dry-run` → `manage.py check` → `coverage run manage.py test apps` + `coverage report --fail-under=70`.
 - Primeira execução: `cp .env.example .env`; env vars lidas por django-environ em `config/settings/base.py`.
 - Social login (allauth Google/Facebook/Apple): `venv/bin/python manage.py bootstrap_social` sincroniza `Site` + `SocialApp` a partir do `.env`. Necessário porque sem confirmação de email (`ACCOUNT_EMAIL_VERIFICATION="none"`) o signup social loga direto e o app ainda precisa estar registrado.
@@ -57,7 +57,7 @@ Django 5 "MasterLight" (codename PlataformaVendas) — empresa de **Elétrica** 
 - Slugs de `Product`/`Category`/`Service`/`ServiceCategory` são **aleatórios e auto-gerados**: `RandomSlugMixin` + `random_slug()` (hex) em `apps/core/models.py`, campos com `editable=False`, `save()` só preenche quando vazio (update preserva). Não existe `prepopulated_fields` de slug e não há campo slug em `ServiceForm`.
 
 ## Deploy
-- Prod = Hostinger via Passenger, MySQL por `DATABASE_URL`. PyMySQL instalado como drop-in MySQLdb (sem build tools). Docker: gunicorn em `config.settings.prod` + `collectstatic --noinput` no build.
+- Prod legado = Hostinger via Passenger, MySQL por `DATABASE_URL` (PyMySQL drop-in, sem build tools). **Novo padrão**: Supabase em todos os ambientes (ver Deploy Vercel).
 
 ## Deploy Vercel (serverless)
 - Runtime **Python 3.12** pinned em `.python-version` (Vercel lê de lá; paridade com CI/Docker — venv local é 3.13).
@@ -65,6 +65,6 @@ Django 5 "MasterLight" (codename PlataformaVendas) — empresa de **Elétrica** 
 - `vercel.json`: `maxDuration=60` + `excludeFiles` para a function `config/wsgi.py`; cron `0 * * * *` em `/pagamentos/reconciliar` (autenticado por `Authorization: Bearer <CRON_SECRET>`).
 - Build command em `pyproject.toml` (`[tool.vercel.scripts] build = "python build.py"`): roda `migrate` + `bootstrap_social` em todo deploy (idempotentes). Vercel roda `collectstatic` sozinho e serve estático do CDN.
 - **Media** = não há upload: imagens (produtos/serviços/portfólio/avatar) são **links** via `URLField` com `validate_image_url` (`apps/core/validators.py`) — sem bucket R2, sem `django-storages`. `SERVE_MEDIA=False` na Vercel (filesystem efêmero/read-only).
-- **Banco** = Vercel Postgres (Neon) via `DATABASE_URL`; `psycopg[binary]` em requirements (PyMySQL fica só p/ fallback MySQL).
+- **Banco** = Supabase Postgres em todos os ambientes (dev, prod, Vercel) via `DATABASE_URL` em **session mode (porta 5432)** do Supavisor — necessário p/ suportar `migrate` e prepared statements no build. Transaction mode (porta 6543) só p/ serverless high-scale (exigiria `migrate` via 5432 e `DISABLE_SERVER_SIDE_CURSORS`, já setado em `base.py` quando ENGINE é postgres). `psycopg[binary]` em requirements (PyMySQL fica só p/ fallback MySQL legado).
 - Migração única: `deploy/migrate_to_vercel.sh` (dumpdata/loaddata MySQL→Postgres).
 - Testes de settings Vercel: `apps/core/tests/test_vercel_settings.py`; CI valida `manage.py check` com `config.settings.vercel`.

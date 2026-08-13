@@ -95,6 +95,13 @@ DATABASES = {
     )
 }
 
+# Supabase (Postgres): em transaction mode do pooler, cursores server-side e
+# prepared statements não são suportados — desligamos para o driver psycopg.
+if DATABASES["default"]["ENGINE"].endswith("postgresql"):
+    DATABASES["default"]["DISABLE_SERVER_SIDE_CURSORS"] = True
+    # Serverless (Vercel) não mantém conexão ociosa; dev/backend longo pode reusar.
+    DATABASES["default"]["CONN_MAX_AGE"] = env.int("DJANGO_CONN_MAX_AGE", default=60)
+
 AUTH_USER_MODEL = "accounts.CustomUser"
 
 AUTH_PASSWORD_VALIDATORS = [
