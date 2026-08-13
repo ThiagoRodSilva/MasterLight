@@ -13,3 +13,9 @@ omit = ["apps/*/migrations/*"]
 [tool.coverage.report]
 show_missing = true
 skip_covered = true
+
+[tool.vercel]
+entrypoint = "config.wsgi:application"
+
+[tool.vercel.scripts]
+build = "python build.py"

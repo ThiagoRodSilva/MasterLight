@@ -32,6 +32,41 @@ pip install -r requirements-prod.txt
 
 export DJANGO_SETTINGS_MODULE=config.settings.prod
 
+echo "==> Validando conexao com o MySQL (DATABASE_URL)"
+python - <<'PY'
+import sys
+
+import environ
+import pymysql
+from django.core.exceptions import ImproperlyConfigured
+
+env = environ.Env()
+env.read_env(".env", overwrite=False)
+
+try:
+    db = env.db_url("DATABASE_URL")
+except ImproperlyConfigured as exc:
+    print(f"ERRO: DATABASE_URL ausente/invalido no .env - {exc}", file=sys.stderr)
+    sys.exit(1)
+
+try:
+    conn = pymysql.connect(
+        host=db["HOST"],
+        port=db["PORT"],
+        user=db["USER"],
+        password=db["PASSWORD"],
+        database=db["NAME"],
+        connect_timeout=10,
+    )
+    conn.close()
+except Exception as exc:  # noqa: BLE001 - motivo detalhado para o operador
+    print(f"ERRO: nao foi possivel conectar ao MySQL: {exc}", file=sys.stderr)
+    print("Confira DB_USER/DB_PASSWORD/DB_NAME/host em .env (hPanel -> Databases).", file=sys.stderr)
+    sys.exit(1)
+
+print(">> MySQL OK")
+PY
+
 echo "==> Migrations no MySQL"
 python manage.py migrate
 

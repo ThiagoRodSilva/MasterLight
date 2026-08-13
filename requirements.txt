@@ -8,10 +8,12 @@ python-decouple==3.8
 # mysqlclient exige dev-libs no host; em ambiente sem build tools usamos PyMySQL como fallback
 PyMySQL==1.1.1
 cryptography==43.0.0  # dependencia do PyMySQL p/ auth caching_sha2
+psycopg[binary]==3.2.3  # Postgres serverless (Vercel/Neon)
 Pillow==10.4.0
 
 # Autenticação social
 django-allauth==64.0.0
+PyJWT[crypto]==2.9.0  # exigido pelo allauth p/ Sign in with Apple (socialaccount)
 
 # Pagamentos (HTTP client p/ gateways)
 requests==2.32.3
@@ -23,6 +25,9 @@ django-widget-tweaks==1.5.0
 
 # Static files
 whitenoise==6.7.0
+
+# Storage de uploads (media) — Cloudflare R2 (S3-compatible) via S3Boto3Storage
+django-storages[s3]==1.14.4
 
 # Dev / testes
 coverage==7.15.4

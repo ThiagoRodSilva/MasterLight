@@ -25,6 +25,12 @@ LOGGING = {
 }
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+SECURE_SSL_REDIRECT = True
+# HSTS: apenas depois de validar que HTTPS está 100% no domínio (www + apex).
+# Preload (SECURE_HSTS_PRELOAD=True) tem efeito permanente e pode ser adicionado
+# depois de testes; recomendado para este domínio quando estiver estável.
+SECURE_HSTS_SECONDS = 31536000  # 1 ano
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 

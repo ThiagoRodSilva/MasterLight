@@ -1,9 +1,9 @@
 name: CI
 on:
   push:
-    branches: [main]
+    branches: [Master]
   pull_request:
-    branches: [main]
+    branches: [Master]
 
 jobs:
   test:
@@ -26,6 +26,11 @@ jobs:
         run: python manage.py check
         env:
           DJANGO_SETTINGS_MODULE: config.settings.dev
+          DJANGO_SECRET_KEY: ci-secret
+      - name: Vercel settings check
+        run: python manage.py check
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.vercel
           DJANGO_SECRET_KEY: ci-secret
       - name: Tests
         run: |

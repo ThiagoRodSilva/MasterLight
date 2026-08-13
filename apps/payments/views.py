@@ -3,7 +3,9 @@
 import json
 import logging
 
+from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.management import call_command
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
@@ -37,6 +39,28 @@ class WebhookView(View):
             return HttpResponse(status=400)
         except Exception:
             logger.exception("erro inesperado no webhook")
+            return HttpResponse(status=500)
+        return HttpResponse(status=200)
+
+
+class ReconcilePaymentsView(View):
+    """Executa a reconciliacao de transacoes Asaas via Vercel Cron.
+
+    Autenticado pelo header `Authorization: Bearer <CRON_SECRET>` que a Vercel
+    injeta em /pagamentos/reconciliar quando a env CRON_SECRET esta definida.
+    """
+
+    http_method_names = ["post"]
+
+    def post(self, request: HttpRequest) -> HttpResponse:
+        secret = settings.CRON_SECRET
+        auth = request.headers.get("Authorization", "")
+        if not secret or auth != f"Bearer {secret}":
+            return HttpResponse(status=403)
+        try:
+            call_command("sync_payments")
+        except Exception:
+            logger.exception("falha na reconciliacao via cron")
             return HttpResponse(status=500)
         return HttpResponse(status=200)
 

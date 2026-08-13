@@ -6,11 +6,13 @@ from .views import (
     ManualConfirmationView,
     OrderStatusView,
     PixConfirmationView,
+    ReconcilePaymentsView,
     WebhookView,
 )
 
 urlpatterns = [
     path("webhook/", WebhookView.as_view(), name="payments-webhook"),
+    path("reconciliar/", ReconcilePaymentsView.as_view(), name="payments-reconcile"),
     path(
         "manual/<uuid:order_pk>/",
         ManualConfirmationView.as_view(),
