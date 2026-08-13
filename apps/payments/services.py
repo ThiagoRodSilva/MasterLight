@@ -6,7 +6,6 @@ cobranca de pedido, assinatura de plano, link de pagamento e webhook.
 
 from dataclasses import asdict, dataclass
 from datetime import date
-from typing import Optional
 
 from django.contrib import messages
 
@@ -115,7 +114,7 @@ def charge_with_rollback(
     *,
     address=None,
     fail_message: str = "Falha ao gerar cobrança.",
-) -> Optional[ChargeResult]:
+) -> ChargeResult | None:
     """Dispara a cobrança de uma Order, cancelando-a em qualquer falha.
 
     Unifica o fluxo cartão/tokenize + `charge_order` + cancelamento que estava

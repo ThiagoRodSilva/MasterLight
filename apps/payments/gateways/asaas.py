@@ -4,7 +4,6 @@ import json
 import logging
 import uuid
 from datetime import date, timedelta
-from typing import Optional
 
 from django.conf import settings
 from django.urls import reverse_lazy
@@ -159,8 +158,8 @@ class AsaasGateway(PaymentGateway):
         description: str = "",
         billing_type: str = "UNDEFINED",
         charge_type: str = "DETACHED",
-        due_date_limit_days: Optional[int] = None,
-        max_installment_count: Optional[int] = None,
+        due_date_limit_days: int | None = None,
+        max_installment_count: int | None = None,
         subscription_cycle: str = "",
         end_date=None,
         external_reference: str = "",
@@ -429,7 +428,7 @@ class AsaasGateway(PaymentGateway):
         """Processa webhook Asaas: autentica token e atualiza status."""
         from apps.payments.models import Transaction
 
-        if isinstance(payload, (bytes, bytearray)):
+        if isinstance(payload, bytes | bytearray):
             try:
                 payload_str = payload.decode("utf-8")
             except UnicodeDecodeError as exc:

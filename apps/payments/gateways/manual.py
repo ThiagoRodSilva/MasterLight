@@ -108,7 +108,7 @@ class ManualGateway(PaymentGateway):
         if token != settings.MANUAL_WEBHOOK_TOKEN:
             raise WebhookAuthError("Assinatura de webhook manual inválida.")
 
-        if isinstance(payload, (bytes, bytearray)):
+        if isinstance(payload, bytes | bytearray):
             try:
                 payload_str = payload.decode("utf-8")
             except UnicodeDecodeError as exc:

@@ -1,7 +1,6 @@
 """Interface abstrata de gateway de pagamento e resultados tipados."""
 
 from dataclasses import dataclass
-from typing import Optional
 
 
 class WebhookAuthError(ValueError):
@@ -15,7 +14,7 @@ class ChargeResult:
     external_id: str = ""
     message: str = ""
     raw_payload: str = ""
-    status: Optional[str] = None
+    status: str | None = None
     subscription_id: str = ""
 
 
@@ -67,8 +66,8 @@ class PaymentGateway:
         description: str = "",
         billing_type: str = "UNDEFINED",
         charge_type: str = "DETACHED",
-        due_date_limit_days: Optional[int] = None,
-        max_installment_count: Optional[int] = None,
+        due_date_limit_days: int | None = None,
+        max_installment_count: int | None = None,
         subscription_cycle: str = "",
         end_date=None,
         external_reference: str = "",

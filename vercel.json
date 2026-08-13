@@ -5,11 +5,5 @@
       "maxDuration": 60,
       "excludeFiles": "{apps/**/tests/**,**/test_*.py,**/conftest.py,fixtures/**,media/**,deploy/**,snippets/**,.github/**,.coverage}"
     }
-  },
-  "crons": [
-    {
-      "path": "/pagamentos/reconciliar",
-      "schedule": "0 * * * *"
-    }
-  ]
+  }
 }
