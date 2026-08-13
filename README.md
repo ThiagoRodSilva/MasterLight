@@ -94,9 +94,10 @@ Estáticos vão via whitenoise (`collectstatic`); **media** é servido pelo pró
 
 ## Deploy Vercel (serverless)
 
-A Vercel detecta o `manage.py` e usa o entrypoint WSGI (`config/wsgi.py`, definido por `WSGI_APPLICATION`). O settings é o `config.settings.vercel` (selecionado pela env `DJANGO_SETTINGS_MODULE`). Estáticos são coletados e servidos pelo CDN da Vercel; banco é o **Vercel Postgres** (Neon) via `DATABASE_URL`. Não há upload de arquivos: imagens (produtos, serviços, portfólio, avatar) são **links** (`URLField`) preenchidos pelo prestador/admin.
+A Vercel detecta o `manage.py` e usa o entrypoint WSGI (`config/wsgi.py`, definido por `WSGI_APPLICATION`). O settings é o `config.settings.vercel` (selecionado pela env `DJANGO_SETTINGS_MODULE`). O runtime é **Python 3.12** (pinned em `.python-version`, paridade com CI/Docker). Estáticos são coletados e servidos pelo CDN da Vercel; banco é o **Vercel Postgres** (Neon) via `DATABASE_URL`. Não há upload de arquivos: imagens (produtos, serviços, portfólio, avatar) são **links** (`URLField`) preenchidos pelo prestador/admin.
 
 ### Arquivos de deploy
+- `.python-version` — pin do runtime Python 3.12 usado na Vercel (paridade com CI/Docker).
 - `config/settings/vercel.py` — settings de produção Vercel (Postgres, ALLOWED_HOSTS com `.vercel.app`, `SERVE_MEDIA=False`).
 - `vercel.json` — `maxDuration=60` + `excludeFiles` da function; cron de reconciliação (`/pagamentos/reconciliar`).
 - `build.py` — build command: roda `migrate` + `bootstrap_social` (idempotentes) em todo deploy (configurado em `[tool.vercel.scripts]` no `pyproject.toml`).

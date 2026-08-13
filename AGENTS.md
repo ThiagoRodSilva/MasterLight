@@ -60,6 +60,7 @@ Django 5 "MasterLight" (codename PlataformaVendas) — empresa de **Elétrica** 
 - Prod = Hostinger via Passenger, MySQL por `DATABASE_URL`. PyMySQL instalado como drop-in MySQLdb (sem build tools). Docker: gunicorn em `config.settings.prod` + `collectstatic --noinput` no build.
 
 ## Deploy Vercel (serverless)
+- Runtime **Python 3.12** pinned em `.python-version` (Vercel lê de lá; paridade com CI/Docker — venv local é 3.13).
 - Entrypoint WSGI `config/wsgi.py` (detectado pelo `manage.py`); settings `config.settings.vercel` via env `DJANGO_SETTINGS_MODULE` (obrigatória no projeto Vercel — sem ela cai em prod.py Hostinger).
 - `vercel.json`: `maxDuration=60` + `excludeFiles` para a function `config/wsgi.py`; cron `0 * * * *` em `/pagamentos/reconciliar` (autenticado por `Authorization: Bearer <CRON_SECRET>`).
 - Build command em `pyproject.toml` (`[tool.vercel.scripts] build = "python build.py"`): roda `migrate` + `bootstrap_social` em todo deploy (idempotentes). Vercel roda `collectstatic` sozinho e serve estático do CDN.
