@@ -1,8 +1,12 @@
 """Views de accounts."""
 
+from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import render
-from django.views.generic import DetailView
+from django.urls import reverse_lazy
+from django.views.generic import DetailView, FormView
 
+from .forms import ProfileEditForm
 from .models import CustomUser
 
 
@@ -22,3 +26,21 @@ class ProfileDetailView(DetailView):
 
     def get_queryset(self):
         return CustomUser.objects.filter(is_active=True)
+
+
+class ProfileEditView(LoginRequiredMixin, FormView):
+    """Edição dos dados pessoais e de pagamento (CPF, telefone, endereço)."""
+
+    form_class = ProfileEditForm
+    template_name = "accounts/me_edit.html"
+    success_url = reverse_lazy("accounts-me")
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        return kwargs
+
+    def form_valid(self, form):
+        form.save()
+        messages.success(self.request, "Dados atualizados.")
+        return super().form_valid(form)

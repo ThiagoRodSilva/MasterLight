@@ -10,6 +10,15 @@ from apps.tests.helpers import make_user
 
 CustomUser = get_user_model()
 
+_SIGNUP_ADDRESS = {
+    "street": "Rua das Flores",
+    "number": "42",
+    "city": "São Paulo",
+    "state": "SP",
+    "zip_code": "01310-100",
+    "country": "Brasil",
+}
+
 
 class TestCustomSignupFormProvider(TestCase):
     @staticmethod
@@ -27,6 +36,7 @@ class TestCustomSignupFormProvider(TestCase):
                 "cpf": "111.444.777-35",
                 "telefone": "(11) 99999-0000",
                 "bio": "Eletricista residencial",
+                **_SIGNUP_ADDRESS,
             }
         )
         assert form.is_valid(), form.errors
@@ -49,7 +59,14 @@ class TestCustomSignupFormProvider(TestCase):
         assert "telefone" in form.errors
 
     def test_signup_cliente_does_not_create_application(self):
-        form = CustomSignupForm(data={"role": CustomUser.Role.CLIENTE})
+        form = CustomSignupForm(
+            data={
+                "role": CustomUser.Role.CLIENTE,
+                "cpf": "111.444.777-35",
+                "telefone": "(11) 99999-0000",
+                **_SIGNUP_ADDRESS,
+            }
+        )
         assert form.is_valid(), form.errors
         user = self._signup(form, "cli@example.com", "cli")
         assert user.role == CustomUser.Role.CLIENTE

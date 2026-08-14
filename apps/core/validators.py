@@ -25,3 +25,20 @@ class ImageURLValidator(URLValidator):
 
 def validate_image_url(value: str) -> None:
     ImageURLValidator()(value)
+
+
+def validate_brazilian_cpf(value: str) -> None:
+    """Valida CPF brasileiro (11 dígitos e dígitos verificadores).
+
+    Aceita valor mascarado (pontos/traço são ignorados). Rejeita CPFs de
+    dígitos repetidos ou com checksum inválido — o Asaas devolve 400 para
+    `cpfCnpj` inválido na criação do customer.
+    """
+    digits = re.sub(r"\D", "", value or "")
+    if len(digits) != 11 or digits == digits[0] * 11:
+        raise ValidationError(_("Informe um CPF válido."))
+    for length in (9, 10):
+        total = sum(int(digits[i]) * (length + 1 - i) for i in range(length))
+        check = (total * 10) % 11 % 10
+        if int(digits[length]) != check:
+            raise ValidationError(_("Informe um CPF válido."))
