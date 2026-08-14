@@ -15,6 +15,10 @@ class Transaction(BaseModel):
         FAILED = "failed", "Falhou"
         REFUNDED = "refunded", "Reembolsada"
 
+    class Kind(models.TextChoices):
+        PAYMENT = "payment", "Pagamento"
+        CHECKOUT = "checkout", "Checkout"
+
     order = models.ForeignKey(
         Order,
         on_delete=models.CASCADE,
@@ -34,6 +38,11 @@ class Transaction(BaseModel):
         max_length=20,
         choices=Status.choices,
         default=Status.PENDING,
+    )
+    kind = models.CharField(
+        max_length=20,
+        choices=Kind.choices,
+        default=Kind.PAYMENT,
     )
     raw_payload = models.TextField(blank=True, default="")
 

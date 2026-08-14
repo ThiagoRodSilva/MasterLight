@@ -260,6 +260,6 @@ class TestApprovalPayLink(AsaasMockMixin, TestCase):
                 "payment": {"id": self.asaas.payment_id, "paymentLink": "pl_desconhecida"},
             }
         )
-        with self.assertRaises(ValueError):
-            AsaasGateway().webhook(payload, {"x-webhook-token": "segredo"})
+        result = AsaasGateway().webhook(payload, {"x-webhook-token": "segredo"})
+        assert result.ok is True
         assert Order.objects.filter(user=cliente).count() == 0

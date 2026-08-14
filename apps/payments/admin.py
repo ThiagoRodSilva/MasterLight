@@ -19,7 +19,10 @@ class TransactionAdmin(admin.ModelAdmin):
         gateway = AsaasGateway()
         updated = 0
         for tx in queryset.filter(
-            provider="asaas", status=Transaction.Status.PENDING, external_id__gt=""
+            provider="asaas",
+            status=Transaction.Status.PENDING,
+            kind=Transaction.Kind.PAYMENT,
+            external_id__gt="",
         ).order_by("-created_at"):
             try:
                 data = gateway.fetch_payment(tx.external_id)

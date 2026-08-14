@@ -27,6 +27,10 @@ def can_transition(current: str, new: str) -> bool:
 class ChargeResult:
     ok: bool
     redirect_url: str
+    # `transaction_id` = pk local da `Transaction` criada/atualizada no banco.
+    # `external_id` = id externo do provedor (ex.: id da cobrança no Asaas);
+    # fica vazio quando o provedor não expõe um id externo (ex.: manual).
+    transaction_id: str = ""
     external_id: str = ""
     message: str = ""
     raw_payload: str = ""

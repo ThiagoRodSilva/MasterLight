@@ -46,7 +46,7 @@ class TestAsaasCharge(AsaasMockMixin, TestCase):
 
         assert result.ok is True
         assert result.status == Transaction.Status.PENDING
-        tx = Transaction.objects.get(pk=result.external_id)
+        tx = Transaction.objects.get(pk=result.transaction_id)
         assert tx.provider == "asaas"
         assert tx.external_id == self.asaas.payment_id
         assert tx.amount == order.total
@@ -83,7 +83,7 @@ class TestAsaasCharge(AsaasMockMixin, TestCase):
             credit_card_token=self.asaas.card_token,
             remote_ip="127.0.0.1",
         )
-        tx = Transaction.objects.get(pk=result.external_id)
+        tx = Transaction.objects.get(pk=result.transaction_id)
         assert tx.status == Transaction.Status.PENDING
         request_body = None
         for call in self.asaas.calls:
@@ -144,7 +144,7 @@ class TestAsaasCharge(AsaasMockMixin, TestCase):
         payload = json.loads(result.raw_payload)
         assert payload["bankSlip"]["url"].startswith("https://boleto.asaas.com")
         assert payload["bankSlip"]["barCode"] == "3419179001234567890"
-        tx = Transaction.objects.get(pk=result.external_id)
+        tx = Transaction.objects.get(pk=result.transaction_id)
         assert "bankSlip" in json.loads(tx.raw_payload)
 
     def test_charge_boleto_redirects_to_boleto_confirm(self):
@@ -226,7 +226,7 @@ class TestAsaasCharge(AsaasMockMixin, TestCase):
         order = create_order(user, with_referral=False)
         result = AsaasGateway().charge(order, billing_type="PIX")
         assert result.ok is True
-        tx = Transaction.objects.get(pk=result.external_id)
+        tx = Transaction.objects.get(pk=result.transaction_id)
         assert json.loads(tx.raw_payload)["pix"] == {}
 
 
@@ -340,10 +340,11 @@ class TestAsaasWebhook(AsaasMockMixin, TestCase):
         with self.assertRaises(ValueError):
             AsaasGateway().webhook(payload, {"x-webhook-token": "errado"})
 
-    def test_webhook_unknown_payment_raises(self):
+    def test_webhook_unknown_payment_is_ignored_without_404(self):
         payload = json.dumps({"event": "PAYMENT_CONFIRMED", "payment": {"id": "outra-pay"}})
-        with self.assertRaises(ValueError):
-            AsaasGateway().webhook(payload, {"x-webhook-token": "segredo"})
+        result = AsaasGateway().webhook(payload, {"x-webhook-token": "segredo"})
+        assert result.ok is True
+        assert "sem transação local" in result.message
 
     def test_webhook_accepts_asaas_access_token_header(self):
         user = make_user()
@@ -411,7 +412,7 @@ class TestPixConfirmationView(AsaasMockMixin, TestCase):
     def test_refund_sets_refunded(self):
         user = make_user()
         order = create_order(user, with_referral=False)
-        tx_id = AsaasGateway().charge(order).external_id
+        tx_id = AsaasGateway().charge(order).transaction_id
         tx_not_refunded = Transaction.objects.get(pk=tx_id)
 
         result = AsaasGateway().refund(tx_not_refunded.pk, amount=order.total)
@@ -626,9 +627,11 @@ class TestSubscriptionRenewalWebhook(AsaasMockMixin, TestCase):
         assert MaintenanceVisit.objects.filter(plan=self.plan).count() == 2
         assert Transaction.objects.filter(external_id=self.asaas.renewal_payment_id).count() == 1
 
-    def test_renewal_unknown_subscription_raises(self):
-        with self.assertRaisesRegex(ValueError, "encontrada"):
-            self._renew(self.asaas.renewal_payment_id, subscription_id="sub_desconhecida")
+    def test_renewal_unknown_subscription_is_ignored_without_404(self):
+        result = self._renew(self.asaas.renewal_payment_id, subscription_id="sub_desconhecida")
+        assert result.ok is True
+        assert "sem transação local" in result.message
+        assert not Transaction.objects.filter(external_id=self.asaas.renewal_payment_id).exists()
 
     def test_renewal_links_subscription_via_external_reference(self):
         from apps.accounts.models import CustomUser
@@ -658,6 +661,76 @@ class TestSubscriptionRenewalWebhook(AsaasMockMixin, TestCase):
         tx = Transaction.objects.get(external_id=self.asaas.renewal_payment_id)
         assert tx.order == plan.order
         assert tx.status == Transaction.Status.PAID
+
+
+@override_settings(**ASAAS_SETTINGS)
+class TestSubscriptionCreatedWebhook(AsaasMockMixin, TestCase):
+    def setUp(self):
+        super().setUp()
+        from apps.accounts.models import CustomUser
+
+        prestador = make_user(role=CustomUser.Role.PRESTADOR)
+        self.cliente = make_user(role=CustomUser.Role.CLIENTE)
+        self.plan = _make_plan(self.cliente, prestador=prestador)
+        self.tx = Transaction.objects.create(
+            order=self.plan.order,
+            user=self.cliente,
+            provider="asaas",
+            external_id=self.asaas.checkout_id,
+            amount=self.plan.value,
+            status=Transaction.Status.PENDING,
+            kind=Transaction.Kind.CHECKOUT,
+        )
+
+    def _payload(self, event="SUBSCRIPTION_CREATED", **subscription_overrides):
+        subscription = {
+            "object": "subscription",
+            "id": "sub_ep6iuav2bfxm78cl",
+            "customer": "cus_000008710825",
+            "value": 79.9,
+            "cycle": "MONTHLY",
+            "billingType": "CREDIT_CARD",
+            "status": "ACTIVE",
+            "checkoutSession": self.asaas.checkout_id,
+            **subscription_overrides,
+        }
+        return json.dumps(
+            {
+                "id": "evt_6561b631fa5580caadd00bbe3b858607&18071956",
+                "event": event,
+                "subscription": subscription,
+            }
+        )
+
+    def test_subscription_created_links_plan_via_checkout_session(self):
+        result = AsaasGateway().webhook(self._payload(), {"x-webhook-token": "segredo"})
+        assert result.ok is True
+        self.plan.refresh_from_db()
+        assert self.plan.asaas_subscription_id == "sub_ep6iuav2bfxm78cl"
+        self.tx.refresh_from_db()
+        assert self.tx.status == Transaction.Status.PENDING
+
+    def test_subscription_created_idempotent_when_already_linked(self):
+        self.plan.asaas_subscription_id = "sub_ep6iuav2bfxm78cl"
+        self.plan.save(update_fields=["asaas_subscription_id", "updated_at"])
+        result = AsaasGateway().webhook(self._payload(), {"x-webhook-token": "segredo"})
+        assert result.ok is True
+        self.plan.refresh_from_db()
+        assert self.plan.asaas_subscription_id == "sub_ep6iuav2bfxm78cl"
+
+    def test_subscription_created_without_plan_returns_ok(self):
+        result = AsaasGateway().webhook(
+            self._payload(checkoutSession="chk_sem_vinculo"), {"x-webhook-token": "segredo"}
+        )
+        assert result.ok is True
+
+    def test_subscription_deleted_event_ignored_without_transition(self):
+        result = AsaasGateway().webhook(
+            self._payload(event="SUBSCRIPTION_DELETED"), {"x-webhook-token": "segredo"}
+        )
+        assert result.ok is True
+        self.tx.refresh_from_db()
+        assert self.tx.status == Transaction.Status.PENDING
 
 
 @override_settings(**ASAAS_SETTINGS)
@@ -875,6 +948,27 @@ class TestAsaasCheckout(AsaasMockMixin, TestCase):
         )
         AsaasGateway().webhook(payload, {"x-webhook-token": "segredo"})
 
+        tx.refresh_from_db()
+        assert tx.status == Transaction.Status.PAID
+
+    def test_payment_confirmed_for_checkout_resolves_via_external_reference(self):
+        user = make_user()
+        order = create_order(user, with_referral=False)
+        AsaasGateway().create_checkout(order)
+        tx = order.transactions.get(provider="asaas")
+
+        payload = json.dumps(
+            {
+                "event": "PAYMENT_CONFIRMED",
+                "payment": {
+                    "id": self.asaas.renewal_payment_id,
+                    "externalReference": str(order.pk),
+                },
+            }
+        )
+        result = AsaasGateway().webhook(payload, {"x-webhook-token": "segredo"})
+
+        assert result.ok is True
         tx.refresh_from_db()
         assert tx.status == Transaction.Status.PAID
 

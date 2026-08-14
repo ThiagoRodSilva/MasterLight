@@ -12,11 +12,11 @@ import json
 from django.test import TestCase, override_settings
 
 from apps.affiliate.models import Referral
-from apps.checkout.models import Order
+from apps.checkout.models import Address, Order
 from apps.payments.checks import payment_provider_check
 from apps.payments.gateways.base import can_transition
 from apps.payments.models import Transaction
-from apps.payments.services import AsaasGateway
+from apps.payments.services import AsaasGateway, ManualGateway
 from apps.tests.helpers import AsaasMockMixin, create_order, make_user
 
 ASAAS_SETTINGS = {
@@ -184,3 +184,136 @@ class TestPaymentProviderCheck(TestCase):
     @override_settings(PAYMENT_PROVIDER="asaas")
     def test_known_provider_returns_empty(self):
         assert payment_provider_check(None) == []
+
+
+@override_settings(**ASAAS_SETTINGS)
+class TestAsaasCustomerData(AsaasMockMixin, TestCase):
+    def test_customer_creation_sends_cpf_phone_and_address(self):
+        user = make_user()
+        user.cpf = "123.456.789-01"
+        user.telefone = "(11) 99999-9999"
+        user.save(update_fields=["cpf", "telefone"])
+        Address.objects.create(
+            user=user,
+            street="Rua das Flores",
+            number="123",
+            city="São Paulo",
+            state="SP",
+            zip_code="01001-000",
+        )
+        order = create_order(user)
+        AsaasGateway().charge(order, billing_type="PIX")
+
+        post = next(
+            c for c in self.asaas.calls if c["method"] == "POST" and c["url"].endswith("/customers")
+        )
+        body = post["body"]
+        assert body["cpfCnpj"] == "12345678901"
+        assert body["mobilePhone"] == "11999999999"
+        assert body["address"] == "Rua das Flores"
+        assert body["addressNumber"] == "123"
+        assert body["province"] == "SP"
+        assert body["city"] == "São Paulo"
+        assert body["postalCode"] == "01001000"
+
+    def test_missing_customer_fields_raise_friendly_error(self):
+        user = make_user()  # sem CPF/telefone/endereço
+        order = create_order(user)
+        self.asaas.fail_customer_creation = True
+
+        with self.assertRaisesRegex(ValueError, "cadastre CPF, telefone e endereço"):
+            AsaasGateway().charge(order, billing_type="PIX")
+
+    def test_checkout_customer_data_includes_cpf_and_address(self):
+        user = make_user()
+        user.cpf = "12345678901"
+        user.save(update_fields=["cpf"])
+        Address.objects.create(
+            user=user,
+            street="Av. Central",
+            number="10",
+            city="Recife",
+            state="PE",
+            zip_code="50000-000",
+        )
+        order = create_order(user)
+        AsaasGateway().create_checkout(order, charge_type="DETACHED")
+
+        call = next(
+            c for c in self.asaas.calls if c["method"] == "POST" and c["url"].endswith("/checkouts")
+        )
+        customer_data = call["body"]["customerData"]
+        assert customer_data["cpfCnpj"] == "12345678901"
+        assert customer_data["postalCode"] == "50000000"
+        assert customer_data["address"] == "Av. Central"
+        assert customer_data["addressNumber"] == "10"
+        assert customer_data["province"] == "PE"
+        assert customer_data["city"] == "Recife"
+
+
+@override_settings(**ASAAS_SETTINGS)
+class TestCustomerCacheRetry(AsaasMockMixin, TestCase):
+    def test_stale_customer_cache_is_cleared_and_retried(self):
+        user = make_user()
+        order = create_order(user)
+        user.asaas_customer_id = "cus_antigo"
+        user.save(update_fields=["asaas_customer_id"])
+        self.asaas.fail_next = (
+            400,
+            {"errors": [{"code": "invalid_customer", "description": "Customer not found"}]},
+        )
+
+        result = AsaasGateway().charge(order, billing_type="PIX")
+
+        assert result.ok is True
+        user.refresh_from_db()
+        assert user.asaas_customer_id == "cus_0001"
+        assert order.transactions.filter(provider="asaas").count() == 1
+
+
+@override_settings(**ASAAS_SETTINGS)
+class TestTransactionKind(AsaasMockMixin, TestCase):
+    def test_checkout_transaction_has_checkout_kind(self):
+        user = make_user()
+        order = create_order(user)
+        AsaasGateway().create_checkout(order, charge_type="DETACHED")
+        tx = order.transactions.get(provider="asaas")
+        assert tx.kind == Transaction.Kind.CHECKOUT
+
+    def test_charge_transaction_has_payment_kind(self):
+        user = make_user()
+        order = create_order(user)
+        AsaasGateway().charge(order, billing_type="PIX")
+        tx = order.transactions.get(provider="asaas")
+        assert tx.kind == Transaction.Kind.PAYMENT
+
+    def test_manual_transaction_has_payment_kind(self):
+        user = make_user()
+        order = create_order(user)
+        ManualGateway().charge(order)
+        txs = order.transactions.filter(provider="manual")
+        assert txs.count() == 2
+        assert all(tx.kind == Transaction.Kind.PAYMENT for tx in txs)
+
+
+@override_settings(**ASAAS_SETTINGS)
+class TestChargeResultSemantics(AsaasMockMixin, TestCase):
+    def test_manual_charge_returns_transaction_id_and_empty_external_id(self):
+        user = make_user()
+        order = create_order(user)
+        result = ManualGateway().charge(order)
+
+        assert result.transaction_id
+        assert result.external_id == ""
+        tx = Transaction.objects.get(pk=result.transaction_id)
+        assert tx.status == Transaction.Status.PENDING
+
+    @override_settings(**ASAAS_SETTINGS)
+    def test_asaas_charge_returns_transaction_id_and_external_id_on_model(self):
+        user = make_user()
+        order = create_order(user)
+        result = AsaasGateway().charge(order, billing_type="PIX")
+
+        assert result.transaction_id
+        tx = Transaction.objects.get(pk=result.transaction_id)
+        assert tx.external_id == self.asaas.payment_id

@@ -20,7 +20,7 @@ class TestManualGatewayWebhook(TestCase):
         gateway = ManualGateway()
         result = gateway.charge(order)
         assert result.ok is True
-        tx = Transaction.objects.get(pk=result.external_id)
+        tx = Transaction.objects.get(pk=result.transaction_id)
         assert tx.status == Transaction.Status.PENDING
         assert tx.amount == order.total
 
@@ -133,6 +133,40 @@ class TestWebhookView(TestCase):
             HTTP_X_WEBHOOK_TOKEN=WEBHOOK_TOKEN,
         )
         assert response.status_code == 200
+
+
+ASAAS_WEBHOOK_SETTINGS = {
+    "PAYMENT_PROVIDER": "asaas",
+    "ASAAS_WEBHOOK_TOKEN": "segredo",
+    "ASAAS_SANDBOX": True,
+}
+
+
+@override_settings(**ASAAS_WEBHOOK_SETTINGS)
+class TestAsaasWebhookView(TestCase):
+    def _post(self, payload, token="segredo"):
+        return self.client.post(
+            reverse("payments-webhook"),
+            data=json.dumps(payload),
+            content_type="application/json",
+            HTTP_X_WEBHOOK_TOKEN=token,
+        )
+
+    def test_unknown_payment_returns_200_not_404(self):
+        response = self._post({"event": "PAYMENT_CONFIRMED", "payment": {"id": "pay_xpto"}})
+        assert response.status_code == 200
+
+    def test_subscription_created_returns_200(self):
+        payload = {
+            "event": "SUBSCRIPTION_CREATED",
+            "subscription": {"id": "sub_0001", "status": "ACTIVE", "checkoutSession": "chk_0001"},
+        }
+        response = self._post(payload)
+        assert response.status_code == 200
+
+    def test_missing_token_returns_401(self):
+        response = self._post({"event": "PAYMENT_CONFIRMED", "payment": {"id": "pay_xpto"}}, token="")
+        assert response.status_code == 401
 
 
 class TestManualConfirmationView(TestCase):

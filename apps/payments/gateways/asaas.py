@@ -96,6 +96,7 @@ class AsaasGateway(PaymentGateway):
         amount,
         status,
         raw_payload,
+        kind="payment",
     ):
         """Cria a Transaction de forma idempotente por (provider, external_id).
 
@@ -122,21 +123,85 @@ class AsaasGateway(PaymentGateway):
             external_id=external_id,
             amount=amount,
             status=status,
+            kind=kind,
             raw_payload=raw_payload,
         )
+
+    _CUSTOMER_MISSING_FIELDS = ("cpfcnpj", "postalcode", "addressnumber", "province", "phonenumber")
+    _CUSTOMER_STALE_MARKERS = ("invalid_customer", "customer not found", "customer nao encontrado")
+
+    def _is_customer_error(self, exc: Exception, stale: bool = False) -> bool:
+        """True se o erro do Asaas indica problema com o objeto `customer`.
+
+        `stale=True` restringe a marcadores de customer inexistente/inválido
+        (usado pelo retry de cache — I6); caso contrário também reconhece a
+        resposta de campos obrigatórios ausentes na criação de customer.
+        """
+        text = str(exc).lower()
+        if stale:
+            return any(marker in text for marker in self._CUSTOMER_STALE_MARKERS)
+        return any(marker in text for marker in self._CUSTOMER_MISSING_FIELDS) or any(
+            marker in text for marker in self._CUSTOMER_STALE_MARKERS
+        )
+
+    def _build_customer_payload(self, user) -> dict:
+        """Monta o payload completo de criação de customer no Asaas (v3).
+
+        A API v3 exige CPF/CNPJ, telefone e endereço para criar um customer;
+        preenche com o perfil e o primeiro endereço ativo do usuário quando
+        disponíveis. Sem dados o Asaas responde 400 (invalid_object) — o erro é
+        traduzido para mensagem amigável em `_ensure_customer`.
+        """
+        cpf = self.client._sanitize_digits(user.cpf)
+        phone = "".join(ch for ch in (user.telefone or "") if ch.isdigit())[:11]
+        address = user.addresses.filter(is_active=True).first()
+
+        body: dict = {
+            "name": user.get_full_name() or user.username or user.email,
+            "email": user.email,
+            "externalReference": str(user.pk),
+            "notificationDisabled": True,
+        }
+        if cpf:
+            body["cpfCnpj"] = cpf
+        if phone:
+            body["mobilePhone"] = phone
+        if address is not None:
+            body["address"] = address.street
+            body["addressNumber"] = address.number or ""
+            body["province"] = address.state
+            body["city"] = address.city
+            body["postalCode"] = "".join(ch for ch in address.zip_code if ch.isdigit())
+        return body
+
+    def _call_with_customer_retry(self, user, fn):
+        """Executa `fn`; se falhar por customer inválido (cache obsoleto), limpa.
+
+        O `asaas_customer_id` em cache pode apontar para um customer excluído no
+        Asaas (I6). Nesse caso limpa o cache e tenta uma única vez — o `fn`
+        recria o customer. Erros de campos obrigatórios não disparam o retry.
+        """
+        try:
+            return fn()
+        except ValueError as exc:
+            if self._is_customer_error(exc, stale=True) and getattr(user, "asaas_customer_id", ""):
+                logger.info("Asaas: customer %s inválido; recriando.", user.asaas_customer_id)
+                user.asaas_customer_id = ""
+                user.save(update_fields=["asaas_customer_id"])
+                return fn()
+            raise
 
     def _ensure_customer(self, user) -> str:
         """Reutiliza (e salva) o customer_id do Asaas no usuario.
 
-        Busca por e-mail para não duplicar customer (dev/prod reuso), e envia
-        CPF/telefone quando existirem. `notificationDisabled` evita e-mails
-        automáticos do Asaas fora do fluxo da plataforma.
+        Busca por e-mail para não duplicar customer (dev/prod reuso), envia
+        CPF/telefone/endereço quando existirem e traduz o 400 de campos
+        obrigatórios ausentes para uma mensagem amigável. `notificationDisabled`
+        evita e-mails automáticos do Asaas fora do fluxo da plataforma.
         """
         cached = getattr(user, "asaas_customer_id", "")
         if cached:
             return cached
-        cpf = self.client._sanitize_digits(user.cpf)
-        phone = "".join(ch for ch in (user.telefone or "") if ch.isdigit())
 
         if user.email:
             try:
@@ -150,20 +215,18 @@ class AsaasGateway(PaymentGateway):
                 user.save(update_fields=["asaas_customer_id"])
                 return existing["id"]
 
-        full_name = user.get_full_name() or user.username or user.email
-        body = {
-            "name": full_name,
-            "email": user.email,
-            "externalReference": str(user.pk),
-            "notificationDisabled": True,
-        }
-        if cpf:
-            body["cpfCnpj"] = cpf
-        if phone:
-            body["mobilePhone"] = phone[:11]
-        customer = self.client._api(
-            "POST", "customers", body, idempotency_key=f"customer-{user.pk}"
-        )
+        body = self._build_customer_payload(user)
+        try:
+            customer = self.client._api(
+                "POST", "customers", body, idempotency_key=f"customer-{user.pk}"
+            )
+        except ValueError as exc:
+            if self._is_customer_error(exc):
+                raise ValueError(
+                    "Para realizar o pagamento, cadastre CPF, telefone e endereço "
+                    "no seu perfil."
+                ) from exc
+            raise
         customer_id = customer["id"]
         user.asaas_customer_id = customer_id
         user.save(update_fields=["asaas_customer_id"])
@@ -194,29 +257,35 @@ class AsaasGateway(PaymentGateway):
         O token fica vinculado ao customer; cobranças seguintes do mesmo
         cliente podem reusá-lo sem trafegar dados do cartão novamente.
         """
-        customer = self._ensure_customer(user)
-        body = {
-            "customer": customer,
-            "creditCard": {
-                "holderName": card.get("holder_name", ""),
-                "number": card.get("number", "").strip(),
-                "expiryMonth": str(card.get("expiry_month", "")).strip(),
-                "expiryYear": str(card.get("expiry_year", "")).strip(),
-                "ccv": card.get("ccv", "").strip(),
-            },
-            "creditCardHolderInfo": {
-                "name": holder.get("name", ""),
-                "email": holder.get("email", ""),
-                "cpfCnpj": holder.get("cpf_cnpj", ""),
-                "postalCode": holder.get("postal_code", ""),
-                "addressNumber": holder.get("address_number", ""),
-                "phone": "".join(ch for ch in (holder.get("phone") or "") if ch.isdigit())[:11],
-            },
-            "remoteIp": remote_ip,
-        }
-        result = self.client._api(
-            "POST", "creditCards/tokenizeCreditCard", body, idempotency_key=f"cardtoken-{user.pk}"
-        )
+        def _run() -> dict:
+            customer = self._ensure_customer(user)
+            body = {
+                "customer": customer,
+                "creditCard": {
+                    "holderName": card.get("holder_name", ""),
+                    "number": card.get("number", "").strip(),
+                    "expiryMonth": str(card.get("expiry_month", "")).strip(),
+                    "expiryYear": str(card.get("expiry_year", "")).strip(),
+                    "ccv": card.get("ccv", "").strip(),
+                },
+                "creditCardHolderInfo": {
+                    "name": holder.get("name", ""),
+                    "email": holder.get("email", ""),
+                    "cpfCnpj": holder.get("cpf_cnpj", ""),
+                    "postalCode": holder.get("postal_code", ""),
+                    "addressNumber": holder.get("address_number", ""),
+                    "phone": "".join(ch for ch in (holder.get("phone") or "") if ch.isdigit())[:11],
+                },
+                "remoteIp": remote_ip,
+            }
+            return self.client._api(
+                "POST",
+                "creditCards/tokenizeCreditCard",
+                body,
+                idempotency_key=f"cardtoken-{user.pk}",
+            )
+
+        result = self._call_with_customer_retry(user, _run)
         token = result.get("creditCardToken") or result.get("credit_card_token")
         if not token:
             raise ValueError("Falha ao tokenizar cartão: resposta sem creditCardToken.")
@@ -332,18 +401,28 @@ class AsaasGateway(PaymentGateway):
         full_name = user.get_full_name() or user.username or user.email
         cpf = self.client._sanitize_digits(user.cpf)
         phone = "".join(ch for ch in (user.telefone or "") if ch.isdigit())
+        address = user.addresses.filter(is_active=True).first()
+        customer_data: dict = {"name": full_name, "email": user.email or ""}
+        if cpf:
+            customer_data["cpfCnpj"] = cpf
+        if phone:
+            customer_data["phone"] = phone[:11]
+        if address is not None:
+            # A API do Asaas exige endereço no customerData (CPF/CNPJ, telefone e
+            # endereço completos) para criar o customer do checkout.
+            customer_data["postalCode"] = "".join(ch for ch in address.zip_code if ch.isdigit())
+            customer_data["address"] = address.street
+            customer_data["addressNumber"] = address.number or ""
+            customer_data["province"] = address.state
+            customer_data["city"] = address.city
         body: dict = {
             "billingTypes": normalized,
             "chargeTypes": [charge],
             "minutesToExpire": 60,
             "externalReference": str(order.pk),
             "items": items,
-            "customerData": {"name": full_name, "email": user.email or ""},
+            "customerData": customer_data,
         }
-        if cpf:
-            body["customerData"]["cpfCnpj"] = cpf
-        if phone:
-            body["customerData"]["phone"] = phone[:11]
         if charge == "RECURRENT":
             cycle_map = {
                 "mensal": "MONTHLY",
@@ -357,9 +436,17 @@ class AsaasGateway(PaymentGateway):
         if callback_urls:
             body["callback"] = {k: v for k, v in callback_urls.items() if v}
 
-        checkout = self.client._api(
-            "POST", "checkouts", body, idempotency_key=f"checkout-{order.pk}"
-        )
+        try:
+            checkout = self.client._api(
+                "POST", "checkouts", body, idempotency_key=f"checkout-{order.pk}"
+            )
+        except ValueError as exc:
+            if self._is_customer_error(exc):
+                raise ValueError(
+                    "Para finalizar o pagamento, cadastre CPF, telefone e endereço "
+                    "no seu perfil."
+                ) from exc
+            raise
         checkout_id = str(checkout.get("id") or "")
         url = str(checkout.get("url") or checkout.get("link") or "")
         if not url and checkout_id:
@@ -373,6 +460,7 @@ class AsaasGateway(PaymentGateway):
             amount=order.total,
             status=Transaction.Status.PENDING,
             raw_payload=raw,
+            kind=Transaction.Kind.CHECKOUT,
         )
         logger.info("Asaas: checkout %s criado para o pedido %s", checkout_id, order.pk)
         return CheckoutResult(
@@ -398,22 +486,26 @@ class AsaasGateway(PaymentGateway):
                 f"billing_type inválido: {billing_type} (use {', '.join(sorted(self._BILLING_TYPES))})."
             )
 
-        customer = self._ensure_customer(order.user)
-        due_date = date.today() + timedelta(days=1)
-        body = {
-            "customer": customer,
-            "billingType": normalized,
-            "value": self.client._money(order.total),
-            "dueDate": due_date.isoformat(),
-        }
-        if normalized in self._TOKEN_BILLING_TYPES:
-            if not credit_card_token:
-                raise ValueError(f"{normalized} exige um creditCardToken (tokenize primeiro).")
-            body["creditCardToken"] = credit_card_token
-            if remote_ip:
-                body["remoteIp"] = remote_ip
+        def _run() -> dict:
+            customer = self._ensure_customer(order.user)
+            due_date = date.today() + timedelta(days=1)
+            body = {
+                "customer": customer,
+                "billingType": normalized,
+                "value": self.client._money(order.total),
+                "dueDate": due_date.isoformat(),
+            }
+            if normalized in self._TOKEN_BILLING_TYPES:
+                if not credit_card_token:
+                    raise ValueError(f"{normalized} exige um creditCardToken (tokenize primeiro).")
+                body["creditCardToken"] = credit_card_token
+                if remote_ip:
+                    body["remoteIp"] = remote_ip
+            return self.client._api(
+                "POST", "payments", body, idempotency_key=f"order-{order.pk}"
+            )
 
-        payment = self.client._api("POST", "payments", body, idempotency_key=f"order-{order.pk}")
+        payment = self._call_with_customer_retry(order.user, _run)
         extras: dict = {}
         if normalized == "PIX":
             try:
@@ -443,7 +535,7 @@ class AsaasGateway(PaymentGateway):
         return ChargeResult(
             ok=True,
             redirect_url=redirect_url,
-            external_id=str(tx.pk),
+            transaction_id=str(tx.pk),
             message=f"Cobrança {normalized} criada para análise.",
             status=Transaction.Status.PENDING,
             raw_payload=raw,
@@ -471,23 +563,27 @@ class AsaasGateway(PaymentGateway):
             "anual": "YEARLY",
         }
         cycle = cycle_map.get(plan.plan_type, "MONTHLY")
-        customer = self._ensure_customer(plan.client)
-        body = {
-            "customer": customer,
-            "billingType": normalized,
-            "value": self.client._money(plan.value),
-            "nextDueDate": plan.next_due_date.isoformat(),
-            "cycle": cycle,
-        }
-        if normalized in self._TOKEN_BILLING_TYPES:
-            if not credit_card_token:
-                raise ValueError(f"{normalized} exige um creditCardToken (tokenize primeiro).")
-            body["creditCardToken"] = credit_card_token
-            if remote_ip:
-                body["remoteIp"] = remote_ip
-        subscription = self.client._api(
-            "POST", "subscriptions", body, idempotency_key=f"plan-{plan.pk}"
-        )
+
+        def _run() -> dict:
+            customer = self._ensure_customer(plan.client)
+            body = {
+                "customer": customer,
+                "billingType": normalized,
+                "value": self.client._money(plan.value),
+                "nextDueDate": plan.next_due_date.isoformat(),
+                "cycle": cycle,
+            }
+            if normalized in self._TOKEN_BILLING_TYPES:
+                if not credit_card_token:
+                    raise ValueError(f"{normalized} exige um creditCardToken (tokenize primeiro).")
+                body["creditCardToken"] = credit_card_token
+                if remote_ip:
+                    body["remoteIp"] = remote_ip
+            return self.client._api(
+                "POST", "subscriptions", body, idempotency_key=f"plan-{plan.pk}"
+            )
+
+        subscription = self._call_with_customer_retry(plan.client, _run)
         subscription_id = subscription["id"]
 
         # Primeira cobranca da assinatura: usa o id do payment para que o
@@ -537,7 +633,7 @@ class AsaasGateway(PaymentGateway):
         return ChargeResult(
             ok=True,
             redirect_url=redirect_url,
-            external_id=str(tx.pk),
+            transaction_id=str(tx.pk),
             message="Assinatura criada. Aguardando o primeiro pagamento.",
             status=Transaction.Status.PENDING,
             raw_payload=raw,
@@ -561,7 +657,7 @@ class AsaasGateway(PaymentGateway):
         return ChargeResult(
             ok=True,
             redirect_url="/",
-            external_id=str(tx.pk),
+            transaction_id=str(tx.pk),
             message="Reembolso solicitado.",
         )
 
@@ -631,6 +727,28 @@ class AsaasGateway(PaymentGateway):
                 subscription_id, plan.pk,
             )
         return plan
+
+    def _resolve_checkout_payment_transaction(self, payment):
+        """Resolve um `PAYMENT_*` redundante de Checkout hosted.
+
+        O checkout DETACHED também gera eventos `PAYMENT_*` com `payment.id`
+        próprio (≠ id do checkout). O `externalReference` (= order.pk, setado
+        em `create_checkout`) localiza a transação do checkout para aplicar o
+        status de forma idempotente — o `CHECKOUT_PAID` já confirma, e o
+        `PAYMENT_CONFIRMED` apenas reforça sem duplicar nem responder 404.
+        """
+        from apps.payments.models import Transaction
+
+        external_ref = payment.get("externalReference") if isinstance(payment, dict) else ""
+        try:
+            order_pk = uuid.UUID(str(external_ref))
+        except (ValueError, TypeError):
+            return None
+        return (
+            Transaction.objects.filter(order__pk=order_pk, provider=self.name)
+            .order_by("-created_at")
+            .first()
+        )
 
     def _create_payment_link_transaction(self, payment, external_id):
         """Cria Transaction para um pagamento vindo de paymentLink avulso.
@@ -717,7 +835,7 @@ class AsaasGateway(PaymentGateway):
             return ChargeResult(
                 ok=True,
                 redirect_url="/",
-                external_id=str(tx.pk),
+                transaction_id=str(tx.pk),
                 message="Checkout criado, aguardando pagamento.",
                 status=tx.status,
                 raw_payload=payload_str,
@@ -734,7 +852,7 @@ class AsaasGateway(PaymentGateway):
             return ChargeResult(
                 ok=True,
                 redirect_url="/",
-                external_id=str(tx.pk),
+                transaction_id=str(tx.pk),
                 message=f"Checkout evento '{event}' ignorado.",
                 status=tx.status,
                 raw_payload=payload_str,
@@ -751,7 +869,7 @@ class AsaasGateway(PaymentGateway):
                 return ChargeResult(
                     ok=True,
                     redirect_url="/",
-                    external_id=str(tx.pk),
+                    transaction_id=str(tx.pk),
                     message=f"Checkout transição '{tx.status} -> {new_status}' bloqueada.",
                     status=tx.status,
                     raw_payload=payload_str,
@@ -767,7 +885,7 @@ class AsaasGateway(PaymentGateway):
         return ChargeResult(
             ok=True,
             redirect_url="/",
-            external_id=str(tx.pk),
+            transaction_id=str(tx.pk),
             message=f"Checkout atualizado para {tx.status}.",
             status=tx.status,
             raw_payload=payload_str,
@@ -819,6 +937,71 @@ class AsaasGateway(PaymentGateway):
             plan.save(update_fields=["asaas_subscription_id", "updated_at"])
             logger.info("Asaas: assinatura %s vinculada ao plano %s", subscription_id, plan.pk)
 
+    def _handle_subscription_webhook(self, data, subscription, event, payload_str) -> ChargeResult:
+        """Processa eventos de assinatura (`SUBSCRIPTION_*`).
+
+        O payload traz `subscription` (sem `payment`/`checkout`). Esses eventos
+        não mudam o status financeiro — a cobrança chega depois em `PAYMENT_*` —
+        então respondemos 200 sem transição, nunca interrompendo a fila do Asaas.
+        No `SUBSCRIPTION_CREATED` aproveitamos o id da assinatura para vincular
+        o plano local via `subscription.checkoutSession` (= id do checkout).
+        """
+        subscription_id = str(subscription.get("id") or "")
+        plan = self._link_subscription_to_plan(subscription, subscription_id)
+        if plan is None:
+            logger.info(
+                "Asaas webhook: evento de assinatura '%s' sem plano local (%s).",
+                event, subscription_id,
+            )
+        return ChargeResult(
+            ok=True,
+            redirect_url="/",
+            message=f"Evento de assinatura '{event}' processado sem transição.",
+            raw_payload=payload_str,
+        )
+
+    def _link_subscription_to_plan(self, subscription, subscription_id):
+        """Vincula o id da assinatura Asaas ao MaintenancePlan local.
+
+        Busca primeiro por `asaas_subscription_id` (já vinculado por
+        `subscribe()` ou reenvio de webhook) — idempotente. Se ainda não
+        vinculado, usa `subscription.checkoutSession` (= id do checkout =
+        `Transaction.external_id`) para localizar o plano pelo pedido. Retorna o
+        plano (ou None quando não há correspondência).
+        """
+        from apps.payments.models import Transaction
+        from apps.services.models import MaintenancePlan
+
+        plan = (
+            MaintenancePlan.objects.filter(
+                asaas_subscription_id=subscription_id, is_active=True
+            )
+            .select_related("order", "client")
+            .first()
+        )
+        if plan is not None:
+            return plan
+
+        checkout_session = str(subscription.get("checkoutSession") or "")
+        if checkout_session:
+            tx = Transaction.objects.filter(
+                external_id=checkout_session, provider=self.name
+            ).first()
+            if tx is not None and tx.order_id is not None:
+                plan = (
+                    MaintenancePlan.objects.filter(order=tx.order, is_active=True)
+                    .select_related("order", "client")
+                    .first()
+                )
+        if plan is not None and not plan.asaas_subscription_id:
+            plan.asaas_subscription_id = subscription_id
+            plan.save(update_fields=["asaas_subscription_id", "updated_at"])
+            logger.info(
+                "Asaas: assinatura %s vinculada ao plano %s via webhook",
+                subscription_id, plan.pk,
+            )
+        return plan
+
     def webhook(self, payload, headers) -> ChargeResult:
         """Processa webhook Asaas: autentica token e atualiza status."""
         from apps.payments.models import Transaction
@@ -845,26 +1028,46 @@ class AsaasGateway(PaymentGateway):
         if isinstance(checkout, dict) and checkout.get("id"):
             return self._handle_checkout_webhook(data, checkout, payload_str)
 
+        event = str(data.get("event") or "").lower()
+        subscription = data.get("subscription") if isinstance(data, dict) else None
+        if isinstance(subscription, dict) and subscription.get("id") and event.startswith("subscription_"):
+            return self._handle_subscription_webhook(data, subscription, event, payload_str)
+
         payment = data.get("payment") if isinstance(data, dict) else None
         if not isinstance(payment, dict) or not payment.get("id"):
             raise ValueError("Payload deve conter 'payment.id'.")
 
         external_id = str(payment.get("id"))
-        event = str(data.get("event") or "").lower()
         tx = Transaction.objects.filter(external_id=external_id).first()
 
         if event == "payment_created":
             # Cobrança criada (ex.: nova fatura da assinatura). Abre a transação
             # pendente quando ainda não existe; nenhum ajuste de status além disso.
             if tx is None:
-                tx = self._create_subscription_transaction(payment, external_id) or self._create_payment_link_transaction(payment, external_id)
+                tx = (
+                    self._create_subscription_transaction(payment, external_id)
+                    or self._create_payment_link_transaction(payment, external_id)
+                    or self._resolve_checkout_payment_transaction(payment)
+                )
                 if tx is None:
-                    raise ValueError("Transação não encontrada.")
+                    # Cobrança desconhecida (ex.: checkout DETACHED sem vínculo
+                    # local, evento de teste). Não interrompe a fila do Asaas.
+                    logger.info(
+                        "Asaas webhook: PAYMENT_CREATED %s sem transação local; ignorado.",
+                        external_id,
+                    )
+                    return ChargeResult(
+                        ok=True,
+                        redirect_url="/",
+                        message=f"Cobrança {external_id} sem transação local; ignorada.",
+                        status=None,
+                        raw_payload=payload_str,
+                    )
                 logger.info("Asaas webhook: transação criada %s", external_id)
                 return ChargeResult(
                     ok=True,
                     redirect_url="/",
-                    external_id=str(tx.pk),
+                    transaction_id=str(tx.pk),
                     message="Transação aguardando pagamento.",
                     status=tx.status,
                     raw_payload=payload_str,
@@ -872,19 +1075,37 @@ class AsaasGateway(PaymentGateway):
             return ChargeResult(
                 ok=True,
                 redirect_url="/",
-                external_id=str(tx.pk),
+                transaction_id=str(tx.pk),
                 message="Transação aguardando pagamento.",
                 status=tx.status,
                 raw_payload=payload_str,
             )
 
         if tx is None:
-            # Renovação de assinatura ou paymentLink avulso: cobrança nova com id
-            # desconhecido, mas vinculada a uma assinatura/solicitação registrada.
-            # Abre a transação antes de aplicar o status do evento financeiro.
-            tx = self._create_subscription_transaction(payment, external_id) or self._create_payment_link_transaction(payment, external_id)
+            # Renovação de assinatura, paymentLink avulso ou pagamento redundante
+            # de checkout: cobrança nova com id desconhecido, mas vinculada a uma
+            # assinatura/solicitação/pedido registrado. Abre a transação antes de
+            # aplicar o status do evento financeiro.
+            tx = (
+                self._create_subscription_transaction(payment, external_id)
+                or self._create_payment_link_transaction(payment, external_id)
+                or self._resolve_checkout_payment_transaction(payment)
+            )
             if tx is None:
-                raise ValueError("Transação não encontrada.")
+                # Evento financeiro sem transação local (ex.: teste do dashboard,
+                # pagamento de checkout sem rastreio). Responde 200 para não
+                # interromper a fila do Asaas nem marcar a entrega como falha.
+                logger.warning(
+                    "Asaas webhook: evento '%s' (%s) sem transação local; ignorado.",
+                    event, external_id,
+                )
+                return ChargeResult(
+                    ok=True,
+                    redirect_url="/",
+                    message=f"Evento '{event}' sem transação local; ignorado.",
+                    status=None,
+                    raw_payload=payload_str,
+                )
             logger.info("Asaas webhook: renovação rastreada %s", external_id)
 
         if event in self._INFORMATIONAL_EVENTS:
@@ -893,7 +1114,7 @@ class AsaasGateway(PaymentGateway):
             return ChargeResult(
                 ok=True,
                 redirect_url="/",
-                external_id=str(tx.pk),
+                transaction_id=str(tx.pk),
                 message=f"Evento informativo '{event}' processado sem transição.",
                 status=tx.status,
                 raw_payload=payload_str,
@@ -916,7 +1137,7 @@ class AsaasGateway(PaymentGateway):
             return ChargeResult(
                 ok=True,
                 redirect_url="/",
-                external_id=str(tx.pk),
+                transaction_id=str(tx.pk),
                 message=f"Evento '{event}' ignorado.",
                 status=tx.status,
                 raw_payload=payload_str,
@@ -936,7 +1157,7 @@ class AsaasGateway(PaymentGateway):
                 return ChargeResult(
                     ok=True,
                     redirect_url="/",
-                    external_id=str(tx.pk),
+                    transaction_id=str(tx.pk),
                     message=f"Transação '{tx.status} -> {new_status}' bloqueada.",
                     status=tx.status,
                     raw_payload=payload_str,
@@ -949,7 +1170,7 @@ class AsaasGateway(PaymentGateway):
         return ChargeResult(
             ok=True,
             redirect_url="/",
-            external_id=str(tx.pk),
+            transaction_id=str(tx.pk),
             message=f"Transação atualizada para {tx.status}.",
             status=tx.status,
             raw_payload=payload_str,

@@ -164,8 +164,8 @@ def charge_order(
         credit_card_token=credit_card_token,
         remote_ip=remote_ip,
     )
-    if result.external_id:
-        tx = Transaction.objects.filter(pk=result.external_id).first()
+    if result.transaction_id:
+        tx = Transaction.objects.filter(pk=result.transaction_id).first()
         if tx:
             if not result.ok:
                 tx.status = Transaction.Status.FAILED

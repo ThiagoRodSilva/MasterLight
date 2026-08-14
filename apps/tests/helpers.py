@@ -142,6 +142,7 @@ class FakeAsaasApi:
         self.checkout_id = "chk_0001"
         self.checkout_url = "https://asaas.com/checkoutSession/show?id=chk_0001"
         self.checkout_subscription_id = "sub_0001"
+        self.fail_customer_creation = False
 
     def __call__(self, method, url, headers, json, params=None, timeout=None):
         self.calls.append(
@@ -155,6 +156,20 @@ class FakeAsaasApi:
             self.fail_5xx -= 1
             return FakeResponse({"errors": [{"description": "erro interno"}]}, status_code=502)
         if method == "POST" and url.endswith("/customers"):
+            if self.fail_customer_creation:
+                return FakeResponse(
+                    {
+                        "errors": [
+                            {"code": "invalid_object", "description": "O campo cpfCnpj deve ser informado."},
+                            {"code": "invalid_object", "description": "O campo phoneNumber deve ser informado."},
+                            {"code": "invalid_object", "description": "O campo address deve ser informado."},
+                            {"code": "invalid_object", "description": "O campo addressNumber deve ser informado."},
+                            {"code": "invalid_object", "description": "O campo postalCode deve ser informado."},
+                            {"code": "invalid_object", "description": "O campo province deve ser informado."},
+                        ]
+                    },
+                    status_code=400,
+                )
             return FakeResponse({"id": self.customer_id})
         if method == "GET" and url.endswith("/customers"):
             return FakeResponse({"data": []})

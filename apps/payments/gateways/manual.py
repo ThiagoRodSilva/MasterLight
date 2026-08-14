@@ -39,7 +39,7 @@ class ManualGateway(PaymentGateway):
             redirect_url=str(
                 reverse_lazy("payments-manual-confirm", kwargs={"order_pk": order.pk})
             ),
-            external_id=str(tx.pk),
+            transaction_id=str(tx.pk),
             message="Pedido criado. Pagamento manual em análise.",
         )
 
@@ -64,7 +64,7 @@ class ManualGateway(PaymentGateway):
             redirect_url=str(
                 reverse_lazy("payments-manual-confirm", kwargs={"order_pk": plan.order.pk})
             ),
-            external_id=str(tx.pk),
+            transaction_id=str(tx.pk),
             message="Assinatura criada. Pagamento manual em análise.",
         )
 
@@ -106,7 +106,7 @@ class ManualGateway(PaymentGateway):
         if tx:
             tx.status = Transaction.Status.REFUNDED
             tx.save(update_fields=["status", "updated_at"])
-            return ChargeResult(ok=True, redirect_url="/", external_id=str(tx.pk))
+            return ChargeResult(ok=True, redirect_url="/", transaction_id=str(tx.pk))
         return ChargeResult(ok=False, redirect_url="/", message="Tx não encontrada.")
 
     def webhook(self, payload, headers) -> ChargeResult:
@@ -162,7 +162,7 @@ class ManualGateway(PaymentGateway):
         return ChargeResult(
             ok=True,
             redirect_url="/",
-            external_id=str(tx.pk),
+            transaction_id=str(tx.pk),
             message=f"Transação atualizada para {tx.status}.",
             status=tx.status,
             raw_payload=payload_str,
