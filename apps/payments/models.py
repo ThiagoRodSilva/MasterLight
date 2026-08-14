@@ -37,5 +37,14 @@ class Transaction(BaseModel):
     )
     raw_payload = models.TextField(blank=True, default="")
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["provider", "external_id"],
+                condition=~models.Q(external_id=""),
+                name="uniq_payments_provider_external_id",
+            )
+        ]
+
     def __str__(self) -> str:
         return f"Tx {self.provider}/{self.pk} {self.status}"

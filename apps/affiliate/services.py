@@ -7,15 +7,13 @@ from django.db.models import F
 
 
 def approve_referral(tx) -> int | None:
-    """Marca o pedido como PAGO quando transacao aprovada.
+    """Aprova referral pendente e credita a comissao no saldo do afiliado.
 
-    Se houver referral pendente ligado ao pedido, aprova e credita a
-    comissao no saldo do afiliado, dentro de transacao atomica.
-
-    Retorna o pk do referral atualizado ou None se nao houver referral.
+    Apenas a parte de comissao: a marcacao do pedido como PAGO e a baixa de
+    estoque sao responsabilidade de `apps.payments.services.mark_order_paid`
+    (signal em `apps/payments/signals.py`), que mantem a regra no dominio de
+    pagamentos. Retorna o pk do referral atualizado ou None sem referral.
     """
-    from apps.checkout.models import Order
-
     if tx.status != "paid":
         return None
 
@@ -23,16 +21,10 @@ def approve_referral(tx) -> int | None:
     referral_qs = order.referrals.filter(status="pending") if order is not None else None
     referral = referral_qs.first() if referral_qs else None
 
+    if referral is None:
+        return None
+
     with db_transaction.atomic():
-        if order is not None and order.status != Order.Status.PAID:
-            order.status = Order.Status.PAID
-            order.save(update_fields=["status", "updated_at"])
-            # Estoque baixa apenas na transição para pago (guarda acima).
-            order.decrement_stock()
-
-        if referral is None:
-            return None
-
         referral.status = referral.Status.APPROVED
         referral.save(update_fields=["status", "updated_at"])
 

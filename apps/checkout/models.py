@@ -79,6 +79,13 @@ class Order(BaseModel):
                 product.stock -= item.qty
                 product.save(update_fields=["stock", "updated_at"])
 
+    def restore_stock(self) -> None:
+        """Repõe o estoque dos produtos de um pedido reembolsado (atômico)."""
+        for item in self.items.filter(product__isnull=False).select_related("product"):
+            product = item.product
+            product.stock += item.qty
+            product.save(update_fields=["stock", "updated_at"])
+
 
 class OrderItem(BaseModel):
     order = models.ForeignKey(

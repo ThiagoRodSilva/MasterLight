@@ -9,7 +9,14 @@ from django.conf import settings
 from django.urls import reverse_lazy
 
 from .asaas_client import AsaasApiClient
-from .base import ChargeResult, CheckoutResult, PaymentGateway, PaymentLinkResult, WebhookAuthError
+from .base import (
+    ChargeResult,
+    CheckoutResult,
+    PaymentGateway,
+    PaymentLinkResult,
+    WebhookAuthError,
+    can_transition,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -79,6 +86,44 @@ class AsaasGateway(PaymentGateway):
 
     def __init__(self):
         self.client = AsaasApiClient()
+
+    def _upsert_transaction(
+        self,
+        *,
+        order,
+        user,
+        external_id,
+        amount,
+        status,
+        raw_payload,
+    ):
+        """Cria a Transaction de forma idempotente por (provider, external_id).
+
+        Evita duplicar transações locais quando o mesmo id externo chega de novo
+        (retry de webhook, idempotency do Asaas, reenvio de renovação) — I4. A
+        constraint parcial `uniq_payments_provider_external_id` é o fallback de
+        segurança. Se já existe, apenas atualiza amount/raw_payload.
+        """
+        from apps.payments.models import Transaction
+
+        if external_id:
+            tx = Transaction.objects.filter(
+                provider=self.name, external_id=external_id
+            ).first()
+            if tx is not None:
+                tx.amount = amount
+                tx.raw_payload = raw_payload
+                tx.save(update_fields=["amount", "raw_payload", "updated_at"])
+                return tx
+        return Transaction.objects.create(
+            order=order,
+            user=user,
+            provider=self.name,
+            external_id=external_id,
+            amount=amount,
+            status=status,
+            raw_payload=raw_payload,
+        )
 
     def _ensure_customer(self, user) -> str:
         """Reutiliza (e salva) o customer_id do Asaas no usuario.
@@ -165,7 +210,7 @@ class AsaasGateway(PaymentGateway):
                 "cpfCnpj": holder.get("cpf_cnpj", ""),
                 "postalCode": holder.get("postal_code", ""),
                 "addressNumber": holder.get("address_number", ""),
-                "phone": holder.get("phone", ""),
+                "phone": "".join(ch for ch in (holder.get("phone") or "") if ch.isdigit())[:11],
             },
             "remoteIp": remote_ip,
         }
@@ -321,10 +366,9 @@ class AsaasGateway(PaymentGateway):
             url = f"https://asaas.com/checkoutSession/show?id={checkout_id}"
 
         raw = json.dumps({"checkout": checkout})
-        Transaction.objects.create(
+        self._upsert_transaction(
             order=order,
             user=user,
-            provider=self.name,
             external_id=checkout_id,
             amount=order.total,
             status=Transaction.Status.PENDING,
@@ -383,10 +427,9 @@ class AsaasGateway(PaymentGateway):
             extras["bankSlip"] = payment.get("bankSlip") or {}
 
         raw = json.dumps({"payment": payment, **extras})
-        tx = Transaction.objects.create(
+        tx = self._upsert_transaction(
             order=order,
             user=order.user,
-            provider=self.name,
             external_id=payment["id"],
             amount=order.total,
             status=Transaction.Status.PENDING,
@@ -474,10 +517,9 @@ class AsaasGateway(PaymentGateway):
         raw = json.dumps(
             {"subscription": subscription, "first_payment": external_payment_id, **extras}
         )
-        tx = Transaction.objects.create(
+        tx = self._upsert_transaction(
             order=plan.order,
             user=plan.client,
-            provider=self.name,
             external_id=external_payment_id,
             amount=plan.value,
             status=Transaction.Status.PENDING,
@@ -539,10 +581,9 @@ class AsaasGateway(PaymentGateway):
         plan = self._find_plan_for_subscription(payment, subscription_id)
         if plan is None or plan.order is None:
             return None
-        return Transaction.objects.create(
+        return self._upsert_transaction(
             order=plan.order,
             user=plan.client,
-            provider=self.name,
             external_id=external_id,
             amount=payment.get("value") or plan.value,
             status=Transaction.Status.PENDING,
@@ -631,10 +672,9 @@ class AsaasGateway(PaymentGateway):
         order.recompute_total()
         service_request.order = order
         service_request.save(update_fields=["order", "updated_at"])
-        return Transaction.objects.create(
+        return self._upsert_transaction(
             order=order,
             user=service_request.cliente,
-            provider=self.name,
             external_id=external_id,
             amount=payment.get("value") or order.total,
             status=Transaction.Status.PENDING,
@@ -701,6 +741,21 @@ class AsaasGateway(PaymentGateway):
             )
 
         if tx.status != new_status:
+            if not can_transition(tx.status, new_status):
+                # Evento financeiro que tentaria reverter uma transação terminal
+                # (ex.: CHECKOUT_EXPIRED depois de já PAID). Ignora sem transição.
+                logger.info(
+                    "Asaas webhook checkout: transição %s -> %s bloqueada (%s)",
+                    tx.status, new_status, checkout_id,
+                )
+                return ChargeResult(
+                    ok=True,
+                    redirect_url="/",
+                    external_id=str(tx.pk),
+                    message=f"Checkout transição '{tx.status} -> {new_status}' bloqueada.",
+                    status=tx.status,
+                    raw_payload=payload_str,
+                )
             tx.status = new_status
             tx.raw_payload = payload_str
             tx.save(update_fields=["status", "raw_payload", "updated_at"])
@@ -868,6 +923,24 @@ class AsaasGateway(PaymentGateway):
             )
 
         if tx.status != new_status:
+            if not can_transition(tx.status, new_status):
+                # Evento financeiro que tentaria reverter uma transação terminal
+                # (ex.: payment_confirmed depois de já REFUNDED). Ignora sem
+                # transição, mas registra o payload para auditoria.
+                logger.info(
+                    "Asaas webhook: transição %s -> %s bloqueada (%s)",
+                    tx.status, new_status, external_id,
+                )
+                tx.raw_payload = payload_str
+                tx.save(update_fields=["raw_payload", "updated_at"])
+                return ChargeResult(
+                    ok=True,
+                    redirect_url="/",
+                    external_id=str(tx.pk),
+                    message=f"Transação '{tx.status} -> {new_status}' bloqueada.",
+                    status=tx.status,
+                    raw_payload=payload_str,
+                )
             previous = tx.status
             tx.status = new_status
             tx.raw_payload = payload_str

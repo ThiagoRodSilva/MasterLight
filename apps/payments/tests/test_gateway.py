@@ -15,9 +15,16 @@ class TestGetGateway(TestCase):
     def test_asaas_provider_returns_asaas_gateway(self):
         assert isinstance(get_gateway(), AsaasGateway)
 
-    @override_settings(PAYMENT_PROVIDER="gateway-desconhecido")
-    def test_unknown_provider_falls_back_to_manual(self):
+    @override_settings(DEBUG=True, PAYMENT_PROVIDER="gateway-desconhecido")
+    def test_unknown_provider_falls_back_to_manual_in_dev(self):
         assert isinstance(get_gateway(), ManualGateway)
+
+    @override_settings(DEBUG=False, PAYMENT_PROVIDER="gateway-desconhecido")
+    def test_unknown_provider_raises_in_production(self):
+        from django.core.exceptions import ImproperlyConfigured
+
+        with self.assertRaisesRegex(ImproperlyConfigured, "gateway-desconhecido"):
+            get_gateway()
 
 
 class TestPrepareCardPayload(TestCase):

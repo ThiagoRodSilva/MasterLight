@@ -221,6 +221,66 @@ def create_payment_link(
     )
 
 
+def mark_order_paid(tx) -> None:
+    """Marca a Order como PAGO e baixa o estoque quando a transacao vira PAGA.
+
+    Responsabilidade unica do dominio de pagamentos (C1): o signal de
+    `post_save` em `apps/payments/signals.py` chama esta funcao, e a comissao
+    de afiliado e tratada em `approve_referral` (somente comissao). Idempotente:
+    so age na transicao para PAGO.
+    """
+    from django.db import transaction as db_transaction
+
+    from apps.checkout.models import Order
+
+    order = tx.order
+    if order is None or order.status == Order.Status.PAID:
+        return
+    with db_transaction.atomic():
+        if order.status == Order.Status.PAID:
+            return
+        order.status = Order.Status.PAID
+        order.save(update_fields=["status", "updated_at"])
+        order.decrement_stock()
+
+
+def reverse_order_refund(tx) -> None:
+    """Reverte um pedido pago quando a transacao vira REEMBOLSADA (C2).
+
+    Seta a Order para REFUNDED, repoe o estoque e estorna a comissao ja
+    creditada do afiliado (sem deixar saldo negativo), devolvendo o referral
+    para PENDING para permitir re-credito num eventual repagamento. Idempotente:
+    so age quando a Order ainda esta PAGO.
+    """
+    from decimal import Decimal
+
+    from django.db import transaction as db_transaction
+
+    from apps.affiliate.models import AffiliateProfile, Referral
+    from apps.checkout.models import Order
+
+    order = tx.order
+    if order is None or order.status != Order.Status.PAID:
+        return
+    with db_transaction.atomic():
+        order.refresh_from_db()
+        if order.status != Order.Status.PAID:
+            return
+        order.status = Order.Status.REFUNDED
+        order.save(update_fields=["status", "updated_at"])
+        order.restore_stock()
+
+        referral = order.referrals.filter(status=Referral.Status.APPROVED).first()
+        if referral is None:
+            return
+        affiliate = AffiliateProfile.objects.select_for_update().get(pk=referral.affiliate_id)
+        commission = referral.commission_amount or Decimal(0)
+        affiliate.balance = max(Decimal(0), (affiliate.balance or Decimal(0)) - commission)
+        affiliate.save(update_fields=["balance", "updated_at"])
+        referral.status = Referral.Status.PENDING
+        referral.save(update_fields=["status", "updated_at"])
+
+
 def create_checkout_for_order(
     order,
     request,

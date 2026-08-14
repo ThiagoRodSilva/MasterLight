@@ -20,7 +20,19 @@ _REGISTRY = {
 
 def get_gateway() -> PaymentGateway:
     provider = getattr(settings, "PAYMENT_PROVIDER", "manual")
-    cls = _REGISTRY.get(provider, ManualGateway)
+    cls = _REGISTRY.get(provider)
+    if cls is None:
+        if getattr(settings, "DEBUG", False):
+            # Em dev, provider desconhecido cai no manual (comportamento antigo).
+            cls = ManualGateway
+        else:
+            # Em produção, provider desconhecido é erro de configuração (I1).
+            from django.core.exceptions import ImproperlyConfigured
+
+            raise ImproperlyConfigured(
+                f"PAYMENT_PROVIDER '{provider}' desconhecido. "
+                f"Registrados: {', '.join(sorted(_REGISTRY))}."
+            )
     return cls()
 
 

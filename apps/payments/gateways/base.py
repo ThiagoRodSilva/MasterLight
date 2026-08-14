@@ -7,6 +7,22 @@ class WebhookAuthError(ValueError):
     """Erro de autenticação de webhook (token ausente/inválido)."""
 
 
+# Transições de status permitidas de uma `Transaction` para outra (I3).
+# Valores são strings cruas de `Transaction.Status` (evita import circular).
+_VALID_TRANSITIONS = {
+    "pending": {"authorized", "paid", "failed", "refunded"},
+    "authorized": {"paid", "failed", "refunded"},
+    "paid": {"refunded"},
+    "failed": set(),
+    "refunded": set(),
+}
+
+
+def can_transition(current: str, new: str) -> bool:
+    """True se `new` é uma transição de status válida a partir de `current`."""
+    return new in _VALID_TRANSITIONS.get(current, set())
+
+
 @dataclass
 class ChargeResult:
     ok: bool

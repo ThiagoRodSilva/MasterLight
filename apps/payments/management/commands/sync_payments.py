@@ -9,6 +9,7 @@ import json
 
 from django.core.management.base import BaseCommand
 
+from apps.payments.gateways.base import can_transition
 from apps.payments.models import Transaction
 from apps.payments.services import AsaasGateway
 
@@ -74,6 +75,13 @@ class Command(BaseCommand):
                 self.stdout.write(f"  status '{asaas_status}' não mapeado.")
                 continue
             if new_status == tx.status:
+                continue
+            if not can_transition(tx.status, new_status):
+                # Reconciliação não pode reverter uma transação terminal
+                # (ex.: status da API diz PENDING para tx já PAID/REFUNDED).
+                self.stdout.write(
+                    self.style.WARNING(f"  transição {tx.status} -> {new_status} bloqueada.")
+                )
                 continue
             tx.status = new_status
             tx.raw_payload = json.dumps(data)

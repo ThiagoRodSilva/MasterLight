@@ -27,3 +27,29 @@ def asaas_api_key_check(app_configs, **kwargs):
             id="payments.E001",
         )
     ]
+
+
+@register()
+def payment_provider_check(app_configs, **kwargs):
+    """Falha cedo quando PAYMENT_PROVIDER não está registrado (I1).
+
+    Em dev (DEBUG=True) um provider desconhecido cai no ManualGateway
+    (`get_gateway`); em produção é erro de configuração. Este check alerta em
+    qualquer ambiente para pegar typo cedo.
+    """
+    from .gateways import _REGISTRY
+
+    provider = getattr(settings, "PAYMENT_PROVIDER", "manual")
+    if provider in _REGISTRY:
+        return []
+    return [
+        Error(
+            f"PAYMENT_PROVIDER '{provider}' desconhecido.",
+            hint=(
+                f"Registrados: {', '.join(sorted(_REGISTRY))}. Em produção "
+                "(DEBUG=False) `get_gateway()` também levanta ImproperlyConfigured."
+            ),
+            obj="settings.PAYMENT_PROVIDER",
+            id="payments.E002",
+        )
+    ]
