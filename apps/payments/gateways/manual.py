@@ -112,7 +112,9 @@ class ManualGateway(PaymentGateway):
     def webhook(self, payload, headers) -> ChargeResult:
         from apps.payments.models import Transaction
 
-        token = str(headers.get("x-webhook-token") or "")
+        token = str(
+            headers.get("asaas-access-token") or headers.get("x-webhook-token") or ""
+        )
         if not settings.MANUAL_WEBHOOK_TOKEN:
             raise WebhookAuthError(
                 "MANUAL_WEBHOOK_TOKEN não configurada (webhook manual desabilitado)."

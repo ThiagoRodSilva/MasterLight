@@ -19,6 +19,9 @@ env = environ.Env(
     DJANGO_DEBUG=(bool, False),
     DJANGO_ALLOWED_HOSTS=(list, []),
 )
+# Valores que comecam com '$' sao tratados como proxy de outra env var; habilitar
+# o escape '\$' para permitir chaves como a do Asaas sandbox ('$aact_...').
+env.escape_proxy = True
 environ.Env.read_env(BASE_DIR / ".env", overwrite=False)
 
 SECRET_KEY = env("DJANGO_SECRET_KEY", default="dev-insecure-change-me")

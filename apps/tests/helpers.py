@@ -178,6 +178,19 @@ class FakeAsaasApi:
             return FakeResponse({"id": self.payment_id, "status": self.customer_status})
         if method == "POST" and url.endswith("/gerarCobranca"):
             return FakeResponse({"id": self.payment_id, "status": "PENDING"})
+        if method == "GET" and url.endswith("/payments") and "subscriptions/" not in url:
+            return FakeResponse(
+                {
+                    "data": [
+                        {
+                            "id": self.payment_id,
+                            "subscription": self.subscription_id,
+                            "externalReference": (params or {}).get("externalReference"),
+                            "status": "PENDING",
+                        }
+                    ]
+                }
+            )
         if method == "POST" and url.endswith("/subscriptions"):
             self.subscription_id = "sub_0001"
             return FakeResponse({"id": self.subscription_id})

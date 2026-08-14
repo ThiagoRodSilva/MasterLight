@@ -253,9 +253,50 @@ class TestAsaasWebhook(AsaasMockMixin, TestCase):
         tx = order.transactions.get(provider="asaas")
         payload = json.dumps({"event": "PAYMENT_RECEIVED", "payment": {"id": self.asaas.payment_id}})
         AsaasGateway().webhook(payload, {"x-webhook-token": "segredo"})
+
         tx.refresh_from_db()
         assert tx.status == Transaction.Status.PAID
 
+    def test_checkout_recurrent_links_subscription_via_payments_fallback(self):
+        from apps.accounts.models import CustomUser
+        from apps.checkout.models import OrderItem
+
+        cliente = make_user(role=CustomUser.Role.CLIENTE)
+        plan = _make_plan(cliente)
+        OrderItem.objects.create(
+            order=plan.order,
+            name="Plano mensal",
+            qty=1,
+            unit_price=plan.value,
+        )
+        plan.order.recompute_total()
+        AsaasGateway().create_checkout(plan.order, charge_type="RECURRENT", cycle="mensal")
+        assert plan.asaas_subscription_id == ""
+
+        # GET /checkouts/{id} indisponível (endpoint não documentado pelo Asaas):
+        # cai no fallback GET /payments?externalReference=<order.pk>.
+        self.asaas.fail_next = (404, {"errors": [{"description": "not found"}]})
+        payload = json.dumps(
+            {"event": "CHECKOUT_PAID", "checkout": {"id": self.asaas.checkout_id}}
+        )
+        result = AsaasGateway().webhook(payload, {"x-webhook-token": "segredo"})
+        assert result.ok is True
+
+        plan.refresh_from_db()
+        assert plan.asaas_subscription_id == self.asaas.subscription_id
+
+    def test_checkout_unknown_event_ignored_without_transition(self):
+        user = make_user()
+        order = create_order(user, with_referral=False)
+        AsaasGateway().create_checkout(order)
+        tx = order.transactions.get(provider="asaas")
+        payload = json.dumps(
+            {"event": "CHECKOUT_EVENTO_INVENTADO", "checkout": {"id": self.asaas.checkout_id}}
+        )
+        result = AsaasGateway().webhook(payload, {"x-webhook-token": "segredo"})
+        assert result.ok is True
+        tx.refresh_from_db()
+        assert tx.status == Transaction.Status.PENDING
     def test_webhook_authorized_does_not_mark_paid(self):
         user = make_user()
         order = create_order(user, with_referral=False)
@@ -303,6 +344,42 @@ class TestAsaasWebhook(AsaasMockMixin, TestCase):
         payload = json.dumps({"event": "PAYMENT_CONFIRMED", "payment": {"id": "outra-pay"}})
         with self.assertRaises(ValueError):
             AsaasGateway().webhook(payload, {"x-webhook-token": "segredo"})
+
+    def test_webhook_accepts_asaas_access_token_header(self):
+        user = make_user()
+        order = create_order(user, with_referral=False)
+        AsaasGateway().charge(order)
+        tx = order.transactions.get(provider="asaas")
+        payload = json.dumps({"event": "PAYMENT_RECEIVED", "payment": {"id": self.asaas.payment_id}})
+        result = AsaasGateway().webhook(payload, {"asaas-access-token": "segredo"})
+        assert result.ok is True
+        tx.refresh_from_db()
+        assert tx.status == Transaction.Status.PAID
+
+    def test_webhook_unknown_event_is_ignored_without_transition(self):
+        user = make_user()
+        order = create_order(user, with_referral=False)
+        AsaasGateway().charge(order)
+        tx = order.transactions.get(provider="asaas")
+        payload = json.dumps(
+            {"event": "PAYMENT_EVENTO_INVENTADO", "payment": {"id": self.asaas.payment_id}}
+        )
+        result = AsaasGateway().webhook(payload, {"x-webhook-token": "segredo"})
+        assert result.ok is True
+        tx.refresh_from_db()
+        assert tx.status == Transaction.Status.PENDING
+
+    def test_webhook_credit_card_capture_refused_marks_failed(self):
+        user = make_user()
+        order = create_order(user, with_referral=False)
+        AsaasGateway().charge(order, billing_type="PIX")
+        tx = order.transactions.get(provider="asaas")
+        payload = json.dumps(
+            {"event": "PAYMENT_CREDIT_CARD_CAPTURE_REFUSED", "payment": {"id": self.asaas.payment_id}}
+        )
+        AsaasGateway().webhook(payload, {"x-webhook-token": "segredo"})
+        tx.refresh_from_db()
+        assert tx.status == Transaction.Status.FAILED
 
 
 @override_settings(**ASAAS_SETTINGS)
@@ -553,6 +630,35 @@ class TestSubscriptionRenewalWebhook(AsaasMockMixin, TestCase):
         with self.assertRaisesRegex(ValueError, "encontrada"):
             self._renew(self.asaas.renewal_payment_id, subscription_id="sub_desconhecida")
 
+    def test_renewal_links_subscription_via_external_reference(self):
+        from apps.accounts.models import CustomUser
+
+        # Plano criado por Checkout RECURRENT sem asaas_subscription_id vinculado.
+        prestador = make_user(role=CustomUser.Role.PRESTADOR)
+        cliente = make_user(role=CustomUser.Role.CLIENTE)
+        plan = _make_plan(cliente, prestador=prestador)
+        assert plan.asaas_subscription_id == ""
+
+        payload = json.dumps(
+            {
+                "event": "PAYMENT_RECEIVED",
+                "payment": {
+                    "id": self.asaas.renewal_payment_id,
+                    "subscription": "sub_checkout",
+                    "externalReference": str(plan.order.pk),
+                    "value": 79.9,
+                },
+            }
+        )
+        result = AsaasGateway().webhook(payload, {"x-webhook-token": "segredo"})
+        assert result.ok is True
+
+        plan.refresh_from_db()
+        assert plan.asaas_subscription_id == "sub_checkout"
+        tx = Transaction.objects.get(external_id=self.asaas.renewal_payment_id)
+        assert tx.order == plan.order
+        assert tx.status == Transaction.Status.PAID
+
 
 @override_settings(**ASAAS_SETTINGS)
 class TestAsaasWebhookTokenEnforced(AsaasMockMixin, TestCase):
@@ -582,10 +688,24 @@ class TestSyncPaymentsCommand(AsaasMockMixin, TestCase):
         tx.refresh_from_db()
         assert tx.status == Transaction.Status.PAID
 
-    def test_command_preserves_unknown_status(self):
+    def test_command_maps_customer_requested_cancellation_to_failed(self):
         from django.core.management import call_command
 
         self.asaas.customer_status = "CUSTOMER_REQUESTED_CANCELLATION"
+        user = make_user()
+        order = create_order(user, with_referral=False)
+        AsaasGateway().charge(order, billing_type="PIX")
+        tx = order.transactions.get(provider="asaas")
+
+        call_command("sync_payments")
+
+        tx.refresh_from_db()
+        assert tx.status == Transaction.Status.FAILED
+
+    def test_command_preserves_truly_unknown_status(self):
+        from django.core.management import call_command
+
+        self.asaas.customer_status = "STATUS_INVENTADO_PELO_ASAAS"
         user = make_user()
         order = create_order(user, with_referral=False)
         AsaasGateway().charge(order, billing_type="PIX")

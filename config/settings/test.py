@@ -12,3 +12,8 @@ DATABASES = {  # noqa: F405
         "NAME": ":memory:",
     }
 }
+
+# Suíte hermética: não depende do .env de dev (que pode apontar para o Asaas
+# sandbox). Testes que exercitam o Asaas usam `override_settings`/mock.
+PAYMENT_PROVIDER = "manual"  # noqa: F405
+ASAAS_API_KEY = ""  # noqa: F405

@@ -18,8 +18,10 @@ class AsaasGateway(PaymentGateway):
     """Gateway real via API v3 do Asaas (Pix e MultiCartão).
 
     - `charge` cria cobrança e salva `Transaction.external_id` = id Asaas.
-    - `webhook` valida token em `x-webhook-token` e mapeia eventos
-      PAYMENT_CONFIRMED/RECEIVED -> paid, PAYMENT_OVERDUE/RESET -> failed.
+    - `webhook` valida token em `asaas-access-token` (header atual do Asaas) e
+      mapeia eventos PAYMENT_CONFIRMED/RECEIVED -> paid, PAYMENT_OVERDUE ->
+      failed. `x-webhook-token` é aceito como compatibilidade com integrações
+      legadas.
     - Ambiente sandbox/prod controlado por `ASAAS_SANDBOX`.
     """
 
@@ -39,6 +41,25 @@ class AsaasGateway(PaymentGateway):
         "payment_dunning",
         "payment_restored",
         "payment_received_in_cash_undone",
+        "payment_updated",
+        "payment_anticipated",
+        "payment_awaiting_risk_analysis",
+        "payment_approved_by_risk_analysis",
+        "payment_bank_slip_viewed",
+        "payment_bank_slip_cancelled",
+        "payment_checkout_viewed",
+        "payment_dunning_requested",
+        "payment_dunning_received",
+        "payment_refund_in_progress",
+        "payment_refund_denied",
+        "payment_chargeback_requested",
+        "payment_chargeback_dispute",
+        "payment_awaiting_chargeback_reversal",
+        "payment_split_cancelled",
+        "payment_split_divergence_block",
+        "payment_split_divergence_block_finished",
+        "payment_split_done",
+        "checkout_viewed",
     }
     _AUTHORIZED_EVENTS = {"payment_authorized"}
     _PAID_EVENTS = {"payment_confirmed", "payment_received"}
@@ -46,9 +67,15 @@ class AsaasGateway(PaymentGateway):
         "payment_overdue",
         "payment_deleted",
         "payment_failed",
+        "payment_reproved_by_risk_analysis",
+        "payment_credit_card_capture_refused",
         "payment_credit_card_capture_cancelled",
     }
-    _REFUNDED_EVENTS = {"payment_refunded", "payment_refund_requested"}
+    _REFUNDED_EVENTS = {
+        "payment_refunded",
+        "payment_refund_requested",
+        "payment_partially_refunded",
+    }
 
     def __init__(self):
         self.client = AsaasApiClient()
@@ -495,18 +522,11 @@ class AsaasGateway(PaymentGateway):
         pendente ligada ao pedido do plano. Retorna None se não encontrar plano.
         """
         from apps.payments.models import Transaction
-        from apps.services.models import MaintenancePlan
 
         subscription_id = payment.get("subscription") if isinstance(payment, dict) else None
         if not subscription_id:
             return None
-        plan = (
-            MaintenancePlan.objects.filter(
-                asaas_subscription_id=str(subscription_id), is_active=True
-            )
-            .select_related("order", "client")
-            .first()
-        )
+        plan = self._find_plan_for_subscription(payment, subscription_id)
         if plan is None or plan.order is None:
             return None
         return Transaction.objects.create(
@@ -518,6 +538,48 @@ class AsaasGateway(PaymentGateway):
             status=Transaction.Status.PENDING,
             raw_payload=json.dumps(payment),
         )
+
+    def _find_plan_for_subscription(self, payment, subscription_id):
+        """Localiza o MaintenancePlan de uma cobrança de assinatura.
+
+        Busca primeiro por `asaas_subscription_id`; se ainda não vinculado
+        (ex.: Checkout RECURRENT cuja assinatura não foi ligada ao plano),
+        usa o `externalReference` da cobrança (= order.pk, herdado do checkout)
+        e registra o id da assinatura. Retorna None se não encontrar.
+        """
+        from apps.services.models import MaintenancePlan
+
+        plan = (
+            MaintenancePlan.objects.filter(
+                asaas_subscription_id=str(subscription_id), is_active=True
+            )
+            .select_related("order", "client")
+            .first()
+        )
+        if plan is not None:
+            return plan
+        if not isinstance(payment, dict):
+            return None
+        external_ref = payment.get("externalReference") or ""
+        try:
+            order_pk = uuid.UUID(str(external_ref))
+        except (ValueError, TypeError):
+            return None
+        plan = (
+            MaintenancePlan.objects.filter(order__pk=order_pk, is_active=True)
+            .select_related("order", "client")
+            .first()
+        )
+        if plan is None:
+            return None
+        if not plan.asaas_subscription_id:
+            plan.asaas_subscription_id = str(subscription_id)
+            plan.save(update_fields=["asaas_subscription_id", "updated_at"])
+            logger.info(
+                "Asaas: assinatura %s vinculada ao plano %s via cobrança",
+                subscription_id, plan.pk,
+            )
+        return plan
 
     def _create_payment_link_transaction(self, payment, external_id):
         """Cria Transaction para um pagamento vindo de paymentLink avulso.
@@ -616,7 +678,17 @@ class AsaasGateway(PaymentGateway):
         elif event == "checkout_paid":
             new_status = Transaction.Status.PAID
         else:
-            raise ValueError(f"Evento de checkout '{event}' não mapeado.")
+            logger.info("Asaas webhook checkout: evento '%s' ignorado (sem transição).", event)
+            tx.raw_payload = payload_str
+            tx.save(update_fields=["raw_payload", "updated_at"])
+            return ChargeResult(
+                ok=True,
+                redirect_url="/",
+                external_id=str(tx.pk),
+                message=f"Checkout evento '{event}' ignorado.",
+                status=tx.status,
+                raw_payload=payload_str,
+            )
 
         if tx.status != new_status:
             tx.status = new_status
@@ -640,8 +712,9 @@ class AsaasGateway(PaymentGateway):
         """Captura o id da assinatura gerada por um checkout RECURRENT.
 
         O webhook `CHECKOUT_PAID` não traz `subscription.id`; consultamos
-        `GET /checkouts/{id}` (retorna `subscriptions`) para registrar em
-        `MaintenancePlan.asaas_subscription_id` e manter as renovações.
+        `GET /checkouts/{id}` (retorna `subscriptions`) e, como fallback,
+        listamos as cobranças do pedido (`GET /payments?externalReference=<pk>`)
+        para registrar em `MaintenancePlan.asaas_subscription_id`.
         """
         from apps.services.models import MaintenancePlan
 
@@ -659,6 +732,23 @@ class AsaasGateway(PaymentGateway):
         if not subscription_id and isinstance(detail, dict):
             sub = detail.get("subscription") if isinstance(detail.get("subscription"), dict) else {}
             subscription_id = str(sub.get("id") or "")
+
+        if not subscription_id:
+            # Fallback: a primeira cobrança da assinatura criada pelo checkout
+            # herda o externalReference do checkout (= order.pk) e traz o id da
+            # assinatura (`subscription`).
+            try:
+                payments = self.client._api(
+                    "GET", "payments", params={"externalReference": str(order.pk), "limit": 20}
+                )
+            except ValueError:
+                payments = {}
+            rows = payments.get("data") if isinstance(payments, dict) else None
+            if rows:
+                for row in rows:
+                    if isinstance(row, dict) and row.get("subscription"):
+                        subscription_id = str(row["subscription"])
+                        break
         if subscription_id:
             plan.asaas_subscription_id = subscription_id
             plan.save(update_fields=["asaas_subscription_id", "updated_at"])
@@ -681,7 +771,7 @@ class AsaasGateway(PaymentGateway):
         except (ValueError, TypeError) as exc:
             raise ValueError("Payload inválido: não é JSON válido.") from exc
 
-        token = str(headers.get("x-webhook-token") or "")
+        token = str(headers.get("asaas-access-token") or headers.get("x-webhook-token") or "")
         expected = getattr(settings, "ASAAS_WEBHOOK_TOKEN", "")
         if not expected or token != expected:
             raise WebhookAuthError("Assinatura de webhook Asaas inválida.")
@@ -753,7 +843,19 @@ class AsaasGateway(PaymentGateway):
         elif event in self._REFUNDED_EVENTS:
             new_status = Transaction.Status.REFUNDED
         else:
-            raise ValueError(f"Evento de webhook '{event}' não mapeado.")
+            # Eventos novos/desconhecidos não devem interromper a fila do Asaas:
+            # registra o payload e responde 200 sem transição de status.
+            logger.info("Asaas webhook: evento '%s' ignorado (sem transição).", event)
+            tx.raw_payload = payload_str
+            tx.save(update_fields=["raw_payload", "updated_at"])
+            return ChargeResult(
+                ok=True,
+                redirect_url="/",
+                external_id=str(tx.pk),
+                message=f"Evento '{event}' ignorado.",
+                status=tx.status,
+                raw_payload=payload_str,
+            )
 
         if tx.status != new_status:
             previous = tx.status
