@@ -140,6 +140,7 @@ class TestSubscribeManual(TestCase):
             c for c in fake.calls if c["method"] == "POST" and c["url"].endswith("/checkouts")
         )
         assert checkout_call["body"]["chargeTypes"] == ["RECURRENT"]
+        assert checkout_call["body"]["billingTypes"] == ["CREDIT_CARD"]
         assert checkout_call["body"]["subscription"]["cycle"] == "MONTHLY"
 
     @override_settings(**ASAAS_SETTINGS)

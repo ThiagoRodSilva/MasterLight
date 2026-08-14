@@ -786,7 +786,34 @@ class TestAsaasCheckout(AsaasMockMixin, TestCase):
             c for c in self.asaas.calls if c["method"] == "POST" and c["url"].endswith("/checkouts")
         )
         assert checkout_call["body"]["chargeTypes"] == ["RECURRENT"]
+        assert checkout_call["body"]["billingTypes"] == ["CREDIT_CARD"]
         assert checkout_call["body"]["subscription"]["cycle"] == "MONTHLY"
+
+    def test_create_checkout_recurrent_forces_credit_card_ignoring_pix(self):
+        user = make_user()
+        order = create_order(user, with_referral=False)
+        result = AsaasGateway().create_checkout(
+            order,
+            billing_types=["PIX"],
+            charge_type="RECURRENT",
+            cycle="mensal",
+        )
+        assert result.ok is True
+        checkout_call = next(
+            c for c in self.asaas.calls if c["method"] == "POST" and c["url"].endswith("/checkouts")
+        )
+        assert checkout_call["body"]["billingTypes"] == ["CREDIT_CARD"]
+        assert "PIX" not in checkout_call["body"]["billingTypes"]
+
+    def test_fake_rejects_recurrent_with_pix(self):
+        response = self.asaas(
+            "POST",
+            "https://api.asaas.com/api/v3/checkouts",
+            {},
+            {"billingTypes": ["PIX", "CREDIT_CARD"], "chargeTypes": ["RECURRENT"]},
+        )
+        assert response.status_code == 400
+        assert response.ok is False
 
     def test_create_checkout_rejects_invalid_billing(self):
         user = make_user()

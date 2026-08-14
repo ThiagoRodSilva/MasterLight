@@ -249,16 +249,26 @@ class AsaasGateway(PaymentGateway):
         `POST /checkouts` e salva `Transaction.external_id` = id do checkout. A
         confirmação chega via webhook `CHECKOUT_PAID`/`CHECKOUT_EXPIRED` com o
         mesmo `checkout.id` (payload tem `checkout`, não `payment`).
+
+        Em `charge_type=RECURRENT`, o Asaas só aceita `CREDIT_CARD` — o
+        `billing_types` é fixado em `["CREDIT_CARD"]` (PIX/BOLETO exigem
+        DETACHED).
         """
         from apps.payments.models import Transaction
 
-        normalized = [(b or "PIX").upper() for b in (billing_types or ["PIX", "CREDIT_CARD"])]
-        invalid = [b for b in normalized if b not in self._BILLING_TYPES]
-        if invalid:
-            raise ValueError(f"billing_types inválidos: {', '.join(invalid)}.")
         charge = (charge_type or "DETACHED").upper()
         if charge not in ("DETACHED", "INSTALLMENT", "RECURRENT"):
             raise ValueError(f"charge_type inválido: {charge_type}.")
+        if charge == "RECURRENT":
+            # API do Asaas: em operações RECURRENT o único método de pagamento
+            # permitido é CREDIT_CARD (PIX/BOLETO exigem DETACHED). Fixa o
+            # billingTypes para não enviar combo inválido e tomar 400.
+            normalized = ["CREDIT_CARD"]
+        else:
+            normalized = [(b or "PIX").upper() for b in (billing_types or ["PIX", "CREDIT_CARD"])]
+        invalid = [b for b in normalized if b not in self._BILLING_TYPES]
+        if invalid:
+            raise ValueError(f"billing_types inválidos: {', '.join(invalid)}.")
 
         items = []
         for item in order.items.all():

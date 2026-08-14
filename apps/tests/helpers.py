@@ -205,13 +205,35 @@ class FakeAsaasApi:
                 }
             )
         if method == "POST" and url.endswith("/checkouts"):
+            # Regra da API real: RECURRENT só aceita CREDIT_CARD; PIX/BOLETO
+            # exigem DETACHED. Reproduz o 400 para pegar regressão.
+            charge_types = (json or {}).get("chargeTypes") or []
+            billing = (json or {}).get("billingTypes") or []
+            if (
+                "RECURRENT" in charge_types
+                and any(b != "CREDIT_CARD" for b in billing)
+            ):
+                return FakeResponse(
+                    {
+                        "errors": [
+                            {
+                                "code": "invalid_object",
+                                "description": (
+                                    "O método de pagamento CREDIT_CARD é o único método "
+                                    "de pagamento permitido para operações RECURRENT"
+                                ),
+                            }
+                        ]
+                    },
+                    status_code=400,
+                )
             return FakeResponse(
                 {
                     "id": self.checkout_id,
                     "link": self.checkout_url,
                     "status": "ACTIVE",
-                    "billingTypes": (json or {}).get("billingTypes"),
-                    "chargeTypes": (json or {}).get("chargeTypes"),
+                    "billingTypes": billing,
+                    "chargeTypes": charge_types,
                     "externalReference": (json or {}).get("externalReference"),
                 }
             )
