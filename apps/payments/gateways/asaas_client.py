@@ -45,7 +45,12 @@ class AsaasApiClient:
         - Levanta `ValueError` em qualquer erro de HTTP após as tentativas.
         """
         if not settings.ASAAS_API_KEY:
-            raise ValueError("ASAAS_API_KEY não configurada.")
+            raise ValueError(
+                "ASAAS_API_KEY não configurada. Defina a chave no .env ou nas env "
+                "vars do ambiente (ex.: Vercel). Se o valor começa com '$', o "
+                "django-environ pode tê-lo tratado como referência a outra env "
+                "var e lido vazio; use a chave crua '$aact_...'."
+            )
         url = f"{self.api_base_url}/{path.lstrip('/')}"
         headers = self._headers()
         if idempotency_key:

@@ -8,3 +8,4 @@ class PaymentsConfig(AppConfig):
 
     def ready(self):
         from . import signals  # noqa: F401
+        from .checks import asaas_api_key_check  # noqa: F401

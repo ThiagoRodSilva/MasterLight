@@ -5,6 +5,8 @@ from pathlib import Path
 
 import environ
 
+from .env_helpers import asaas_api_key
+
 # Permite usar PyMySQL como driver MySQL drop-in (instalado sem build tools)
 try:
     import pymysql  # noqa: F401
@@ -193,7 +195,9 @@ CRISPY_TEMPLATE_PACK = "bootstrap5"
 
 # Pagamentos (app payments)
 PAYMENT_PROVIDER = env("PAYMENT_PROVIDER", default="manual")
-ASAAS_API_KEY = env("ASAAS_API_KEY", default="")
+# Chave do Asaas lida crua via helper (ver env_helpers.py): sem o proxy de '$'
+# do django-environ, que zeraria chaves '$aact_...' em ambientes como a Vercel.
+ASAAS_API_KEY = asaas_api_key()
 ASAAS_SANDBOX = env.bool("ASAAS_SANDBOX", default=True)
 ASAAS_WEBHOOK_TOKEN = env("ASAAS_WEBHOOK_TOKEN", default="")
 MANUAL_WEBHOOK_TOKEN = env("MANUAL_WEBHOOK_TOKEN", default="")
