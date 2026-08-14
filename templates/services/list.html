@@ -1,30 +1,55 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="container py-5">
-  <h1>Serviços</h1>
-  <div class="mb-3 d-flex gap-2 flex-wrap">
-    <a href="{% url 'services-list' %}" class="badge {% if not request.GET.categoria %}bg-dark text-white{% else %}bg-light text-dark border{% endif %}">Todos</a>
-    {% for c in categories %}
-      <a href="?categoria={{ c.slug }}" class="badge {% if request.GET.categoria == c.slug %}bg-warning text-dark{% else %}bg-light text-dark border{% endif %}">{{ c.name }}</a>
-    {% endfor %}
-  </div>
-  <div class="row g-3">
-    {% for s in services %}
-    <div class="col-md-4">
-      <a href="{% url 'services-detail' s.slug %}" class="card card-hover text-decoration-none text-dark h-100">
-        {% if s.image %}<img src="{{ s.image }}" class="card-img-top">{% endif %}
-        <div class="card-body">
-          <h5 class="card-title">{{ s.name }}</h5>
-          <p class="text-muted small">{{ s.category|default:"Geral" }}</p>
-          <span class="badge bg-warning text-dark">A partir de R$ {{ s.base_price|floatformat:2 }}</span>
-        </div>
-      </a>
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+      <h1 class="mb-1">Serviços</h1>
+      <span class="text-muted-brand">{{ page_obj.paginator.count }} serviços disponíveis</span>
     </div>
-    {% empty %}
-    <p class="text-muted">Nenhum serviço disponível.</p>
+    <form class="d-flex" method="get">
+      <input name="q" class="form-control form-control-brand me-2" placeholder="Buscar serviços" value="{{ request.GET.q|default:'' }}">
+      <button class="btn btn-brand" type="submit"><i class="bi bi-search"></i> Buscar</button>
+    </form>
+  </div>
+
+  <div class="mb-4 d-flex gap-2 flex-wrap">
+    <a href="{% url 'services-list' %}" class="chip {% if not request.GET.categoria %}is-active{% endif %}">Todos</a>
+    {% for c in categories %}
+      <a href="?categoria={{ c.slug }}" class="chip {% if request.GET.categoria == c.slug %}is-active{% endif %}">{{ c.name }}</a>
     {% endfor %}
   </div>
 
-  {% include "partials/pagination.html" %}
+  <div class="row g-4">
+    {% for s in services %}
+    <div class="col-sm-6 col-lg-4">
+      <div class="card card-interactive card-elevated h-100 border-0">
+        <a href="{% url 'services-detail' s.slug %}" class="text-decoration-none text-dark">
+          {% if s.image %}
+          <div class="ratio ratio-4x3 bg-brand-50">
+            <img src="{{ s.image }}" class="card-img-top object-fit-cover" alt="{{ s.name }}">
+          </div>
+          {% endif %}
+          <div class="card-body d-flex flex-column">
+            <h5 class="card-title mb-1">{{ s.name }}</h5>
+            <p class="text-muted-brand small mb-2">{{ s.category|default:"Geral" }}</p>
+            <span class="badge badge-soft mb-3 align-self-start">A partir de R$ {{ s.base_price|floatformat:2 }}</span>
+            <span class="btn btn-brand btn-sm mt-auto w-100">Solicitar orçamento</span>
+          </div>
+        </a>
+      </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+      <div class="empty-state">
+        <i class="bi bi-tools fs-2 d-block mb-2"></i>
+        <div class="empty-title">Nenhum serviço disponível.</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="mt-4">
+    {% include "partials/pagination.html" %}
+  </div>
 </div>
 {% endblock %}

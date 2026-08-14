@@ -1,11 +1,40 @@
-<footer class="bg-dark text-white mt-auto py-4">
+<footer class="bg-dark text-white mt-auto py-5">
   <div class="container">
-    <div class="row">
-      <div class="col-md-6"><strong>{{ BRAND_NAME }}</strong><br><small>{{ BRAND_TAGLINE }}</small></div>
-      <div class="col-md-6 text-md-end small">
-        {% if AFFILIATES_ENABLED %}
-        <a class="text-white text-decoration-none" href="{% url 'affiliate-landing' %}">Programa de afiliados</a>
-        {% endif %}
+    <div class="row g-4">
+      <div class="col-md-5">
+        <strong class="fs-5">{{ BRAND_NAME }}</strong><br>
+        <small class="text-white-50">{{ BRAND_TAGLINE }}</small>
+        <div class="d-flex gap-3 mt-3 fs-5">
+          <a class="text-white text-decoration-none" href="#" aria-label="Instagram"><i class="bi bi-instagram"></i></a>
+          <a class="text-white text-decoration-none" href="#" aria-label="Facebook"><i class="bi bi-facebook"></i></a>
+          <a class="text-white text-decoration-none" href="#" aria-label="WhatsApp"><i class="bi bi-whatsapp"></i></a>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <h6 class="text-uppercase small text-white-50 mb-3">Navegação</h6>
+        <ul class="list-unstyled small mb-0">
+          {% if STORE_ENABLED %}
+          <li class="mb-2"><a class="text-white text-decoration-none" href="{% url 'shop-list' %}">Loja</a></li>
+          {% endif %}
+          {% if SERVICES_ENABLED %}
+          <li class="mb-2"><a class="text-white text-decoration-none" href="{% url 'services-list' %}">Serviços</a></li>
+          {% endif %}
+          <li class="mb-2"><a class="text-white text-decoration-none" href="{% url 'portfolio-list' %}">Portfólio</a></li>
+          {% if AFFILIATES_ENABLED %}
+          <li class="mb-2"><a class="text-white text-decoration-none" href="{% url 'affiliate-landing' %}">Programa de afiliados</a></li>
+          {% endif %}
+          {% if MAINTENANCE_ENABLED %}
+          <li class="mb-2"><a class="text-white text-decoration-none" href="{% url 'services-plan-list' %}">Manutenção</a></li>
+          {% endif %}
+        </ul>
+      </div>
+      <div class="col-md-3">
+        <h6 class="text-uppercase small text-white-50 mb-3">Pagamento</h6>
+        <div class="d-flex flex-wrap gap-2">
+          <span class="badge badge-soft"><i class="bi bi-qr-code me-1"></i>Pix</span>
+          <span class="badge badge-soft"><i class="bi bi-credit-card me-1"></i>Cartão</span>
+          <span class="badge badge-soft"><i class="bi bi-bank me-1"></i>Boleto</span>
+        </div>
       </div>
     </div>
   </div>

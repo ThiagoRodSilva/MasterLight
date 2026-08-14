@@ -1,7 +1,3 @@
-{% comment %}
-Polling do status do pedido (GET payments-status). Troca a seção por um
-alerta de sucesso quando o pagamento é confirmado pelo webhook.
-{% endcomment %}
 <div id="payment-status-panel" class="mt-4"></div>
 <script>
   (function () {
@@ -19,11 +15,11 @@ alerta de sucesso quando o pagamento é confirmado pelo webhook.
             return;
           }
           if (data.paid) {
-            panel.innerHTML = '<div class="alert alert-success">Pagamento confirmado! Seu pedido foi atualizado.</div>';
+            panel.innerHTML = '<div class="alert alert-success d-flex align-items-center gap-2"><i class="bi bi-check2-circle fs-5"></i>Pagamento confirmado! Seu pedido foi atualizado.</div>';
             return;
           }
           if (data.canceled) {
-            panel.innerHTML = '<div class="alert alert-danger">Seu pedido foi cancelado. Entre em contato com o atendimento se precisar de ajuda.</div>';
+            panel.innerHTML = '<div class="alert alert-danger d-flex align-items-center gap-2"><i class="bi bi-x-circle fs-5"></i>Seu pedido foi cancelado. Entre em contato com o atendimento se precisar de ajuda.</div>';
             return;
           }
           if (tries < 60) { timer = setTimeout(check, 4000); }

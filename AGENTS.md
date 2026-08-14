@@ -24,7 +24,7 @@ Django 5 "MasterLight" (codename PlataformaVendas) — empresa de **Elétrica** 
 - `Cart` em `apps/checkout` é **classe Python por sessão, não um model** — manter assim.
 - Dinheiro é `Decimal`; floats do `Cart` são propositais, só para display.
 - URL names são manualmente prefixados (ex.: `checkout-*`, `services-*`), sem namespaces `app_name`. Use `reverse_lazy("...")` com esses nomes.
-- Templates por app em `apps/<app>/templates/<app>/`; `templates/` global tem `base.html` + `partials/`. Forms com crispy-forms bootstrap5.
+- **Todos os templates vivem em `templates/` na raiz do projeto** (subpasta por app: `templates/<app>/`; `base.html` + `partials/` na raiz). Não existe `templates/` dentro dos apps — o `DIRS` de settings aponta para a raiz e `APP_DIRS` segue `True` (templates do allauth). Forms com crispy-forms bootstrap5.
 
 ## Pagamentos, signals & afiliados
 - Abstração de gateway: `PaymentGateway` em `apps/payments/services.py` com `charge`/`refund`/`webhook`/`subscribe`/`tokenize_credit_card` + dataclass `ChargeResult`. **Para adicionar provider**: subclassifique, registre no `_REGISTRY`, set `PAYMENT_PROVIDER` no env. Registrados: `"manual"` (dev, default) e `"asaas"` (Pix/cartão real).

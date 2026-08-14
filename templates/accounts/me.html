@@ -1,53 +1,130 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="container py-5">
-  <h1>Minha conta</h1>
-  <p>{{ user.email }} · {{ user.get_role_display }}</p>
+  <div class="d-flex flex-column flex-md-row gap-4 align-items-center mb-5">
+    <div class="avatar avatar-lg bg-brand-200 text-brand-dark">
+      {% if user.avatar %}
+        <img src="{{ user.avatar }}" alt="{{ user.get_full_name|default:user.email }}" class="rounded-circle">
+      {% else %}
+        {{ user.get_full_name|first|upper|default:user.email|first|upper }}
+      {% endif %}
+    </div>
+    <div class="text-center text-md-start">
+      <h1 class="mb-1">{{ user.get_full_name|default:user.email }}</h1>
+      <p class="text-muted mb-2">{{ user.email }}</p>
+      <a href="{% url 'accounts-me-edit' %}" class="btn btn-brand"><i class="bi bi-pencil me-1"></i> Editar dados</a>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <div class="col-12 col-md-4">
+      <div class="card card-elevated h-100">
+        <div class="card-body">
+          <h6 class="text-muted mb-1"><i class="bi bi-person-badge me-2"></i>CPF</h6>
+          <p class="mb-0 fw-medium">{{ user.cpf|default:"Não informado" }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="card card-elevated h-100">
+        <div class="card-body">
+          <h6 class="text-muted mb-1"><i class="bi bi-telephone me-2"></i>Telefone</h6>
+          <p class="mb-0 fw-medium">{{ user.telefone|default:"Não informado" }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="card card-elevated h-100">
+        <div class="card-body">
+          <h6 class="text-muted mb-1"><i class="bi bi-geo-alt me-2"></i>Endereço</h6>
+          <p class="mb-0 fw-medium">
+            {% if user.addresses.all.exists %}
+              {{ user.addresses.all.0 }}
+            {% else %}
+              Nenhum cadastrado
+            {% endif %}
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
   {% if not user.cpf or not user.telefone or not user.addresses.all.exists %}
-    <div class="alert alert-warning">
+    <div class="alert alert-warning mb-4">
       Complete seu CPF, telefone e endereço para conseguir pagar. <a href="{% url 'accounts-me-edit' %}" class="alert-link">Editar dados</a>.
     </div>
   {% endif %}
-  <a href="{% url 'accounts-me-edit' %}" class="btn btn-outline-dark mb-3">Editar dados</a>
+
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-md-6">
+      <div class="stat-card stat-card--brand">
+        <div class="stat-card__body">
+          <small>Perfil</small>
+          <strong>{{ user.get_role_display }}</strong>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-6">
+      <div class="stat-card">
+        <div class="stat-card__body">
+          <small>Membro desde</small>
+          <strong>{{ user.date_joined|date:"M/Y" }}</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
   {% with application=user.provider_application %}
     {% if application.is_pending %}
-      <div class="alert alert-warning">
+      <div class="alert alert-warning mb-4">
         Sua solicitação de conta de prestador está aguardando aprovação do administrador.
       </div>
     {% elif application.status == "rejected" %}
-      <div class="alert alert-danger">
+      <div class="alert alert-danger mb-4">
         Sua solicitação de conta de prestador foi recusada. Atualize seus dados e entre em contato.
       </div>
     {% endif %}
   {% endwith %}
-  {% if user.is_prestador %}
-    <a href="{% url 'portfolio-create' %}" class="btn btn-dark">Novo item de portfólio</a>
-    {% if SERVICES_ENABLED %}
-    <a href="{% url 'services-my' %}" class="btn btn-dark">Meus serviços</a>
-    <a href="{% url 'services-provider-requests' %}" class="btn btn-brand">Solicitações recebidas</a>
+
+  <div class="d-flex flex-wrap gap-2 mb-5">
+    {% if user.is_prestador %}
+      <a href="{% url 'portfolio-create' %}" class="btn btn-outline-brand"><i class="bi bi-plus-circle me-1"></i> Novo item de portfólio</a>
+      {% if SERVICES_ENABLED %}
+      <a href="{% url 'services-my' %}" class="btn btn-outline-brand"><i class="bi bi-box-seam me-1"></i> Meus serviços</a>
+      <a href="{% url 'services-provider-requests' %}" class="btn btn-brand"><i class="bi bi-inbox me-1"></i> Solicitações recebidas</a>
+      {% endif %}
     {% endif %}
-  {% endif %}
-  {% if user.is_afiliado and AFFILIATES_ENABLED %}
-    <a href="{% url 'affiliate-dashboard' %}" class="btn btn-brand">Painel de afiliado</a>
-  {% endif %}
-  {% if SERVICES_ENABLED %}
-  <a href="{% url 'services-my-requests' %}" class="btn btn-outline-dark">Minhas solicitações</a>
-  {% endif %}
-  {% if STORE_ENABLED %}
-  <a href="{% url 'checkout-cart' %}" class="btn btn-outline-dark">Carrinho</a>
-  {% endif %}
-  <h2 class="mt-5 mb-3">Meus pedidos</h2>
+    {% if user.is_afiliado and AFFILIATES_ENABLED %}
+      <a href="{% url 'affiliate-dashboard' %}" class="btn btn-brand"><i class="bi bi-wallet2 me-1"></i> Painel de afiliado</a>
+    {% endif %}
+    {% if SERVICES_ENABLED %}
+    <a href="{% url 'services-my-requests' %}" class="btn btn-outline-brand"><i class="bi bi-list-check me-1"></i> Minhas solicitações</a>
+    {% endif %}
+    {% if STORE_ENABLED %}
+    <a href="{% url 'checkout-cart' %}" class="btn btn-outline-brand"><i class="bi bi-cart me-1"></i> Carrinho</a>
+    {% endif %}
+  </div>
+
+  <h2 class="mb-4">Meus pedidos</h2>
   {% for order in user.orders.select_related %}
-    <div class="border rounded p-3 mb-2 d-flex justify-content-between align-items-center">
-      <div>
-        <span class="badge bg-secondary">#{{ order.pk|truncatechars:8 }}</span>
-        <strong>R$ {{ order.total|floatformat:2 }}</strong>
-        <span class="ms-2 text-muted">{{ order.get_status_display }}</span>
+    <div class="card card-elevated mb-3">
+      <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+        <div class="d-flex flex-column gap-1">
+          <span class="badge bg-secondary">#{{ order.pk|truncatechars:8 }}</span>
+          <div class="d-flex align-items-center gap-2">
+            <strong>R$ {{ order.total|floatformat:2 }}</strong>
+            <span class="badge badge-soft">{{ order.get_status_display }}</span>
+          </div>
+        </div>
+        <small class="text-muted text-nowrap">{{ order.created_at|date:"d/m/Y H:i" }}</small>
       </div>
-      <small class="text-muted">{{ order.created_at|date:"d/m/Y H:i" }}</small>
     </div>
   {% empty %}
-    <p class="text-muted">Nenhum pedido ainda.</p>
+    <div class="empty-state">
+      <i class="bi bi-bag-x empty-state__icon"></i>
+      <h4 class="empty-title">Nenhum pedido ainda</h4>
+      <p class="text-muted">Seus pedidos aparecerão aqui.</p>
+    </div>
   {% endfor %}
 </div>
 {% endblock %}

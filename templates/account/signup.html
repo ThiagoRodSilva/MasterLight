@@ -2,18 +2,22 @@
 {% load crispy_forms_tags %}
 {% load socialaccount %}
 {% block content %}
-<div class="container py-5 auth-panel">
-  <h1>Criar conta</h1>
-  {% get_providers as providers %}
-  {% if providers %}
-  <div class="d-flex gap-2 mb-3">
-    {% for p in providers %}
-      <a href="{% provider_login_url p.id process='signup' %}" class="btn btn-outline-dark">{{ p.name }}</a>
-    {% endfor %}
+<div class="container py-5">
+  <div class="auth-panel card card-elevated border-0 shadow-brand">
+    <div class="card-body p-4 p-md-5">
+      <h1 class="h3 mb-3">Criar conta</h1>
+      {% get_providers as providers %}
+      {% if providers %}
+      <div class="d-flex gap-2 mb-3">
+        {% for p in providers %}
+          <a href="{% provider_login_url p.id process='signup' %}" class="btn btn-outline-brand">{{ p.name }}</a>
+        {% endfor %}
+      </div>
+      {% endif %}
+      <form method="post" data-loading>{% csrf_token %}{{ form|crispy }}
+        <button class="btn btn-brand w-100" type="submit">Cadastrar</button>
+      </form>
+    </div>
   </div>
-  {% endif %}
-  <form method="post">{% csrf_token %}{{ form|crispy }}
-    <button class="btn btn-dark w-100" type="submit">Cadastrar</button>
-  </form>
 </div>
 {% endblock %}

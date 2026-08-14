@@ -4,8 +4,20 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111111" id="theme-color-meta">
   <title>{% block title %}{{ BRAND_NAME }}{% endblock %}</title>
   <link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
+  <script>
+    (function () {
+      var stored = null;
+      try { stored = localStorage.getItem('ml-theme'); } catch (e) {}
+      var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      var theme = stored || (prefersDark ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-bs-theme', theme);
+      var meta = document.getElementById('theme-color-meta');
+      if (meta) { meta.setAttribute('content', theme === 'dark' ? '#121212' : '#111111'); }
+    })();
+  </script>
   <style>
     :root {
       --bs-primary: {{ BRAND_PALETTE.primary }};
@@ -14,23 +26,26 @@
     }
   </style>
   <link href="{% static 'vendor/bootstrap/bootstrap.min.css' %}" rel="stylesheet">
+  <link href="{% static 'vendor/bootstrap-icons/bootstrap-icons.min.css' %}" rel="stylesheet">
   <link href="{% static 'css/tokens.css' %}" rel="stylesheet">
   <link href="{% static 'css/components.css' %}" rel="stylesheet">
   <link href="{% static 'css/styles.css' %}" rel="stylesheet">
   {% block extra_head %}{% endblock %}
 </head>
 <body class="d-flex flex-column min-vh-100">
+  <a href="#main-content" class="visually-hidden-focusable skip-link">Pular para o conteúdo principal</a>
   {% include "partials/navbar.html" %}
 
   {% include "partials/messages.html" %}
 
-  <main class="flex-grow-1">
+  <main id="main-content" class="flex-grow-1">
     {% block content %}{% endblock %}
   </main>
 
   {% include "partials/footer.html" %}
 
   <script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}"></script>
+  <script src="{% static 'js/main.js' %}"></script>
   {% block extra_scripts %}{% endblock %}
 </body>
 </html>

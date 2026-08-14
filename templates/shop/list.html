@@ -1,61 +1,55 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="container py-5">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h1>Loja</h1>
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+      <h1 class="mb-1">Loja</h1>
+      <span class="text-muted-brand">{{ page_obj.paginator.count }} produtos disponíveis</span>
+    </div>
     <form class="d-flex" method="get">
-      <input name="q" class="form-control me-2" placeholder="Buscar produtos" value="{{ request.GET.q|default:'' }}">
-      <button class="btn btn-dark" type="submit">Buscar</button>
+      <input name="q" class="form-control form-control-brand me-2" placeholder="Buscar produtos" value="{{ request.GET.q|default:'' }}">
+      <button class="btn btn-brand" type="submit"><i class="bi bi-search"></i> Buscar</button>
     </form>
   </div>
 
-  <div class="mb-3 d-flex gap-2 flex-wrap">
-    <a href="{% url 'shop-list' %}" class="badge {% if not active_category %}bg-dark text-white{% else %}bg-light border text-dark{% endif %}">Todos</a>
+  <div class="mb-4 d-flex gap-2 flex-wrap">
+    <a href="{% url 'shop-list' %}" class="chip {% if not active_category %}is-active{% endif %}">Todos</a>
     {% for c in categories %}
-      <a href="{% url 'shop-category' c.slug %}" class="badge {% if active_category == c.slug %}bg-warning text-dark{% else %}bg-light border text-dark{% endif %}">{{ c.name }}</a>
+      <a href="{% url 'shop-category' c.slug %}" class="chip {% if active_category == c.slug %}is-active{% endif %}">{{ c.name }}</a>
     {% endfor %}
   </div>
 
-    <div class="row g-3">
+    <div class="row g-4">
       {% for p in products %}
-        <div class="col-md-3">
-          <a href="{% url 'shop-detail' p.slug %}" class="card card-hover text-decoration-none text-dark h-100">
-            {% if p.cover %}<img src="{{ p.cover.image }}" class="card-img-top" alt="{{ p.cover.alt }}">{% endif %}
-            <div class="card-body">
-              <h6 class="card-title">{{ p.name }}</h6>
-              <span class="badge bg-warning text-dark">R$ {{ p.price|floatformat:2 }}</span>
-            </div>
-          </a>
+        <div class="col-sm-6 col-md-4 col-lg-3">
+          <div class="card card-interactive card-elevated h-100 border-0">
+            <a href="{% url 'shop-detail' p.slug %}" class="text-decoration-none text-dark">
+              {% if p.cover %}
+                <div class="ratio ratio-1x1 bg-brand-50">
+                  <img src="{{ p.cover.image }}" class="card-img-top object-fit-cover" alt="{{ p.cover.alt }}">
+                </div>
+              {% endif %}
+              <div class="card-body d-flex flex-column">
+                <h6 class="card-title mb-1">{{ p.name }}</h6>
+                <span class="text-muted-brand small mb-2">{{ p.category|default:"Geral" }}</span>
+                <span class="badge badge-soft mb-3 align-self-start">R$ {{ p.price|floatformat:2 }}</span>
+                <span class="btn btn-brand btn-sm mt-auto w-100">Ver detalhes</span>
+              </div>
+            </a>
+          </div>
         </div>
       {% empty %}
-        <p class="text-muted">Nenhum produto encontrado.</p>
+        <div class="col-12">
+          <div class="empty-state">
+            <i class="bi bi-box-seam fs-2 d-block mb-2"></i>
+            <div class="empty-title">Nenhum produto encontrado.</div>
+          </div>
+        </div>
       {% endfor %}
     </div>
 
-    {% if is_paginated %}
-      <nav class="mt-4" aria-label="Paginação">
-        <ul class="pagination justify-content-center">
-          {% if page_obj.has_previous %}
-            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a></li>
-          {% else %}
-            <li class="page-item disabled"><span class="page-link">Anterior</span></li>
-          {% endif %}
-
-          {% for n in page_obj.paginator.page_range %}
-            {% if page_obj.number == n %}
-              <li class="page-item active" aria-current="page"><span class="page-link">{{ n }}</span></li>
-            {% elif n > page_obj.number|add:'-3' and n < page_obj.number|add:'3' %}
-              <li class="page-item"><a class="page-link" href="?page={{ n }}">{{ n }}</a></li>
-            {% endif %}
-          {% endfor %}
-
-          {% if page_obj.has_next %}
-            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Próximo</a></li>
-          {% else %}
-            <li class="page-item disabled"><span class="page-link">Próximo</span></li>
-          {% endif %}
-        </ul>
-      </nav>
-    {% endif %}
+    <div class="mt-4">
+      {% include "partials/pagination.html" %}
+    </div>
 </div>
 {% endblock %}

@@ -1,12 +1,64 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="container py-5">
-  <h1>{{ profile_user.get_full_name|default:profile_user.email }}</h1>
-  <p>{{ profile_user.get_role_display }}</p>
-  {% with pp=profile_user.public_profile %}
-    {% if pp.bio %}<p>{{ pp.bio }}</p>{% endif %}
-    {% if pp.website %}<a href="{{ pp.website }}" target="_blank" class="btn btn-outline-dark">Website</a>{% endif %}
-    {% if pp.instagram %}<a href="{{ pp.instagram }}" target="_blank" class="btn btn-outline-dark">Instagram</a>{% endif %}
-  {% endwith %}
+  <div class="d-flex flex-column flex-md-row gap-4 align-items-center mb-5">
+    <div class="avatar avatar-lg bg-brand-200 text-brand-dark">
+      {% if profile_user.avatar %}
+        <img src="{{ profile_user.avatar }}" alt="{{ profile_user.get_full_name|default:profile_user.email }}" class="rounded-circle">
+      {% else %}
+        {{ profile_user.get_full_name|first|upper|default:profile_user.email|first|upper }}
+      {% endif %}
+    </div>
+    <div class="text-center text-md-start">
+      <h1 class="mb-1">{{ profile_user.get_full_name|default:profile_user.email }}</h1>
+      <p class="text-muted mb-2">{{ profile_user.get_role_display }}</p>
+      {% if user == profile_user %}
+        <a href="{% url 'accounts-me-edit' %}" class="btn btn-brand"><i class="bi bi-pencil me-1"></i> Editar dados</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="row g-4">
+    {% with pp=profile_user.public_profile %}
+      {% if pp.bio %}
+      <div class="col-12">
+        <div class="card card-elevated">
+          <div class="card-body">
+            <h5 class="mb-3"><i class="bi bi-person-lines-fill me-2"></i>Sobre</h5>
+            <p class="mb-0">{{ pp.bio }}</p>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+      {% if pp.website %}
+      <div class="col-12 col-md-6">
+        <div class="card card-elevated h-100">
+          <div class="card-body d-flex align-items-center">
+            <i class="bi bi-globe me-3 text-muted fs-4"></i>
+            <a href="{{ pp.website }}" target="_blank" rel="noopener" class="text-decoration-none fw-medium">{{ pp.website }}</a>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+      {% if pp.instagram %}
+      <div class="col-12 col-md-6">
+        <div class="card card-elevated h-100">
+          <div class="card-body d-flex align-items-center">
+            <i class="bi bi-instagram me-3 text-danger fs-4"></i>
+            <a href="{{ pp.instagram }}" target="_blank" rel="noopener" class="text-decoration-none fw-medium">@{{ pp.instagram|cut:"https://instagram.com/"|cut:"https://www.instagram.com/"|cut:"@" }}</a>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    {% endwith %}
+  </div>
+
+  {% if not profile_user.public_profile.bio and not profile_user.public_profile.website and not profile_user.public_profile.instagram %}
+    <div class="empty-state mt-5">
+      <i class="bi bi-person-empty empty-state__icon"></i>
+      <h4 class="empty-title">Perfil vazio</h4>
+      <p class="text-muted">Este usuário ainda não preencheu informações públicas.</p>
+    </div>
+  {% endif %}
 </div>
 {% endblock %}

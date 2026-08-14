@@ -1,9 +1,13 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container py-5 auth-panel">
-  <h1>Sair</h1>
-  <form method="post">{% csrf_token %}<p>Confirma sair?</p>
-    <button class="btn btn-dark" type="submit">Sair</button>
-  </form>
+<div class="container py-5">
+  <div class="auth-panel card card-elevated border-0 shadow-brand">
+    <div class="card-body p-4 p-md-5">
+      <h1>Sair</h1>
+      <form method="post" data-loading>{% csrf_token %}<p>Confirma sair?</p>
+        <button class="btn btn-brand w-100" type="submit">Sair</button>
+      </form>
+    </div>
+  </div>
 </div>
 {% endblock %}

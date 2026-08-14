@@ -3,27 +3,32 @@
 <div class="container py-5">
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h1 class="m-0">Meus serviços</h1>
-    <a href="{% url 'services-create' %}" class="btn btn-dark">+ Novo serviço</a>
+    <a href="{% url 'services-create' %}" class="btn btn-brand"><i class="bi bi-plus-lg me-1"></i>Novo serviço</a>
   </div>
   <div class="row g-3">
     {% for s in services %}
     <div class="col-md-4">
-      <div class="card h-100">
+      <div class="card card-elevated card-interactive h-100">
         {% if s.image %}<img src="{{ s.image }}" class="card-img-top">{% endif %}
-        <div class="card-body">
+        <div class="card-body d-flex flex-column">
           <h5 class="card-title">{{ s.name }}</h5>
           <p class="text-muted small">{{ s.category|default:"Geral" }}</p>
-          <span class="badge bg-warning text-dark">R$ {{ s.base_price|floatformat:2 }}</span>
-          {% if not s.is_active %}<span class="badge bg-secondary">Desativado</span>{% endif %}
-          <div class="mt-3 d-flex gap-2">
-            <a href="{% url 'services-update' s.slug %}" class="btn btn-sm btn-outline-dark">Editar</a>
-            <a href="{% url 'services-delete' s.pk %}" class="btn btn-sm btn-outline-danger">Excluir</a>
+          <span class="badge badge-brand mb-2">R$ {{ s.base_price|floatformat:2 }}</span>
+          {% if not s.is_active %}<span class="badge badge-soft">Desativado</span>{% endif %}
+          <div class="mt-auto pt-3 d-flex gap-2">
+            <a href="{% url 'services-update' s.slug %}" class="btn btn-outline-brand btn-sm"><i class="bi bi-pencil me-1"></i>Editar</a>
+            <a href="{% url 'services-delete' s.pk %}" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash me-1"></i>Excluir</a>
           </div>
         </div>
       </div>
     </div>
     {% empty %}
-    <p class="text-muted">Você ainda não tem serviços. <a href="{% url 'services-create' %}">Crie o primeiro</a>.</p>
+    <div class="col-12">
+      <div class="empty-state">
+        <i class="bi bi-tools empty-title d-block mb-2" style="font-size: 2rem;"></i>
+        <p class="mb-0">Você ainda não tem serviços. <a href="{% url 'services-create' %}">Crie o primeiro</a>.</p>
+      </div>
+    </div>
     {% endfor %}
   </div>
 </div>

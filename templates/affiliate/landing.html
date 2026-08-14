@@ -2,50 +2,97 @@
 {% block content %}
 <section class="hero py-5">
   <div class="container">
-    <h1 class="display-5 fw-bold">Seja um Afiliado {{ BRAND_NAME }}</h1>
-    <p class="lead">Divulgue e ganhe comissão por cada venda que vier através do seu link.</p>
+    <h1 class="display-5 fw-bold mb-3">Seja um Afiliado {{ BRAND_NAME }}</h1>
+    <p class="lead mb-4">Divulgue e ganhe comissão por cada venda que vier através do seu link.</p>
     {% if profile %}
       <p class="mb-3">Seu link exclusivo:</p>
       <div class="input-group mb-3 form-panel--medium">
-        <input type="text" class="form-control" id="ref-link" readonly value="{{ ref_url }}">
-        <button class="btn btn-dark" type="button" id="copy-btn">Copiar</button>
+        <input type="text" class="form-control form-control-brand" id="ref-link" readonly value="{{ ref_url }}">
+        <button class="btn btn-brand" type="button" id="copy-btn"><i class="bi bi-clipboard me-1"></i> Copiar</button>
       </div>
-      <a href="{% url 'affiliate-dashboard' %}" class="btn btn-dark">Abrir painel</a>
+      <a href="{% url 'affiliate-dashboard' %}" class="btn btn-brand-ghost text-brand-dark border-brand"><i class="bi bi-speedometer2 me-1"></i> Abrir painel</a>
     {% else %}
-      <a href="{% url 'account_signup' %}" class="btn btn-dark me-2">Começar agora</a>
-      <a href="{% url 'account_login' %}" class="btn btn-light border">Já sou afiliado</a>
+      <a href="{% url 'account_signup' %}?role=afiliado" class="btn btn-brand me-2"><i class="bi bi-person-plus me-1"></i> Seja um afiliado</a>
+      <a href="{% url 'account_login' %}" class="btn btn-outline-brand"><i class="bi bi-box-arrow-in-right me-1"></i> Já sou afiliado</a>
     {% endif %}
   </div>
 </section>
 
 <section class="container py-5">
-  <div class="row g-3">
-    <div class="col-md-4">
-      <div class="card h-100 border-0 shadow-sm">
-        <div class="card-body">
-          <h5>1. Cadastre-se</h5>
+  <h2 class="text-center mb-5">Por que ser afiliado {{ BRAND_NAME }}?</h2>
+  <div class="row g-4">
+    <div class="col-12 col-md-4">
+      <div class="card card-interactive card-elevated h-100 text-center p-4">
+        <div class="avatar avatar-lg bg-brand-200 text-brand-dark mx-auto mb-3">
+          <i class="bi bi-cash-coin fs-4"></i>
+        </div>
+        <h5 class="mb-2">Comissão por venda</h5>
+        <p class="text-muted mb-0">Ganhe uma porcentagem sobre cada venda confirmada que vier do seu link de indicação.</p>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="card card-interactive card-elevated h-100 text-center p-4">
+        <div class="avatar avatar-lg bg-brand-200 text-brand-dark mx-auto mb-3">
+          <i class="bi bi-link-45deg fs-4"></i>
+        </div>
+        <h5 class="mb-2">Links de indicação</h5>
+        <p class="text-muted mb-0">Receba um link único e exclusivo para compartilhar onde quiser: redes sociais, WhatsApp, e-mail.</p>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="card card-interactive card-elevated h-100 text-center p-4">
+        <div class="avatar avatar-lg bg-brand-200 text-brand-dark mx-auto mb-3">
+          <i class="bi bi-graph-up fs-4"></i>
+        </div>
+        <h5 class="mb-2">Acompanhe no painel</h5>
+        <p class="text-muted mb-0">Visualize cliques, vendas, comissões e solicite saques direto no seu painel de afiliado.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="bg-brand-50 py-5">
+  <div class="container">
+    <h2 class="text-center mb-5">Como funciona</h2>
+    <div class="row g-4">
+      <div class="col-12 col-md-4">
+        <div class="text-center">
+          <div class="avatar avatar-lg bg-brand text-brand-dark mx-auto mb-3">
+            <span class="fw-bold">1</span>
+          </div>
+          <h5>Cadastre-se</h5>
           <p class="text-muted">Escolha a opção "Afiliado" no cadastro e você ganha um link único automaticamente.</p>
         </div>
       </div>
-    </div>
-    <div class="col-md-4">
-      <div class="card h-100 border-0 shadow-sm">
-        <div class="card-body">
-          <h5>2. Divulgue</h5>
+      <div class="col-12 col-md-4">
+        <div class="text-center">
+          <div class="avatar avatar-lg bg-brand text-brand-dark mx-auto mb-3">
+            <span class="fw-bold">2</span>
+          </div>
+          <h5>Divulgue</h5>
           <p class="text-muted">Compartilhe seu link em redes sociais, grupos e com amigos e clientes.</p>
         </div>
       </div>
-    </div>
-    <div class="col-md-4">
-      <div class="card h-100 border-0 shadow-sm">
-        <div class="card-body">
-          <h5>3. Ganhe</h5>
+      <div class="col-12 col-md-4">
+        <div class="text-center">
+          <div class="avatar avatar-lg bg-brand text-brand-dark mx-auto mb-3">
+            <span class="fw-bold">3</span>
+          </div>
+          <h5>Ganhe</h5>
           <p class="text-muted">Receba uma comissão por cada venda confirmada e solicite o saque no painel.</p>
         </div>
       </div>
     </div>
   </div>
 </section>
+
+{% if not profile %}
+<section class="container py-5 text-center">
+  <h3 class="mb-3">Pronto para começar?</h3>
+  <p class="text-muted mb-4">Cadastre-se agora e comece a ganhar comissões hoje mesmo.</p>
+  <a href="{% url 'account_signup' %}?role=afiliado" class="btn btn-brand btn-lg"><i class="bi bi-rocket-takeoff me-2"></i> Criar conta de afiliado</a>
+</section>
+{% endif %}
 {% endblock %}
 
 {% block extra_scripts %}
@@ -55,7 +102,7 @@
     if (!el) return;
     el.select();
     navigator.clipboard?.writeText(el.value);
-    this.textContent = 'Copiado!';
+    this.innerHTML = '<i class="bi bi-check-lg me-1"></i> Copiado!';
   });
 </script>
 {% endblock %}

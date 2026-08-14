@@ -3,30 +3,56 @@
 <div class="container py-5">
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h1 class="m-0">Solicitações recebidas</h1>
-    <a href="{% url 'services-my' %}" class="btn btn-outline-dark">Meus serviços</a>
+    <a href="{% url 'services-my' %}" class="btn btn-outline-brand"><i class="bi bi-tools me-1"></i>Meus serviços</a>
   </div>
-  <div class="row g-3">
-    {% for r in requests %}
-    <div class="col-md-6">
-      <div class="card mb-3">
-        <div class="card-body">
-          <h5 class="card-title">{{ r.service.name }}</h5>
-          <p class="text-muted small mb-1">
-            Cliente: <strong>{{ r.cliente.email }}</strong> ·
-            Status: <span class="badge {% if r.status == 'pending' %}bg-secondary{% elif r.status == 'quoted' %}bg-warning text-dark{% elif r.status == 'approved' %}bg-success{% else %}bg-light text-dark border{% endif %}">{{ r.get_status_display }}</span>
-          </p>
-          {% if r.prestador %}<p class="small text-muted mb-1">Prestador: {{ r.prestador.email }}</p>{% endif %}
-          {% if r.final_price %}<p class="mb-1">Orçamento: <strong>R$ {{ r.final_price|floatformat:2 }}</strong></p>{% endif %}
-          <p class="text-muted small mb-1">{{ r.created_at|date:"d/m/Y H:i" }}</p>
-          {% if r.status == "pending" %}
-          <a href="{% url 'services-request-quote' r.pk %}" class="btn btn-sm btn-dark">Enviar orçamento</a>
-          {% endif %}
-        </div>
-      </div>
+  <div class="card card-elevated">
+    <div class="table-responsive">
+      <table class="table table-brand mb-0">
+        <thead>
+          <tr>
+            <th>Serviço</th>
+            <th>Cliente</th>
+            <th>Status</th>
+            <th>Orçamento</th>
+            <th>Criado em</th>
+            <th class="text-end">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in requests %}
+          <tr>
+            <td>{{ r.service.name }}</td>
+            <td>{{ r.cliente.email }}</td>
+            <td>
+              <span class="badge
+                {% if r.status == 'pending' %} badge-soft-warning
+                {% elif r.status == 'quoted' %} badge-soft-info
+                {% elif r.status == 'approved' %} badge-soft-success
+                {% else %} badge-soft{% endif %}">
+                {{ r.get_status_display }}
+              </span>
+            </td>
+            <td>{% if r.final_price %}R$ {{ r.final_price|floatformat:2 }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+            <td>{{ r.created_at|date:"d/m/Y H:i" }}</td>
+            <td class="text-end">
+              {% if r.status == "pending" %}
+              <a href="{% url 'services-request-quote' r.pk %}" class="btn btn-brand btn-sm"><i class="bi bi-cash-coin me-1"></i>Enviar orçamento</a>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" class="text-center py-5">
+              <div class="empty-state">
+                <i class="bi bi-clipboard-check empty-title d-block mb-2" style="font-size: 2rem;"></i>
+                <p class="mb-0">Nenhuma solicitação recebida.</p>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
-    {% empty %}
-    <p class="text-muted">Nenhuma solicitação recebida.</p>
-    {% endfor %}
   </div>
 
   {% include "partials/pagination.html" %}

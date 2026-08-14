@@ -2,35 +2,63 @@
 {% block content %}
 <div class="container py-5">
   <h1 class="mb-4">Minhas solicitações</h1>
-  <div class="row g-3">
-    {% for r in requests %}
-    <div class="col-md-6">
-      <div class="card mb-3">
-        <div class="card-body">
-          <h5 class="card-title">{{ r.service.name }}</h5>
-          <p class="text-muted small mb-1">
-            Status: <span class="badge {% if r.status == 'pending' %}bg-secondary{% elif r.status == 'quoted' %}bg-warning text-dark{% elif r.status == 'approved' %}bg-success{% elif r.status == 'canceled' %}bg-light text-dark border{% else %}bg-info text-dark{% endif %}">{{ r.get_status_display }}</span>
-          </p>
-          {% if r.prestador %}<p class="small text-muted mb-1">Prestador: {{ r.prestador.email }}</p>{% endif %}
-          {% if r.final_price %}<p class="mb-1">Orçamento: <strong>R$ {{ r.final_price|floatformat:2 }}</strong></p>{% endif %}
-          <p class="text-muted small mb-2">{{ r.created_at|date:"d/m/Y H:i" }}</p>
-          <div class="d-flex gap-2">
-            {% if r.status == "quoted" %}
-            <a href="{% url 'services-request-approve' r.pk %}" class="btn btn-dark btn-sm">Aprovar e pagar</a>
-            {% endif %}
-            {% if r.status == "pending" or r.status == "quoted" %}
-            <form method="post" action="{% url 'services-request-cancel' r.pk %}">
-              {% csrf_token %}
-              <button class="btn btn-outline-danger btn-sm" type="submit">Cancelar</button>
-            </form>
-            {% endif %}
-          </div>
-        </div>
-      </div>
+  <div class="card card-elevated">
+    <div class="table-responsive">
+      <table class="table table-brand mb-0">
+        <thead>
+          <tr>
+            <th>Serviço</th>
+            <th>Status</th>
+            <th>Prestador</th>
+            <th>Orçamento</th>
+            <th>Criado em</th>
+            <th class="text-end">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in requests %}
+          <tr>
+            <td>{{ r.service.name }}</td>
+            <td>
+              <span class="badge
+                {% if r.status == 'pending' %} badge-soft-warning
+                {% elif r.status == 'quoted' %} badge-soft-info
+                {% elif r.status == 'approved' %} badge-soft-success
+                {% elif r.status == 'canceled' %} badge-soft-danger
+                {% else %} badge-soft{% endif %}">
+                {{ r.get_status_display }}
+              </span>
+            </td>
+            <td>{% if r.prestador %}{{ r.prestador.email }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+            <td>{% if r.final_price %}R$ {{ r.final_price|floatformat:2 }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+            <td>{{ r.created_at|date:"d/m/Y H:i" }}</td>
+            <td class="text-end">
+              <div class="d-flex gap-2 justify-content-end">
+                {% if r.status == "quoted" %}
+                <a href="{% url 'services-request-approve' r.pk %}" class="btn btn-brand btn-sm">Aprovar e pagar</a>
+                {% endif %}
+                {% if r.status == "pending" or r.status == "quoted" %}
+                <form method="post" action="{% url 'services-request-cancel' r.pk %}">
+                  {% csrf_token %}
+                  <button class="btn btn-soft-dark btn-sm" type="submit">Cancelar</button>
+                </form>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" class="text-center py-5">
+              <div class="empty-state">
+                <i class="bi bi-clipboard-check empty-title d-block mb-2" style="font-size: 2rem;"></i>
+                <p class="mb-0">Nenhuma solicitação ainda. <a href="{% url 'services-list' %}">Solicitar um serviço</a>.</p>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
-    {% empty %}
-    <p class="text-muted">Nenhuma solicitação ainda. <a href="{% url 'services-list' %}">Solicitar um serviço</a>.</p>
-    {% endfor %}
   </div>
 
   {% include "partials/pagination.html" %}

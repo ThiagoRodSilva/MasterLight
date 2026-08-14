@@ -2,28 +2,43 @@
 {% block content %}
 <div class="container py-5">
   <div class="row justify-content-center">
-    <div class="col-md-8 text-center">
-      {% if outcome == "success" %}
-      <h1 class="mb-3">Pagamento concluído</h1>
-      <div class="alert alert-success">
-        Seu pagamento foi processado na página do Asaas. Estamos confirmando a transação — assim que o
-        webhook confirmar, o pedido <strong>#{{ order.pk|truncatechars:8 }}</strong> será atualizado.
+    <div class="col-md-8">
+      <div class="card card-elevated border-0 auth-panel mx-auto">
+        <div class="card-body p-5 text-center">
+          {% if outcome == "success" %}
+          <div class="bg-success bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-4" style="width: 80px; height: 80px;">
+            <i class="bi bi-check2-circle fs-1 text-success"></i>
+          </div>
+          <h1 class="mb-2">Pagamento concluído</h1>
+          <div class="alert alert-success mb-4">
+            Seu pagamento foi processado na página do Asaas. Estamos confirmando a transação — assim que o
+            webhook confirmar, o pedido <strong>#{{ order.pk|truncatechars:8 }}</strong> será atualizado.
+          </div>
+          {% elif outcome == "cancel" %}
+          <div class="bg-warning bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-4" style="width: 80px; height: 80px;">
+            <i class="bi bi-x-circle fs-1 text-warning"></i>
+          </div>
+          <h1 class="mb-2">Pagamento cancelado</h1>
+          <div class="alert alert-warning mb-4">
+            Você cancelou o pagamento do pedido <strong>#{{ order.pk|truncatechars:8 }}</strong>.
+            Se desejar, tente novamente.
+          </div>
+          {% else %}
+          <div class="bg-info bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-4" style="width: 80px; height: 80px;">
+            <i class="bi bi-info-circle fs-1 text-info"></i>
+          </div>
+          <h1 class="mb-2">Link expirado</h1>
+          <div class="alert alert-warning mb-4">
+            O link de pagamento do pedido <strong>#{{ order.pk|truncatechars:8 }}</strong> expirou.
+            Gere um novo pagamento para continuar.
+          </div>
+          {% endif %}
+          <div class="d-flex gap-2 justify-content-center flex-wrap">
+            <a href="{% url 'payments-status' order.pk %}" class="btn btn-outline-brand">Ver status</a>
+            <a href="{% url 'accounts-me' %}" class="btn btn-outline-brand">Meus pedidos</a>
+          </div>
+        </div>
       </div>
-      {% elif outcome == "cancel" %}
-      <h1 class="mb-3">Pagamento cancelado</h1>
-      <div class="alert alert-warning">
-        Você cancelou o pagamento do pedido <strong>#{{ order.pk|truncatechars:8 }}</strong>.
-        Se desejar, tente novamente.
-      </div>
-      {% else %}
-      <h1 class="mb-3">Link expirado</h1>
-      <div class="alert alert-warning">
-        O link de pagamento do pedido <strong>#{{ order.pk|truncatechars:8 }}</strong> expirou.
-        Gere um novo pagamento para continuar.
-      </div>
-      {% endif %}
-      <a href="{% url 'payments-status' order.pk %}" class="btn btn-outline-dark me-2">Ver status</a>
-      <a href="{% url 'accounts-me' %}" class="btn btn-outline-dark">Meus pedidos</a>
     </div>
   </div>
 </div>

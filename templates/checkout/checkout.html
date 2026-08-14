@@ -1,56 +1,120 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="container py-5">
-  <h1>Finalizar pedido</h1>
-  <p>Total: <strong>R$ {{ cart.total|floatformat:2 }}</strong></p>
-  <form method="post">
-    {% csrf_token %}
-    {% if CHECKOUT_HOSTED %}
-    <div class="card mb-3 p-3 form-panel--narrow">
-      <h6 class="mb-2">Pagamento</h6>
-      <p class="mb-0 small">Você será direcionado para a página de pagamento segura do Asaas (Pix, cartão de crédito ou boleto).</p>
-    </div>
-    <button class="btn btn-brand">Pagar com Asaas</button>
-    {% else %}
-    <div class="card mb-3 p-3 form-panel--narrow">
-      <h6 class="mb-2">Forma de pagamento</h6>
-      <div class="form-check">
-        <input class="form-check-input" type="radio" name="payment_method" id="pm_pix" value="PIX" checked>
-        <label class="form-check-label" for="pm_pix">Pix (QR Code)</label>
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
+        <h1 class="h3 mb-0">Finalizar pedido</h1>
+        <div class="d-flex align-items-center gap-2 small ms-auto">
+          <span class="badge badge-soft">1 Carrinho</span>
+          <i class="bi bi-chevron-right text-muted-brand"></i>
+          <span class="badge badge-brand">2 Pagamento</span>
+          <i class="bi bi-chevron-right text-muted-brand"></i>
+          <span class="badge badge-soft">3 Confirmação</span>
+        </div>
       </div>
-      {% if CARD_ENABLED %}
-      <div class="form-check">
-        <input class="form-check-input" type="radio" name="payment_method" id="pm_card" value="CREDIT_CARD">
-        <label class="form-check-label" for="pm_card">Cartão de crédito</label>
-      </div>
-      {% endif %}
-      {% if BOLETO_ENABLED %}
-      <div class="form-check">
-        <input class="form-check-input" type="radio" name="payment_method" id="pm_boleto" value="BOLETO">
-        <label class="form-check-label" for="pm_boleto">Boleto bancário</label>
-      </div>
-      {% endif %}
 
-      <div id="card-fields" class="mt-3 d-none">
-        <div class="row g-2">
-          <div class="col-12"><label class="form-label small">Titular do cartão</label>
-            <input class="form-control" type="text" name="card_holder" autocomplete="cc-name" required></div>
-          <div class="col-12"><label class="form-label small">CPF do titular</label>
-            <input class="form-control" type="text" name="card_cpf" inputmode="numeric" maxlength="14" placeholder="000.000.000-00"></div>
-          <div class="col-12"><label class="form-label small">Número</label>
-            <input class="form-control" type="text" name="card_number" inputmode="numeric" autocomplete="cc-number" required pattern="[\d ]{13,19}"></div>
-          <div class="col-6"><label class="form-label small">Validade (MM)</label>
-            <input class="form-control" type="text" name="card_expiry_month" inputmode="numeric" maxlength="2" required pattern="(0[1-9]|1[0-2])"></div>
-          <div class="col-6"><label class="form-label small">Validade (AAAA)</label>
-            <input class="form-control" type="text" name="card_expiry_year" inputmode="numeric" maxlength="4" required pattern="20[2-9][0-9]"></div>
-          <div class="col-6"><label class="form-label small">CVV</label>
-            <input class="form-control" type="text" name="card_ccv" inputmode="numeric" maxlength="4" autocomplete="cc-csc" required pattern="[0-9]{3,4}"></div>
+      <form method="post">
+        {% csrf_token %}
+        {% if CHECKOUT_HOSTED %}
+        <div class="card card-elevated border-0 mb-4">
+          <div class="card-body p-4">
+            <div class="d-flex align-items-center gap-3">
+              <div class="bg-brand-100 rounded-circle p-3 d-flex align-items-center justify-content-center">
+                <i class="bi bi-shield-check fs-4 text-brand-dark"></i>
+              </div>
+              <div>
+                <h6 class="mb-1">Pagamento seguro com Asaas</h6>
+                <p class="mb-0 small text-muted">Você será direcionado para a página de pagamento (Pix, cartão de crédito ou boleto).</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-brand btn-lg w-100"><i class="bi bi-arrow-right me-2"></i>Pagar com Asaas</button>
+        {% else %}
+        <div class="card card-elevated border-0 mb-4">
+          <div class="card-body p-4">
+            <h6 class="mb-3">Forma de pagamento</h6>
+            <div class="row g-3" role="radiogroup" aria-label="Forma de pagamento">
+              <div class="col-12 col-md-4">
+                <label class="form-check form-check-input-card d-flex flex-column align-items-center p-3 border rounded radius-lg h-100 cursor-pointer" for="pm_pix">
+                  <input class="form-check-input visually-hidden" type="radio" name="payment_method" id="pm_pix" value="PIX" checked>
+                  <i class="bi bi-qr-code fs-1 mb-2 text-brand-dark"></i>
+                  <span class="fw-medium">Pix (QR Code)</span>
+                </label>
+              </div>
+              {% if CARD_ENABLED %}
+              <div class="col-12 col-md-4">
+                <label class="form-check form-check-input-card d-flex flex-column align-items-center p-3 border rounded radius-lg h-100 cursor-pointer" for="pm_card">
+                  <input class="form-check-input visually-hidden" type="radio" name="payment_method" id="pm_card" value="CREDIT_CARD">
+                  <i class="bi bi-credit-card fs-1 mb-2 text-muted"></i>
+                  <span class="fw-medium">Cartão de crédito</span>
+                </label>
+              </div>
+              {% endif %}
+              {% if BOLETO_ENABLED %}
+              <div class="col-12 col-md-4">
+                <label class="form-check form-check-input-card d-flex flex-column align-items-center p-3 border rounded radius-lg h-100 cursor-pointer" for="pm_boleto">
+                  <input class="form-check-input visually-hidden" type="radio" name="payment_method" id="pm_boleto" value="BOLETO">
+                  <i class="bi bi-bank fs-1 mb-2 text-muted"></i>
+                  <span class="fw-medium">Boleto bancário</span>
+                </label>
+              </div>
+              {% endif %}
+            </div>
+
+            <div id="card-fields" class="mt-4 d-none">
+              <div class="card card-filled border-0 p-4">
+                <h6 class="mb-3">Dados do cartão</h6>
+                <div class="row g-3">
+                  <div class="col-12"><label class="form-label small">Titular do cartão</label>
+                    <input class="form-control form-control-brand" type="text" name="card_holder" autocomplete="cc-name" required></div>
+                  <div class="col-12"><label class="form-label small">CPF do titular</label>
+                    <input class="form-control form-control-brand" type="text" name="card_cpf" inputmode="numeric" maxlength="14" placeholder="000.000.000-00"></div>
+                  <div class="col-12"><label class="form-label small">Número</label>
+                    <input class="form-control form-control-brand" type="text" name="card_number" inputmode="numeric" autocomplete="cc-number" required pattern="[\d ]{13,19}"></div>
+                  <div class="col-6"><label class="form-label small">Validade (MM)</label>
+                    <input class="form-control form-control-brand" type="text" name="card_expiry_month" inputmode="numeric" maxlength="2" required pattern="(0[1-9]|1[0-2])"></div>
+                  <div class="col-6"><label class="form-label small">Validade (AAAA)</label>
+                    <input class="form-control form-control-brand" type="text" name="card_expiry_year" inputmode="numeric" maxlength="4" required pattern="20[2-9][0-9]"></div>
+                  <div class="col-6"><label class="form-label small">CVV</label>
+                    <input class="form-control form-control-brand" type="text" name="card_ccv" inputmode="numeric" maxlength="4" autocomplete="cc-csc" required pattern="[0-9]{3,4}"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-brand btn-lg w-100" data-loading><i class="bi bi-check2-circle me-2"></i>Confirmar e pagar</button>
+        {% endif %}
+      </form>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card card-elevated border-0 sticky-top" style="top: 100px;">
+        <div class="card-body p-4">
+          <h6 class="mb-3">Resumo do pedido</h6>
+          {% if cart %}
+            <ul class="list-unstyled mb-3">
+              {% for line in cart %}
+              <li class="d-flex justify-content-between py-2 border-bottom">
+                <div>
+                  <div class="fw-medium small">{{ line.name }}</div>
+                  <div class="text-muted-brand small">Qtd: {{ line.qty }} × R$ {{ line.price|floatformat:2 }}</div>
+                </div>
+                <span class="fw-semibold">R$ {{ line.subtotal|floatformat:2 }}</span>
+              </li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+          <hr>
+          <div class="d-flex justify-content-between fw-bold fs-5">
+            <span>Total</span>
+            <span>R$ {{ cart.total|floatformat:2 }}</span>
+          </div>
         </div>
       </div>
     </div>
-    <button class="btn btn-dark">Confirmar e pagar</button>
-    {% endif %}
-  </form>
+  </div>
 </div>
 {% endblock %}
 

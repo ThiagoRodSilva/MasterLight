@@ -4,36 +4,37 @@
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h1>Portfólio</h1>
     {% if user.is_authenticated and user.is_prestador %}
-      <a href="{% url 'portfolio-create' %}" class="btn btn-dark">Novo item</a>
+    <a href="{% url 'portfolio-create' %}" class="btn btn-brand"><i class="bi bi-plus-lg me-1"></i>Novo item</a>
     {% endif %}
   </div>
 
   {% if request.GET.categoria %}
-    <a href="{% url 'portfolio-list' %}" class="badge bg-warning text-dark mb-3">Remover filtro</a>
+    <a href="{% url 'portfolio-list' %}" class="badge badge-soft mb-3">Remover filtro</a>
   {% endif %}
 
   <div class="row g-3">
     {% for item in items %}
     <div class="col-md-4">
-      <a href="{% url 'portfolio-detail' item.pk %}" class="card card-hover text-decoration-none text-dark h-100">
+      <a href="{% url 'portfolio-detail' item.pk %}" class="card card-elevated card-interactive text-decoration-none text-dark h-100">
         {% if item.image %}<img src="{{ item.image }}" class="card-img-top">{% endif %}
         <div class="card-body">
           <h5 class="card-title">{{ item.title }}</h5>
-          {% if item.category %}<span class="badge text-bg-warning">{{ item.category }}</span>{% endif %}
+          {% if item.category %}<span class="badge badge-brand">{{ item.category }}</span>{% endif %}
         </div>
       </a>
     </div>
     {% empty %}
-    <p class="text-muted">Nenhum item publicado.</p>
+    <div class="col-12">
+      <div class="empty-state">
+        <i class="bi bi-bag-check empty-title d-block mb-2" style="font-size: 2rem;"></i>
+        <p class="mb-0">Nenhum item publicado.</p>
+      </div>
+    </div>
     {% endfor %}
   </div>
 
   {% if page_obj %}
-  <nav class="mt-4"><ul class="pagination justify-content-center">
-    {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a></li>{% endif %}
-    <li class="page-item active"><span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
-    {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Próxima</a></li>{% endif %}
-  </ul></nav>
+  {% include "partials/pagination.html" %}
   {% endif %}
 </div>
 {% endblock %}
