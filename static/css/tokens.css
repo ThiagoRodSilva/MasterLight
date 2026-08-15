@@ -1,0 +1,128 @@
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("../fonts/Inter/InterVariable.woff2") format("woff2-variations");
+}
+
+:root {
+  /* Tipografia */
+  --font-sans: "Inter", var(--bs-body-font-family), system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --bs-body-font-family: var(--font-sans);
+  --bs-headings-font-family: var(--font-sans);
+
+  /* Brand — derivadas da paleta dinâmica injetada no base.html */
+  --brand-primary: #ffc107;
+  --brand-primary-alt: #ffd600;
+  --brand-dark: #111111;
+  --brand-light: #ffffff;
+
+  --brand-50: color-mix(in srgb, var(--brand-primary) 8%, white);
+  --brand-100: color-mix(in srgb, var(--brand-primary) 20%, white);
+  --brand-200: color-mix(in srgb, var(--brand-primary) 40%, white);
+  --brand-300: color-mix(in srgb, var(--brand-primary) 60%, white);
+  --brand-400: color-mix(in srgb, var(--brand-primary) 80%, white);
+  --brand-500: var(--brand-primary);
+  --brand-600: color-mix(in srgb, var(--brand-primary) 85%, black);
+  --brand-700: color-mix(in srgb, var(--brand-primary) 60%, black);
+  --brand-800: color-mix(in srgb, var(--brand-primary) 40%, black);
+  --brand-900: color-mix(in srgb, var(--brand-primary) 20%, black);
+
+  /* Cores semânticas */
+  --color-success: #198754;
+  --color-success-100: #d1e7dd;
+  --color-danger: #dc3545;
+  --color-danger-100: #f8d7da;
+  --color-warning: #d97706;
+  --color-warning-100: #fff3cd;
+  --color-info: #0dcaf0;
+  --color-info-100: #cff4fc;
+  --color-muted: #6c757d;
+
+  /* Superfícies e texto (trocam de papel no dark mode) */
+  --surface-page: var(--brand-light);
+  --surface-card: var(--brand-light);
+  --text-strong: var(--brand-dark);
+  --border-soft: rgba(17, 17, 17, 0.15);
+  --border-strong: rgba(17, 17, 17, 0.22);
+
+  /* Escala de espaçamento (base 4px) */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+
+  /* Raio de borda */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-full: 999px;
+
+  /* Sombras em camadas */
+  --shadow-sm: 0 1px 2px rgba(17, 17, 17, 0.06);
+  --shadow-md: 0 4px 12px rgba(17, 17, 17, 0.08);
+  --shadow-lg: 0 12px 24px rgba(17, 17, 17, 0.1);
+  --shadow-xl: 0 20px 40px rgba(17, 17, 17, 0.14);
+  --shadow-brand: 0 4px 14px rgba(255, 193, 7, 0.45);
+}
+
+/* ============================================================
+   Dark mode — sobrescreve os tokens quando data-bs-theme="dark".
+   Os "brand constants" (#111/#fff) são preservados; as superfícies,
+   tints da marca e cores semânticas são trocadas de papel.
+   ============================================================ */
+[data-bs-theme="dark"] {
+  color-scheme: dark;
+
+  /* Tints da marca: fundos escurecem, textos de marca clareiam */
+  --brand-50: color-mix(in srgb, var(--brand-primary) 12%, black);
+  --brand-100: color-mix(in srgb, var(--brand-primary) 22%, black);
+  --brand-200: color-mix(in srgb, var(--brand-primary) 34%, black);
+  --brand-300: color-mix(in srgb, var(--brand-primary) 50%, black);
+  --brand-400: color-mix(in srgb, var(--brand-primary) 65%, black);
+  --brand-600: color-mix(in srgb, var(--brand-primary) 78%, white);
+  --brand-700: color-mix(in srgb, var(--brand-primary) 62%, white);
+  --brand-800: color-mix(in srgb, var(--brand-primary) 48%, white);
+  --brand-900: color-mix(in srgb, var(--brand-primary) 34%, white);
+
+  /* Cores semânticas mais claras para contraste sobre fundo escuro */
+  --color-success: #75b798;
+  --color-danger: #ea868f;
+  --color-warning: #ffca6a;
+  --color-info: #3dd5f3;
+  --color-muted: #adb5bd;
+  --color-success-100: color-mix(in srgb, #198754 22%, black);
+  --color-danger-100: color-mix(in srgb, #dc3545 22%, black);
+  --color-warning-100: color-mix(in srgb, #d97706 22%, black);
+  --color-info-100: color-mix(in srgb, #0dcaf0 22%, black);
+
+  /* Superfícies e texto: página escura, cartões levemente mais claros */
+  --surface-page: #121212;
+  --surface-card: #1a1a1a;
+  --text-strong: #f2f2f2;
+  --border-soft: rgba(255, 255, 255, 0.14);
+  --border-strong: rgba(255, 255, 255, 0.22);
+
+  /* Integração com o Bootstrap (carregado antes deste arquivo) */
+  --bs-body-bg: var(--surface-page);
+  --bs-body-color: var(--text-strong);
+  --bs-card-bg: var(--surface-card);
+  --bs-card-border-color: var(--border-soft);
+  --bs-border-color: var(--border-soft);
+  --bs-secondary-color: var(--color-muted);
+  --bs-tertiary-color: var(--color-muted);
+
+  /* Sombras: escuras invisíveis em fundo escuro, usa preto mais forte */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.55);
+  --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.6);
+  --shadow-brand: 0 4px 14px rgba(255, 193, 7, 0.3);
+}

@@ -19,7 +19,7 @@
       </div>
     </div>
     <div class="col-lg-5">
-      <div class="card card-elevated sticky-top" style="top: 100px;">
+      <div class="card card-elevated sticky-top sticky-offset">
         <div class="card-body">
           <h5 class="mb-3">Resumo do orçamento</h5>
           <p class="mb-3">Orçamento: <strong>R$ {{ service_request.final_price|floatformat:2 }}</strong></p>
@@ -33,22 +33,33 @@
             <button class="btn btn-brand w-100" type="submit">Aprovar e pagar</button>
             {% else %}
             <h6 class="mb-2">Forma de pagamento</h6>
-            <div class="form-check">
-              <input class="form-check-input" type="radio" name="payment_method" id="pm_pix" value="PIX" checked>
-              <label class="form-check-label" for="pm_pix">Pix (QR Code)</label>
+            <div class="row g-3" role="radiogroup" aria-label="Forma de pagamento">
+              <div class="col-12">
+                <label class="form-check form-check-input-card d-flex flex-column align-items-center p-3 border rounded radius-lg h-100 cursor-pointer" for="pm_pix">
+                  <input class="form-check-input visually-hidden" type="radio" name="payment_method" id="pm_pix" value="PIX" checked>
+                  <i class="bi bi-qr-code fs-1 mb-2 text-brand-dark"></i>
+                  <span class="fw-medium">Pix (QR Code)</span>
+                </label>
+              </div>
+              {% if CARD_ENABLED %}
+              <div class="col-12">
+                <label class="form-check form-check-input-card d-flex flex-column align-items-center p-3 border rounded radius-lg h-100 cursor-pointer" for="pm_card">
+                  <input class="form-check-input visually-hidden" type="radio" name="payment_method" id="pm_card" value="CREDIT_CARD">
+                  <i class="bi bi-credit-card fs-1 mb-2 text-muted"></i>
+                  <span class="fw-medium">Cartão de crédito</span>
+                </label>
+              </div>
+              {% endif %}
+              {% if BOLETO_ENABLED %}
+              <div class="col-12">
+                <label class="form-check form-check-input-card d-flex flex-column align-items-center p-3 border rounded radius-lg h-100 cursor-pointer" for="pm_boleto">
+                  <input class="form-check-input visually-hidden" type="radio" name="payment_method" id="pm_boleto" value="BOLETO">
+                  <i class="bi bi-bank fs-1 mb-2 text-muted"></i>
+                  <span class="fw-medium">Boleto bancário</span>
+                </label>
+              </div>
+              {% endif %}
             </div>
-            {% if CARD_ENABLED %}
-            <div class="form-check">
-              <input class="form-check-input" type="radio" name="payment_method" id="pm_card" value="CREDIT_CARD">
-              <label class="form-check-label" for="pm_card">Cartão de crédito</label>
-            </div>
-            {% endif %}
-            {% if BOLETO_ENABLED %}
-            <div class="form-check">
-              <input class="form-check-input" type="radio" name="payment_method" id="pm_boleto" value="BOLETO">
-              <label class="form-check-label" for="pm_boleto">Boleto bancário</label>
-            </div>
-            {% endif %}
 
             <div id="card-fields" class="mt-3 d-none">
               <div class="row g-2">

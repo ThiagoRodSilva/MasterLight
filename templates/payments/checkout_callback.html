@@ -6,7 +6,7 @@
       <div class="card card-elevated border-0 auth-panel mx-auto">
         <div class="card-body p-5 text-center">
           {% if outcome == "success" %}
-          <div class="bg-success bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-4" style="width: 80px; height: 80px;">
+          <div class="bg-success bg-opacity-10 icon-circle d-inline-flex mb-4">
             <i class="bi bi-check2-circle fs-1 text-success"></i>
           </div>
           <h1 class="mb-2">Pagamento concluído</h1>
@@ -15,7 +15,7 @@
             webhook confirmar, o pedido <strong>#{{ order.pk|truncatechars:8 }}</strong> será atualizado.
           </div>
           {% elif outcome == "cancel" %}
-          <div class="bg-warning bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-4" style="width: 80px; height: 80px;">
+          <div class="bg-warning bg-opacity-10 icon-circle d-inline-flex mb-4">
             <i class="bi bi-x-circle fs-1 text-warning"></i>
           </div>
           <h1 class="mb-2">Pagamento cancelado</h1>
@@ -24,7 +24,7 @@
             Se desejar, tente novamente.
           </div>
           {% else %}
-          <div class="bg-info bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-4" style="width: 80px; height: 80px;">
+          <div class="bg-info bg-opacity-10 icon-circle d-inline-flex mb-4">
             <i class="bi bi-info-circle fs-1 text-info"></i>
           </div>
           <h1 class="mb-2">Link expirado</h1>
