@@ -40,7 +40,7 @@ class PortfolioCreateView(ProviderRequiredMixin, CreateView):
         return super().form_valid(form)
 
 
-class PortfolioUpdateView(OwnerRequiredMixin, UpdateView):
+class PortfolioUpdateView(ProviderRequiredMixin, OwnerRequiredMixin, UpdateView):
     model = PortfolioItem
     fields = ["title", "description", "category", "image", "video", "published"]
     template_name = "portfolio/form.html"

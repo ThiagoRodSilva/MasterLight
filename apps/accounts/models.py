@@ -42,16 +42,26 @@ class CustomUser(AbstractUser):
         return f"{self.get_full_name() or self.email} ({self.get_role_display()})"
 
     @property
+    def is_admin(self) -> bool:
+        return self.role == self.Role.ADMIN or self.is_superuser
+
+    @property
     def is_prestador(self) -> bool:
-        return self.role == self.Role.PRESTADOR or self.is_superuser
+        return self.role == self.Role.PRESTADOR or self.is_admin
 
     @property
     def is_afiliado(self) -> bool:
-        return self.role == self.Role.AFILIADO
+        return self.role == self.Role.AFILIADO or self.is_admin
 
     @property
-    def is_admin(self) -> bool:
-        return self.role == self.Role.ADMIN or self.is_superuser
+    def is_cliente(self) -> bool:
+        return self.role == self.Role.CLIENTE or self.is_admin
+
+    def save(self, *args, **kwargs):
+        # role=admin concede acesso ao Django admin (is_staff); superuser
+        # mantém staff mesmo com outra role. Sincronizado em todo save.
+        self.is_staff = self.is_superuser or self.role == self.Role.ADMIN
+        return super().save(*args, **kwargs)
 
 
 class PublicProfile(BaseModel):

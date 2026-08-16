@@ -46,7 +46,7 @@ class CustomSignupForm(forms.Form):
             (CustomUser.Role.AFILIADO, "Afiliado"),
         ]
         if SiteSettings.load().provider_registration_enabled:
-            choices.append((CustomUser.Role.PRESTADOR, "Prestador (aprovado pelo admin)"))
+            choices.append((CustomUser.Role.PRESTADOR, "Prestador"))
         self.fields["role"] = CustomUser._meta.get_field("role").formfield(
             choices=choices,
             initial=CustomUser.Role.CLIENTE,

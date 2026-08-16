@@ -275,3 +275,49 @@ class TestCatalogo(TestCase):
         )
         response = self.client.get(reverse("services-detail", kwargs={"slug": service.slug}))
         assert response.status_code == 200
+
+
+class TestServiceRoleSeparation(TestCase):
+    def setUp(self):
+        super().setUp()
+        self.category = ServiceCategory.objects.create(name="Elétrica", slug="eletrica-role")
+        self.provider = make_user(role=CustomUser.Role.PRESTADOR)
+        self.service = Service.objects.create(
+            name="Serviço X",
+            slug="servico-x-role",
+            base_price=10,
+            category=self.category,
+            created_by=self.provider,
+        )
+
+    def test_my_requests_restrito_a_cliente(self):
+        for role in (CustomUser.Role.PRESTADOR, CustomUser.Role.AFILIADO):
+            with self.subTest(role=role):
+                user = make_user(role=role)
+                self.client.force_login(user)
+                response = self.client.get(reverse("services-my-requests"))
+                assert response.status_code == 403
+
+    def test_cliente_acessa_minhas_solicitacoes(self):
+        cliente = make_user(role=CustomUser.Role.CLIENTE)
+        self.client.force_login(cliente)
+        response = self.client.get(reverse("services-my-requests"))
+        assert response.status_code == 200
+
+    def test_editar_servico_restrito_a_prestador(self):
+        cliente = make_user(role=CustomUser.Role.CLIENTE)
+        self.client.force_login(cliente)
+        response = self.client.get(reverse("services-update", kwargs={"slug": self.service.slug}))
+        assert response.status_code == 403
+
+    def test_excluir_servico_restrito_a_prestador(self):
+        afiliado = make_user(role=CustomUser.Role.AFILIADO)
+        self.client.force_login(afiliado)
+        response = self.client.post(reverse("services-delete", kwargs={"pk": self.service.pk}))
+        assert response.status_code == 403
+
+    def test_admin_pode_editar_servico_de_outro(self):
+        admin = make_user(role=CustomUser.Role.ADMIN)
+        self.client.force_login(admin)
+        response = self.client.get(reverse("services-update", kwargs={"slug": self.service.slug}))
+        assert response.status_code == 200

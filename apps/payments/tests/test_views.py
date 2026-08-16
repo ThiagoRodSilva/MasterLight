@@ -7,7 +7,7 @@ from django.urls import reverse
 
 from apps.payments.models import Transaction
 from apps.payments.services import ManualGateway
-from apps.tests.helpers import create_order, make_affiliate, make_user
+from apps.tests.helpers import create_order, make_user
 
 WEBHOOK_TOKEN = "segredo-manual"
 
@@ -187,7 +187,7 @@ class TestManualConfirmationView(TestCase):
     def test_manual_confirm_404_other_user(self):
         user = make_user()
         self.client.force_login(user)
-        other = make_affiliate().user
+        other = make_user()
         order = create_order(other, with_referral=False)
         response = self.client.get(reverse("payments-manual-confirm", kwargs={"order_pk": order.pk}))
         assert response.status_code == 404
@@ -207,7 +207,7 @@ class TestCardConfirmationView(TestCase):
         assert response.status_code == 200
 
     def test_card_confirm_404_other_user(self):
-        other = make_affiliate().user
+        other = make_user()
         order = create_order(other, with_referral=False)
         response = self.client.get(self._url(order))
         assert response.status_code == 404
@@ -232,7 +232,7 @@ class TestOrderStatusView(TestCase):
     def test_status_404_other_user(self):
         user = make_user()
         self.client.force_login(user)
-        other = make_affiliate().user
+        other = make_user()
         order = create_order(other, with_referral=False)
         response = self.client.get(reverse("payments-status", kwargs={"order_pk": order.pk}))
         assert response.status_code == 404
@@ -241,3 +241,30 @@ class TestOrderStatusView(TestCase):
         order = create_order(make_user(), with_referral=False)
         response = self.client.get(reverse("payments-status", kwargs={"order_pk": order.pk}))
         assert response.status_code in (302, 403)
+
+
+class TestPaymentConfirmationRoleSeparation(TestCase):
+    def test_confirmacoes_restritas_a_cliente(self):
+        from apps.accounts.models import CustomUser
+
+        for role in (CustomUser.Role.PRESTADOR, CustomUser.Role.AFILIADO):
+            with self.subTest(role=role):
+                user = make_user(role=role)
+                self.client.force_login(user)
+                order = create_order(user, with_referral=False)
+                for url_name in ("payments-manual-confirm", "payments-status"):
+                    response = self.client.get(
+                        reverse(url_name, kwargs={"order_pk": order.pk})
+                    )
+                    assert response.status_code == 403
+
+    def test_admin_pode_acessar_confirmacoes(self):
+        from apps.accounts.models import CustomUser
+
+        admin = make_user(role=CustomUser.Role.ADMIN)
+        self.client.force_login(admin)
+        order = create_order(admin, with_referral=False)
+        response = self.client.get(
+            reverse("payments-manual-confirm", kwargs={"order_pk": order.pk})
+        )
+        assert response.status_code == 200

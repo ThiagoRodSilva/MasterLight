@@ -215,4 +215,7 @@ MAINTENANCE_PLAN_PRICES = {
 }
 
 LOGIN_REDIRECT_URL = "/"
+# allauth está montado em /social/; sem isso os mixins redirecionam para
+# /accounts/login/ (rota inexistente) quando o visitante não está autenticado.
+LOGIN_URL = "/social/login/"
 ACCOUNT_LOGOUT_REDIRECT_URL = "/"

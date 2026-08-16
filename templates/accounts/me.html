@@ -97,10 +97,10 @@
     {% if user.is_afiliado and AFFILIATES_ENABLED %}
       <a href="{% url 'affiliate-dashboard' %}" class="btn btn-brand"><i class="bi bi-wallet2 me-1"></i> Painel de afiliado</a>
     {% endif %}
-    {% if SERVICES_ENABLED %}
+    {% if user.is_cliente and SERVICES_ENABLED %}
     <a href="{% url 'services-my-requests' %}" class="btn btn-outline-brand"><i class="bi bi-list-check me-1"></i> Minhas solicitações</a>
     {% endif %}
-    {% if STORE_ENABLED %}
+    {% if user.is_cliente and STORE_ENABLED %}
     <a href="{% url 'checkout-cart' %}" class="btn btn-outline-brand"><i class="bi bi-cart me-1"></i> Carrinho</a>
     {% endif %}
   </div>

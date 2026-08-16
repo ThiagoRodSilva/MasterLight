@@ -276,3 +276,31 @@ class TestReferralCreation(TestCase):
         self.client.post(reverse("checkout-cart-add", args=[product.pk]), {"qty": "1"})
         self.client.post(reverse("checkout"))
         assert Referral.objects.filter(affiliate=affiliate).count() == 0
+
+
+class TestCheckoutRoleSeparation(TestCase):
+    def test_checkout_restrito_a_cliente(self):
+        from apps.accounts.models import CustomUser
+
+        for role in (CustomUser.Role.PRESTADOR, CustomUser.Role.AFILIADO):
+            with self.subTest(role=role):
+                user = make_user(role=role)
+                self.client.force_login(user)
+                response = self.client.get(reverse("checkout"))
+                assert response.status_code == 403
+
+    def test_address_restrito_a_cliente(self):
+        from apps.accounts.models import CustomUser
+
+        user = make_user(role=CustomUser.Role.AFILIADO)
+        self.client.force_login(user)
+        response = self.client.get(reverse("checkout-address"))
+        assert response.status_code == 403
+
+    def test_admin_pode_acessar_checkout(self):
+        from apps.accounts.models import CustomUser
+
+        admin = make_user(role=CustomUser.Role.ADMIN)
+        self.client.force_login(admin)
+        response = self.client.get(reverse("checkout"))
+        assert response.status_code in (200, 302)

@@ -4,7 +4,6 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -79,21 +78,18 @@ class ServiceCreateView(ProviderRequiredMixin, CreateView):
         return response
 
 
-class ServiceUpdateView(OwnerRequiredMixin, UpdateView):
+class ServiceUpdateView(ProviderRequiredMixin, OwnerRequiredMixin, UpdateView):
     model = Service
     form_class = ServiceForm
     template_name = "services/service_form.html"
     context_object_name = "service"
-
-    def get_queryset(self):
-        return super().get_queryset().filter(created_by=self.request.user)
 
     def get_success_url(self):
         messages.success(self.request, "Serviço atualizado.")
         return reverse_lazy("services-my")
 
 
-class ServiceDeleteView(OwnerRequiredMixin, DeleteView):
+class ServiceDeleteView(ProviderRequiredMixin, OwnerRequiredMixin, DeleteView):
     model = Service
     template_name = "services/service_confirm_delete.html"
     context_object_name = "service"
@@ -295,7 +291,7 @@ class ServiceRequestCancelView(ClienteRequiredMixin, UpdateView):
 # Cliente: minhas solicitações
 
 
-class MyServiceRequestListView(LoginRequiredMixin, ListView):
+class MyServiceRequestListView(ClienteRequiredMixin, ListView):
     template_name = "services/my_requests.html"
     context_object_name = "requests"
     paginate_by = 20

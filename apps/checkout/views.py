@@ -3,7 +3,6 @@
 from django.apps import apps
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
@@ -11,6 +10,7 @@ from django.views import View
 from django.views.generic import CreateView
 
 from apps.affiliate.models import AffiliateProfile, Referral
+from apps.core.mixins import ClienteRequiredMixin
 from apps.core.models import SiteSettings
 from apps.payments.services import checkout_or_charge
 
@@ -62,7 +62,7 @@ def cart_remove_view(request, product_pk):
     return redirect("checkout-cart")
 
 
-class CheckoutView(LoginRequiredMixin, View):
+class CheckoutView(ClienteRequiredMixin, View):
     """Cria Order a partir do carrinho e dispara pagamento."""
 
     template_name = "checkout/checkout.html"
@@ -145,7 +145,7 @@ class CheckoutView(LoginRequiredMixin, View):
         return redirect(result["redirect_url"])
 
 
-class AddressCreateView(LoginRequiredMixin, CreateView):
+class AddressCreateView(ClienteRequiredMixin, CreateView):
     model = Address
     fields = ["street", "number", "city", "state", "zip_code", "country"]
     template_name = "checkout/address_form.html"

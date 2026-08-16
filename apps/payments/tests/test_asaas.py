@@ -399,11 +399,9 @@ class TestPixConfirmationView(AsaasMockMixin, TestCase):
         assert "base64png" in html
 
     def test_pix_confirmation_requires_own_order(self):
-        from apps.accounts.models import CustomUser
-
         user = make_user()
         self.client.force_login(user)
-        other = make_user(role=CustomUser.Role.AFILIADO)
+        other = make_user()
         order = create_order(other, with_referral=False)
 
         response = self.client.get(reverse("payments-pix-confirm", kwargs={"order_pk": order.pk}))
@@ -440,11 +438,9 @@ class TestPixConfirmationView(AsaasMockMixin, TestCase):
         assert "3419179001234567890" in html
 
     def test_boleto_confirmation_requires_own_order(self):
-        from apps.accounts.models import CustomUser
-
         user = make_user()
         self.client.force_login(user)
-        other = make_user(role=CustomUser.Role.AFILIADO)
+        other = make_user()
         order = create_order(other, with_referral=False)
 
         response = self.client.get(reverse("payments-boleto-confirm", kwargs={"order_pk": order.pk}))

@@ -4,7 +4,6 @@ import json
 import logging
 
 from django.conf import settings
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.management import call_command
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
@@ -12,6 +11,8 @@ from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import TemplateView
+
+from apps.core.mixins import ClienteRequiredMixin
 
 from ..checkout.models import Order
 from .services import WebhookAuthError, webhook_handler
@@ -65,7 +66,7 @@ class ReconcilePaymentsView(View):
         return HttpResponse(status=200)
 
 
-class PixConfirmationView(LoginRequiredMixin, TemplateView):
+class PixConfirmationView(ClienteRequiredMixin, TemplateView):
     """Mostra QR Code/copia-e-cola do Pix gerado no Asaas."""
 
     template_name = "payments/pix_confirm.html"
@@ -92,7 +93,7 @@ class PixConfirmationView(LoginRequiredMixin, TemplateView):
         return ctx
 
 
-class CardConfirmationView(LoginRequiredMixin, TemplateView):
+class CardConfirmationView(ClienteRequiredMixin, TemplateView):
     """Confirmação de pagamento com cartão de crédito (Asaas)."""
 
     template_name = "payments/card_confirm.html"
@@ -103,7 +104,7 @@ class CardConfirmationView(LoginRequiredMixin, TemplateView):
         return ctx
 
 
-class BoletoConfirmationView(LoginRequiredMixin, TemplateView):
+class BoletoConfirmationView(ClienteRequiredMixin, TemplateView):
     """Mostra o boleto bancário gerado no Asaas (link/linha digitável)."""
 
     template_name = "payments/boleto_confirm.html"
@@ -130,7 +131,7 @@ class BoletoConfirmationView(LoginRequiredMixin, TemplateView):
         return ctx
 
 
-class OrderStatusView(LoginRequiredMixin, View):
+class OrderStatusView(ClienteRequiredMixin, View):
     """Retorna o status do pedido em JSON (usado pelo polling das telas).
 
     O usuário acessa apenas pedidos próprios; `paid` indica pagamento
@@ -148,7 +149,7 @@ class OrderStatusView(LoginRequiredMixin, View):
         )
 
 
-class ManualConfirmationView(LoginRequiredMixin, TemplateView):
+class ManualConfirmationView(ClienteRequiredMixin, TemplateView):
     """Confirmação de pagamento manual (gateway `manual`)."""
 
     template_name = "payments/manual_confirm.html"
@@ -159,7 +160,7 @@ class ManualConfirmationView(LoginRequiredMixin, TemplateView):
         return ctx
 
 
-class CheckoutCallbackView(LoginRequiredMixin, TemplateView):
+class CheckoutCallbackView(ClienteRequiredMixin, TemplateView):
     """Retorno do Asaas Checkout (successUrl/cancelUrl/expiredUrl).
 
     A confirmação financeira vem via webhook `CHECKOUT_PAID`; esta página apenas

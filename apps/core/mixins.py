@@ -21,42 +21,50 @@ class SectionEnabledMixin:
         return super().dispatch(request, *args, **kwargs)
 
 
+class RoleRequiredMixin(LoginRequiredMixin):
+    """Base dos mixins de separação de contas.
+
+    Permite apenas usuários cuja `role` esteja em `allowed_roles`, além de
+    admins (`role="admin"`) e superusers — os únicos com acesso a tudo.
+    """
+
+    allowed_roles = set()
+
+    def dispatch(self, request, *args, **kwargs):
+        user = request.user
+        if not user.is_authenticated:
+            return self.handle_no_permission()
+        if not (user.is_superuser or user.role in self.allowed_roles):
+            return self.handle_no_permission()
+        return super().dispatch(request, *args, **kwargs)
+
+
 class OwnerRequiredMixin(LoginRequiredMixin):
-    """Garante que o objeto pertence ao usuario autenticado."""
+    """Garante que o objeto pertence ao usuário autenticado.
+
+    Admins/superusers (acesso a tudo) enxergam todos os objetos.
+    """
 
     def get_queryset(self):
         qs = super().get_queryset()
+        if self.request.user.is_admin:
+            return qs
         return qs.filter(created_by=self.request.user)
 
 
-class ProviderRequiredMixin(LoginRequiredMixin):
+class ProviderRequiredMixin(RoleRequiredMixin):
     """Limita acesso a prestadores/admin."""
 
-    def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return self.handle_no_permission()
-        if not request.user.is_superuser and request.user.role not in ("prestador", "admin"):
-            return self.handle_no_permission()
-        return super().dispatch(request, *args, **kwargs)
+    allowed_roles = {"prestador", "admin"}
 
 
-class AffiliateRequiredMixin(LoginRequiredMixin):
-    """Limita acesso afiliados/admin."""
+class AffiliateRequiredMixin(RoleRequiredMixin):
+    """Limita acesso a afiliados/admin."""
 
-    def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return self.handle_no_permission()
-        if not request.user.is_superuser and request.user.role not in ("afiliado", "admin"):
-            return self.handle_no_permission()
-        return super().dispatch(request, *args, **kwargs)
+    allowed_roles = {"afiliado", "admin"}
 
 
-class ClienteRequiredMixin(LoginRequiredMixin):
-    """Limita acesso clientes/admin (ex.: solicitar orçamento de serviço)."""
+class ClienteRequiredMixin(RoleRequiredMixin):
+    """Limita acesso a clientes/admin (ex.: solicitar orçamento de serviço)."""
 
-    def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return self.handle_no_permission()
-        if not request.user.is_superuser and request.user.role not in ("cliente", "admin"):
-            return self.handle_no_permission()
-        return super().dispatch(request, *args, **kwargs)
+    allowed_roles = {"cliente", "admin"}
