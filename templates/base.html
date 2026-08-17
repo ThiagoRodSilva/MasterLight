@@ -4,24 +4,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#111111" id="theme-color-meta">
+  <meta name="theme-color" content="#111111">
   <title>{% block title %}{{ BRAND_NAME }}{% endblock %}</title>
   <link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
-  <script>
-    (function () {
-      var stored = null;
-      try { stored = localStorage.getItem('ml-theme'); } catch (e) {}
-      var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-      var theme = stored || (prefersDark ? 'dark' : 'light');
-      document.documentElement.setAttribute('data-bs-theme', theme);
-      var meta = document.getElementById('theme-color-meta');
-      if (meta) { meta.setAttribute('content', theme === 'dark' ? '#121212' : '#111111'); }
-    })();
-  </script>
   <style>
     :root {
       --bs-primary: {{ BRAND_PALETTE.primary }};
-      --bs-primary-alt: {{ BRAND_PALETTE.primary_alt }};
       --bs-dark: {{ BRAND_PALETTE.dark }};
     }
   </style>

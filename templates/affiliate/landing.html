@@ -10,7 +10,7 @@
         <input type="text" class="form-control form-control-brand" id="ref-link" readonly value="{{ ref_url }}">
         <button class="btn btn-brand" type="button" id="copy-btn"><i class="bi bi-clipboard me-1"></i> Copiar</button>
       </div>
-      <a href="{% url 'affiliate-dashboard' %}" class="btn btn-brand-ghost text-brand-dark border-brand"><i class="bi bi-speedometer2 me-1"></i> Abrir painel</a>
+      <a href="{% url 'affiliate-dashboard' %}" class="btn btn-brand-ghost border-brand"><i class="bi bi-speedometer2 me-1"></i> Abrir painel</a>
     {% else %}
       <a href="{% url 'account_signup' %}?role=afiliado" class="btn btn-brand me-2"><i class="bi bi-person-plus me-1"></i> Seja um afiliado</a>
       <a href="{% url 'account_login' %}" class="btn btn-outline-brand"><i class="bi bi-box-arrow-in-right me-1"></i> Já sou afiliado</a>
@@ -57,7 +57,7 @@
     <div class="row g-4">
       <div class="col-12 col-md-4">
         <div class="text-center">
-          <div class="avatar avatar-lg bg-brand text-brand-dark mx-auto mb-3">
+          <div class="avatar avatar-lg bg-brand text-brand-contrast mx-auto mb-3">
             <span class="fw-bold">1</span>
           </div>
           <h5>Cadastre-se</h5>
@@ -66,7 +66,7 @@
       </div>
       <div class="col-12 col-md-4">
         <div class="text-center">
-          <div class="avatar avatar-lg bg-brand text-brand-dark mx-auto mb-3">
+          <div class="avatar avatar-lg bg-brand text-brand-contrast mx-auto mb-3">
             <span class="fw-bold">2</span>
           </div>
           <h5>Divulgue</h5>
@@ -75,7 +75,7 @@
       </div>
       <div class="col-12 col-md-4">
         <div class="text-center">
-          <div class="avatar avatar-lg bg-brand text-brand-dark mx-auto mb-3">
+          <div class="avatar avatar-lg bg-brand text-brand-contrast mx-auto mb-3">
             <span class="fw-bold">3</span>
           </div>
           <h5>Ganhe</h5>

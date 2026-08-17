@@ -134,6 +134,35 @@ class MaintenancePlan(BaseModel):
         return self.cycle_days_for(self.plan_type)
 
 
+class MaintenancePlanTemplate(BaseModel):
+    """Catálogo de planos de manutenção oferecidos (CRUD via admin)."""
+
+    name = models.CharField(max_length=120, verbose_name="nome")
+    plan_type = models.CharField(
+        max_length=20,
+        choices=MaintenancePlan.PlanType.choices,
+        default=MaintenancePlan.PlanType.MONTHLY,
+        verbose_name="tipo de plano",
+    )
+    value = models.DecimalField(
+        max_digits=12, decimal_places=2, default=0, verbose_name="preço por ciclo"
+    )
+    description = models.TextField(blank=True, default="", verbose_name="descrição")
+    ordering = models.PositiveIntegerField(default=0, verbose_name="ordem de exibição")
+
+    class Meta:
+        ordering = ["ordering", "value"]
+        verbose_name = "Plano de Manutenção (catálogo)"
+        verbose_name_plural = "Planos de Manutenção (catálogo)"
+
+    def __str__(self) -> str:
+        return f"{self.name} — R$ {self.value}"
+
+    @property
+    def label(self) -> str:
+        return self.get_plan_type_display()
+
+
 class MaintenanceVisit(BaseModel):
     plan = models.ForeignKey(
         MaintenancePlan,

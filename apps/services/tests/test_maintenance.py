@@ -12,7 +12,7 @@ from apps.checkout.models import Order
 from apps.core.models import SiteSettings
 from apps.payments.models import Transaction
 from apps.payments.services import AsaasGateway
-from apps.services.models import MaintenancePlan, MaintenanceVisit
+from apps.services.models import MaintenancePlan, MaintenancePlanTemplate, MaintenanceVisit
 from apps.tests.helpers import AsaasMockMixin, make_user, mock_asaas
 
 ASAAS_SETTINGS = {
@@ -103,6 +103,35 @@ class TestSubscribeManual(TestCase):
                 },
             )
         assert resp.status_code == 302
+        assert not MaintenancePlan.objects.filter(client=cliente).exists()
+
+    def test_subscribe_uses_template_value(self):
+        template = MaintenancePlanTemplate.objects.get(plan_type="mensal")
+        template.value = Decimal("99.90")
+        template.save(update_fields=["value"])
+        prestador = _make_prestador()
+        cliente = _make_cliente()
+        with override_settings(PAYMENT_PROVIDER="manual"):
+            self.client.force_login(cliente)
+            resp = self.client.post(
+                "/servicos/planos/assinar/",
+                {"plan_type": "mensal", "prestador": prestador.pk},
+            )
+        assert resp.status_code == 302
+        plan = MaintenancePlan.objects.get(client=cliente)
+        tx = Transaction.objects.get(order=plan.order)
+        assert tx.amount == Decimal("99.90")
+
+    def test_subscribe_rejects_inactive_plan(self):
+        MaintenancePlanTemplate.objects.filter(plan_type="mensal").update(is_active=False)
+        prestador = _make_prestador()
+        cliente = _make_cliente()
+        with override_settings(PAYMENT_PROVIDER="manual"):
+            self.client.force_login(cliente)
+            self.client.post(
+                "/servicos/planos/assinar/",
+                {"plan_type": "mensal", "prestador": prestador.pk},
+            )
         assert not MaintenancePlan.objects.filter(client=cliente).exists()
 
     @override_settings(**ASAAS_SETTINGS)
@@ -248,6 +277,30 @@ class TestMaintenanceViews(TestCase):
         resp = self.client.get("/servicos/planos/assinar/?tipo=inexistente")
         assert resp.status_code == 200
 
+    def test_plan_list_lists_active_templates_only(self):
+        MaintenancePlanTemplate.objects.update(is_active=False)
+        MaintenancePlanTemplate.objects.create(
+            name="Manutenção semestral",
+            plan_type="trimestral",
+            value="189.90",
+            ordering=4,
+        )
+        resp = self.client.get("/servicos/planos/")
+        content = resp.content.decode()
+        assert "Manutenção semestral" in content
+        assert "Manutenção mensal" not in content
+
+    def test_plan_list_shows_template_price(self):
+        resp = self.client.get("/servicos/planos/")
+        assert "79,90" in resp.content.decode()
+
+    def test_plan_form_ignores_tipo_without_active_template(self):
+        MaintenancePlanTemplate.objects.filter(plan_type="mensal").update(is_active=False)
+        cliente = _make_cliente()
+        self.client.force_login(cliente)
+        resp = self.client.get("/servicos/planos/assinar/?tipo=mensal")
+        assert resp.status_code == 200
+
     def test_visits_dashboard_lists_for_provider(self):
         prestador = _make_prestador()
         cliente = _make_cliente()
@@ -278,3 +331,83 @@ class TestVisitCompleteView(TestCase):
         assert resp.status_code == 302
         visit.refresh_from_db()
         assert visit.completed_at is not None
+
+
+class TestMaintenancePlanTemplateModel(TestCase):
+    def test_str_e_label(self):
+        template = MaintenancePlanTemplate(
+            name="Manutenção mensal", plan_type="mensal", value="79.90"
+        )
+        assert "Manutenção mensal" in str(template)
+        assert template.label == "Mensal"
+
+
+class TestMaintenancePlanTemplateAdmin(TestCase):
+    def _login_admin(self):
+        user = make_user(
+            role=CustomUser.Role.ADMIN, is_superuser=True, is_staff=True
+        )
+        self.client.force_login(user)
+        return user
+
+    def test_admin_can_create_plan(self):
+        self._login_admin()
+        resp = self.client.post(
+            "/admin/services/maintenanceplantemplate/add/",
+            {
+                "name": "Manutenção semestral",
+                "plan_type": "trimestral",
+                "value": "189.90",
+                "description": "Visitas a cada 6 meses.",
+                "ordering": "4",
+                "is_active": "on",
+            },
+        )
+        assert resp.status_code == 302
+        assert MaintenancePlanTemplate.objects.filter(name="Manutenção semestral").exists()
+
+    def test_admin_can_edit_plan_value(self):
+        self._login_admin()
+        template = MaintenancePlanTemplate.objects.create(
+            name="Manutenção mensal",
+            plan_type="mensal",
+            value="79.90",
+            ordering=1,
+        )
+        resp = self.client.post(
+            f"/admin/services/maintenanceplantemplate/{template.pk}/change/",
+            {
+                "name": "Manutenção mensal",
+                "plan_type": "mensal",
+                "value": "99.90",
+                "description": "",
+                "ordering": "1",
+                "is_active": "on",
+            },
+        )
+        assert resp.status_code == 302
+        template.refresh_from_db()
+        assert template.value == Decimal("99.90")
+
+    def test_admin_can_deactivate_plan(self):
+        self._login_admin()
+        template = MaintenancePlanTemplate.objects.create(
+            name="Manutenção anual",
+            plan_type="anual",
+            value="799.90",
+            ordering=3,
+        )
+        resp = self.client.post(
+            f"/admin/services/maintenanceplantemplate/{template.pk}/change/",
+            {
+                "name": "Manutenção anual",
+                "plan_type": "anual",
+                "value": "799.90",
+                "description": "",
+                "ordering": "3",
+                "is_active": "",
+            },
+        )
+        assert resp.status_code == 302
+        template.refresh_from_db()
+        assert not template.is_active

@@ -2,6 +2,7 @@ from django.contrib import admin
 
 from .models import (
     MaintenancePlan,
+    MaintenancePlanTemplate,
     MaintenanceVisit,
     Service,
     ServiceCategory,
@@ -37,6 +38,12 @@ class ServiceRequestAdmin(admin.ModelAdmin):
     date_hierarchy = "created_at"
 
 
+class MaintenanceVisitInline(admin.TabularInline):
+    model = MaintenanceVisit
+    extra = 0
+    fields = ("scheduled_at", "completed_at", "notes", "is_active")
+
+
 @admin.register(MaintenancePlan)
 class MaintenancePlanAdmin(admin.ModelAdmin):
     list_display = (
@@ -51,6 +58,25 @@ class MaintenancePlanAdmin(admin.ModelAdmin):
     list_filter = ("plan_type", "is_active")
     search_fields = ("client__email", "prestador__email", "asaas_subscription_id")
     date_hierarchy = "created_at"
+    autocomplete_fields = ("client", "prestador")
+    readonly_fields = ("asaas_subscription_id",)
+    inlines = (MaintenanceVisitInline,)
+
+
+@admin.register(MaintenancePlanTemplate)
+class MaintenancePlanTemplateAdmin(admin.ModelAdmin):
+    list_display = (
+        "name",
+        "plan_type",
+        "value",
+        "ordering",
+        "is_active",
+        "updated_at",
+    )
+    list_editable = ("value", "ordering", "is_active")
+    list_filter = ("plan_type", "is_active")
+    search_fields = ("name", "description")
+    ordering = ("ordering", "value")
 
 
 @admin.register(MaintenanceVisit)

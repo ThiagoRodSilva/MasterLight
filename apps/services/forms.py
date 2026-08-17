@@ -1,9 +1,8 @@
 """Forms do app services."""
 
 from django import forms
-from django.conf import settings
 
-from .models import MaintenancePlan, Service, ServiceRequest
+from .models import MaintenancePlan, MaintenancePlanTemplate, Service, ServiceRequest
 
 
 class ServiceForm(forms.ModelForm):
@@ -48,5 +47,10 @@ class MaintenancePlanForm(forms.ModelForm):
         cleaned = super().clean()
         plan_type = cleaned.get("plan_type")
         if plan_type:
-            cleaned["value"] = settings.MAINTENANCE_PLAN_PRICES.get(plan_type, 0)
+            template = MaintenancePlanTemplate.objects.filter(
+                plan_type=plan_type, is_active=True
+            ).first()
+            if template is None:
+                raise forms.ValidationError("Este plano está indisponível no momento.")
+            cleaned["value"] = template.value
         return cleaned

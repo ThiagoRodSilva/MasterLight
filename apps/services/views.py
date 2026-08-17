@@ -9,7 +9,6 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.utils import timezone
-from django.utils.translation import gettext_lazy as _
 from django.views import View
 from django.views.generic import (
     CreateView,
@@ -29,7 +28,14 @@ from apps.core.mixins import (
 )
 
 from .forms import MaintenancePlanForm, ServiceForm, ServiceRequestForm
-from .models import MaintenancePlan, MaintenanceVisit, Service, ServiceCategory, ServiceRequest
+from .models import (
+    MaintenancePlan,
+    MaintenancePlanTemplate,
+    MaintenanceVisit,
+    Service,
+    ServiceCategory,
+    ServiceRequest,
+)
 
 
 class ServiceListView(SectionEnabledMixin, ListView):
@@ -314,16 +320,9 @@ class MaintenancePlanListView(SectionEnabledMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        prices = settings.MAINTENANCE_PLAN_PRICES
-        ctx["plans"] = [
-            {
-                "value": t.value,
-                "label": t.label,
-                "price": prices.get(t.value, 0),
-                "description": MaintenancePlan.DESCRIPTIONS[t.value],
-            }
-            for t in MaintenancePlan.PlanType
-        ]
+        ctx["plans"] = MaintenancePlanTemplate.objects.filter(is_active=True).order_by(
+            "ordering", "value"
+        )
         return ctx
 
 
@@ -331,23 +330,22 @@ class MaintenancePlanCreateView(SectionEnabledMixin, ClienteRequiredMixin, FormV
     section_flag = "maintenance_enabled"
     template_name = "services/plan_form.html"
     form_class = MaintenancePlanForm
-    plan_type_label = {
-        MaintenancePlan.PlanType.MONTHLY: _("Manutenção mensal"),
-        MaintenancePlan.PlanType.QUARTERLY: _("Manutenção trimestral"),
-        MaintenancePlan.PlanType.ANNUAL: _("Manutenção anual"),
-    }
 
     def get_initial(self):
         initial = super().get_initial()
         tipo = self.request.GET.get("tipo")
-        valid = {t.value for t in MaintenancePlan.PlanType}
-        if tipo in valid:
+        if tipo and MaintenancePlanTemplate.objects.filter(
+            plan_type=tipo, is_active=True
+        ).exists():
             initial["plan_type"] = tipo
         return initial
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx["prices"] = settings.MAINTENANCE_PLAN_PRICES
+        ctx["prices"] = {
+            t.plan_type: t.value
+            for t in MaintenancePlanTemplate.objects.filter(is_active=True)
+        }
         return ctx
 
     def form_valid(self, form):
@@ -361,6 +359,9 @@ class MaintenancePlanCreateView(SectionEnabledMixin, ClienteRequiredMixin, FormV
         value = form.cleaned_data["value"]
         plan_type = form.cleaned_data["plan_type"]
         prestador = form.cleaned_data["prestador"]
+        template = MaintenancePlanTemplate.objects.get(
+            plan_type=plan_type, is_active=True
+        )
         next_due = timezone.localdate() + timedelta(days=MaintenancePlan.cycle_days_for(plan_type))
 
         try:
@@ -372,7 +373,7 @@ class MaintenancePlanCreateView(SectionEnabledMixin, ClienteRequiredMixin, FormV
                 )
                 OrderItem.objects.create(
                     order=order,
-                    name=self.plan_type_label[plan_type],
+                    name=template.name,
                     qty=1,
                     unit_price=value,
                 )

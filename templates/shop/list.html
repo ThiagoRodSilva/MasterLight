@@ -23,7 +23,7 @@
       {% for p in products %}
         <div class="col-sm-6 col-md-4 col-lg-3">
           <div class="card card-interactive card-elevated h-100 border-0">
-            <a href="{% url 'shop-detail' p.slug %}" class="text-decoration-none text-dark">
+            <a href="{% url 'shop-detail' p.slug %}" class="text-decoration-none text-strong">
               {% if p.cover %}
                 <div class="ratio ratio-1x1 bg-brand-50">
                   <img src="{{ p.cover.image }}" class="card-img-top object-fit-cover" alt="{{ p.cover.alt }}">
