@@ -7,13 +7,14 @@ from django.core.validators import URLValidator
 from django.utils.deconstruct import deconstructible
 from django.utils.translation import gettext_lazy as _
 
-_IMAGE_EXTENSIONS = {"jpg", "jpeg", "png", "gif", "webp", "avif", "svg"}
+_IMAGE_EXTENSIONS = {"jpg", "jpeg", "png", "gif", "webp", "avif"}
 
 
 @deconstructible
 class ImageURLValidator(URLValidator):
     """Valida URL HTTP/HTTPS apontando para uma imagem."""
 
+    schemes = ["http", "https"]
     message = _("Informe uma URL de imagem válida (.jpg, .png, .webp, etc.).")
 
     def __call__(self, value: str) -> None:

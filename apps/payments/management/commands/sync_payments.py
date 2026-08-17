@@ -23,8 +23,6 @@ _ASAAS_TO_LOCAL = {
     "pending_confirmation": Transaction.Status.PENDING,
     "awaiting_risk_analysis": Transaction.Status.PENDING,
     "dunning_requested": Transaction.Status.PENDING,
-    "refund_in_progress": Transaction.Status.REFUNDED,
-    "partially_refunded": Transaction.Status.REFUNDED,
     "refunded": Transaction.Status.REFUNDED,
     "failed": Transaction.Status.FAILED,
     "overdue": Transaction.Status.FAILED,

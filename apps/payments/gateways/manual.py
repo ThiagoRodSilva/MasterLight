@@ -6,7 +6,14 @@ import uuid
 from django.conf import settings
 from django.urls import reverse_lazy
 
-from .base import ChargeResult, CheckoutResult, PaymentGateway, PaymentLinkResult, WebhookAuthError
+from .base import (
+    ChargeResult,
+    CheckoutResult,
+    PaymentGateway,
+    PaymentLinkResult,
+    WebhookAuthError,
+    can_transition,
+)
 
 
 class ManualGateway(PaymentGateway):
@@ -104,9 +111,17 @@ class ManualGateway(PaymentGateway):
 
         tx = Transaction.objects.filter(pk=transaction_id).first()
         if tx:
-            tx.status = Transaction.Status.REFUNDED
-            tx.save(update_fields=["status", "updated_at"])
-            return ChargeResult(ok=True, redirect_url="/", transaction_id=str(tx.pk))
+            new_status = Transaction.Status.REFUNDED
+            if can_transition(tx.status, new_status):
+                tx.status = new_status
+                tx.save(update_fields=["status", "updated_at"])
+                return ChargeResult(ok=True, redirect_url="/", transaction_id=str(tx.pk))
+            return ChargeResult(
+                ok=False,
+                redirect_url="/",
+                transaction_id=str(tx.pk),
+                message=f"Transição '{tx.status} -> {new_status}' bloqueada.",
+            )
         return ChargeResult(ok=False, redirect_url="/", message="Tx não encontrada.")
 
     def webhook(self, payload, headers) -> ChargeResult:
@@ -152,10 +167,23 @@ class ManualGateway(PaymentGateway):
             raise ValueError(f"Transação {transaction_id} não encontrada.")
 
         try:
-            tx.status = Transaction.Status(status)
+            new_status = Transaction.Status(status)
         except ValueError as exc:
             raise ValueError(f"Status '{status}' inválido.") from exc
 
+        if not can_transition(tx.status, new_status):
+            tx.raw_payload = payload_str
+            tx.save(update_fields=["raw_payload", "updated_at"])
+            return ChargeResult(
+                ok=True,
+                redirect_url="/",
+                transaction_id=str(tx.pk),
+                message=f"Transição '{tx.status} -> {new_status}' bloqueada.",
+                status=tx.status,
+                raw_payload=payload_str,
+            )
+
+        tx.status = new_status
         tx.raw_payload = payload_str
         tx.save(update_fields=["status", "raw_payload", "updated_at"])
 

@@ -6,6 +6,7 @@ import uuid
 from datetime import date, timedelta
 
 from django.conf import settings
+from django.db import IntegrityError
 from django.urls import reverse_lazy
 
 from .asaas_client import AsaasApiClient
@@ -67,6 +68,7 @@ class AsaasGateway(PaymentGateway):
         "payment_split_divergence_block_finished",
         "payment_split_done",
         "checkout_viewed",
+        "payment_partially_refunded",
     }
     _AUTHORIZED_EVENTS = {"payment_authorized"}
     _PAID_EVENTS = {"payment_confirmed", "payment_received"}
@@ -81,7 +83,6 @@ class AsaasGateway(PaymentGateway):
     _REFUNDED_EVENTS = {
         "payment_refunded",
         "payment_refund_requested",
-        "payment_partially_refunded",
     }
 
     def __init__(self):
@@ -116,16 +117,30 @@ class AsaasGateway(PaymentGateway):
                 tx.raw_payload = raw_payload
                 tx.save(update_fields=["amount", "raw_payload", "updated_at"])
                 return tx
-        return Transaction.objects.create(
-            order=order,
-            user=user,
-            provider=self.name,
-            external_id=external_id,
-            amount=amount,
-            status=status,
-            kind=kind,
-            raw_payload=raw_payload,
-        )
+        try:
+            return Transaction.objects.create(
+                order=order,
+                user=user,
+                provider=self.name,
+                external_id=external_id,
+                amount=amount,
+                status=status,
+                kind=kind,
+                raw_payload=raw_payload,
+            )
+        except IntegrityError:
+            # Race condition: outro webhook criou a transação entre o filter e o create.
+            # Busca a existente e atualiza (idempotente).
+            tx = Transaction.objects.filter(
+                provider=self.name, external_id=external_id
+            ).first()
+            if tx is not None:
+                tx.amount = amount
+                tx.raw_payload = raw_payload
+                tx.save(update_fields=["amount", "raw_payload", "updated_at"])
+                return tx
+            # Se ainda não existe (improvável), re-levanta.
+            raise
 
     _CUSTOMER_MISSING_FIELDS = ("cpfcnpj", "postalcode", "addressnumber", "province", "phonenumber")
     _CUSTOMER_STALE_MARKERS = ("invalid_customer", "customer not found", "customer nao encontrado")
@@ -759,6 +774,8 @@ class AsaasGateway(PaymentGateway):
         para que o fluxo normal de status (paid) aprove a solicitação via signal.
         Retorna None se nenhuma solicitação corresponder ao link.
         """
+        from django.db import transaction as dj_transaction
+
         from apps.checkout.models import Order, OrderItem
         from apps.payments.models import Transaction
         from apps.services.models import ServiceRequest
@@ -775,21 +792,29 @@ class AsaasGateway(PaymentGateway):
         )
         if service_request is None or service_request.status != ServiceRequest.Status.QUOTED:
             return None
-        order = Order.objects.create(
-            user=service_request.cliente,
-            status=Order.Status.AWAITING_PAYMENT,
-            kind=Order.Kind.SERVICE,
-        )
-        OrderItem.objects.create(
-            order=order,
-            service=service_request.service,
-            name=service_request.service.name,
-            qty=1,
-            unit_price=service_request.final_price or service_request.service.base_price,
-        )
-        order.recompute_total()
-        service_request.order = order
-        service_request.save(update_fields=["order", "updated_at"])
+
+        with dj_transaction.atomic():
+            order = Order.objects.create(
+                user=service_request.cliente,
+                status=Order.Status.AWAITING_PAYMENT,
+                kind=Order.Kind.SERVICE,
+            )
+            unit_price = (
+                service_request.final_price
+                if service_request.final_price is not None
+                else service_request.service.base_price
+            )
+            OrderItem.objects.create(
+                order=order,
+                service=service_request.service,
+                name=service_request.service.name,
+                qty=1,
+                unit_price=unit_price,
+            )
+            order.recompute_total()
+            service_request.order = order
+            service_request.save(update_fields=["order", "updated_at"])
+
         return self._upsert_transaction(
             order=order,
             user=service_request.cliente,
@@ -812,7 +837,7 @@ class AsaasGateway(PaymentGateway):
 
         event = str(data.get("event") or "").lower()
         checkout_id = str(checkout.get("id") or "")
-        tx = Transaction.objects.filter(external_id=checkout_id).first()
+        tx = Transaction.objects.filter(external_id=checkout_id, provider=self.name).first()
 
         if tx is None:
             # Fallback por externalReference (order.pk) quando a transação não
@@ -827,7 +852,14 @@ class AsaasGateway(PaymentGateway):
                     .first()
                 )
         if tx is None:
-            raise ValueError(f"Checkout {checkout_id} sem transação vinculada.")
+            logger.info("Asaas webhook checkout: checkout %s sem transação local; ignorado.", checkout_id)
+            return ChargeResult(
+                ok=True,
+                redirect_url="/",
+                message=f"Checkout {checkout_id} sem transação local; ignorado.",
+                status=None,
+                raw_payload=payload_str,
+            )
 
         if event == "checkout_created":
             tx.raw_payload = payload_str

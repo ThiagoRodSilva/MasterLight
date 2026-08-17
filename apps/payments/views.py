@@ -2,6 +2,7 @@
 
 import json
 import logging
+import secrets
 
 from django.conf import settings
 from django.core.management import call_command
@@ -44,19 +45,23 @@ class WebhookView(View):
         return HttpResponse(status=200)
 
 
+@method_decorator(csrf_exempt, name="dispatch")
 class ReconcilePaymentsView(View):
     """Executa a reconciliacao de transacoes Asaas via Vercel Cron.
 
     Autenticado pelo header `Authorization: Bearer <CRON_SECRET>` que a Vercel
     injeta em /pagamentos/reconciliar quando a env CRON_SECRET esta definida.
+    `CRON_SECRET` so existe em `config.settings.vercel`; em dev/test usa-se
+    `getattr` (vazio), mantendo o endpoint fechado por padrao.
     """
 
     http_method_names = ["post"]
 
     def post(self, request: HttpRequest) -> HttpResponse:
-        secret = settings.CRON_SECRET
+        secret = getattr(settings, "CRON_SECRET", "")
         auth = request.headers.get("Authorization", "")
-        if not secret or auth != f"Bearer {secret}":
+        expected = f"Bearer {secret}" if secret else ""
+        if not secret or not auth or not secrets.compare_digest(auth, expected):
             return HttpResponse(status=403)
         try:
             call_command("sync_payments")

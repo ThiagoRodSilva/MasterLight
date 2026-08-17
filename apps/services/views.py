@@ -20,6 +20,7 @@ from django.views.generic import (
     UpdateView,
 )
 
+from apps.checkout.models import Order
 from apps.core.mixins import (
     ClienteRequiredMixin,
     OwnerRequiredMixin,
@@ -27,7 +28,7 @@ from apps.core.mixins import (
     SectionEnabledMixin,
 )
 
-from .forms import MaintenancePlanForm, ServiceForm, ServiceRequestForm
+from .forms import MaintenancePlanForm, QuoteForm, ServiceForm, ServiceRequestForm
 from .models import (
     MaintenancePlan,
     MaintenancePlanTemplate,
@@ -114,7 +115,7 @@ class ServiceListViewMine(ProviderRequiredMixin, ListView):
     context_object_name = "services"
 
     def get_queryset(self):
-        return Service.objects.filter(created_by=self.request.user).select_related("category")
+        return Service.objects.filter(created_by=self.request.user, is_active=True).select_related("category")
 
 
 # -------------------------------------------------------------------------
@@ -159,7 +160,7 @@ class ProviderServiceRequestListView(ProviderRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        qs = ServiceRequest.objects.all()
+        qs = ServiceRequest.objects.filter(is_active=True)
         if not self.request.user.is_admin:
             qs = qs.filter(service__providers=self.request.user) | qs.filter(
                 service__created_by=self.request.user
@@ -169,12 +170,12 @@ class ProviderServiceRequestListView(ProviderRequiredMixin, ListView):
 
 class ServiceQuoteView(ProviderRequiredMixin, UpdateView):
     model = ServiceRequest
-    fields = ["final_price"]
+    form_class = QuoteForm
     template_name = "services/quote_form.html"
     context_object_name = "service_request"
 
     def get_queryset(self):
-        qs = ServiceRequest.objects.filter(status="pending")
+        qs = ServiceRequest.objects.filter(is_active=True, status=ServiceRequest.Status.PENDING)
         if not self.request.user.is_admin:
             qs = qs.filter(service__providers=self.request.user) | qs.filter(
                 service__created_by=self.request.user
@@ -183,6 +184,10 @@ class ServiceQuoteView(ProviderRequiredMixin, UpdateView):
 
     def form_valid(self, form):
         form.instance.status = ServiceRequest.Status.QUOTED
+        if form.instance.prestador_id is None:
+            form.instance.prestador = self.request.user
+        if form.instance.final_price is None:
+            form.instance.final_price = form.instance.service.base_price
         return super().form_valid(form)
 
     def get_success_url(self):
@@ -196,7 +201,9 @@ class ServiceRequestApproveView(ClienteRequiredMixin, View):
     template_name = "services/request_approve.html"
 
     def get_queryset(self):
-        return ServiceRequest.objects.filter(cliente=self.request.user, status="quoted")
+        return ServiceRequest.objects.filter(
+            cliente=self.request.user, status=ServiceRequest.Status.QUOTED, is_active=True
+        )
 
     def get_object(self):
         return get_object_or_404(self.get_queryset(), pk=self.kwargs["pk"])
@@ -209,7 +216,18 @@ class ServiceRequestApproveView(ClienteRequiredMixin, View):
         from apps.checkout.models import Order, OrderItem
         from apps.payments.services import checkout_or_charge
 
-        service_request = self.get_object()
+        service_request = get_object_or_404(
+            ServiceRequest.objects.select_for_update(),
+            pk=self.kwargs["pk"],
+            cliente=request.user,
+            status=ServiceRequest.Status.QUOTED,
+            is_active=True,
+        )
+
+        if service_request.order_id is not None:
+            messages.error(request, "Esta solicitação já possui um pedido de pagamento associado.")
+            return redirect("services-my-requests")
+
         with transaction.atomic():
             if service_request.status != ServiceRequest.Status.QUOTED:
                 messages.error(request, "Solicitação não está aguardando aprovação.")
@@ -220,12 +238,17 @@ class ServiceRequestApproveView(ClienteRequiredMixin, View):
                 status=Order.Status.AWAITING_PAYMENT,
                 kind=Order.Kind.SERVICE,
             )
+            final_price = (
+                service_request.final_price
+                if service_request.final_price is not None
+                else service_request.service.base_price
+            )
             OrderItem.objects.create(
                 order=order,
                 service=service_request.service,
                 name=service_request.service.name,
                 qty=1,
-                unit_price=service_request.final_price or service_request.service.base_price,
+                unit_price=final_price,
             )
             order.recompute_total()
             service_request.order = order
@@ -234,6 +257,8 @@ class ServiceRequestApproveView(ClienteRequiredMixin, View):
             result = checkout_or_charge(order, request, fail_message="Falha ao gerar cobrança.")
 
         if result is None:
+            service_request.order = None
+            service_request.save(update_fields=["order", "updated_at"])
             return redirect("services-my-requests")
         if "url" in result:
             return redirect(result["url"])
@@ -248,7 +273,9 @@ class ServiceRequestPayLinkView(ClienteRequiredMixin, View):
     """
 
     def get_queryset(self):
-        return ServiceRequest.objects.filter(cliente=self.request.user, status="quoted")
+        return ServiceRequest.objects.filter(
+            cliente=self.request.user, status=ServiceRequest.Status.QUOTED, is_active=True
+        )
 
     def get_object(self):
         return get_object_or_404(self.get_queryset(), pk=self.kwargs["pk"])
@@ -257,6 +284,11 @@ class ServiceRequestPayLinkView(ClienteRequiredMixin, View):
         from apps.payments.services import create_payment_link
 
         service_request = self.get_object()
+        final_price = (
+            service_request.final_price
+            if service_request.final_price is not None
+            else service_request.service.base_price
+        )
         try:
             result = create_payment_link(
                 name=f"Orçamento — {service_request.service.name}",
@@ -264,7 +296,7 @@ class ServiceRequestPayLinkView(ClienteRequiredMixin, View):
                     f"Orçamento de {service_request.service.name} "
                     f"(solicitação {service_request.pk})"
                 ),
-                value=service_request.final_price or service_request.service.base_price,
+                value=final_price,
                 billing_type="UNDEFINED",
                 charge_type="DETACHED",
                 external_reference=str(service_request.pk),
@@ -277,19 +309,28 @@ class ServiceRequestPayLinkView(ClienteRequiredMixin, View):
         return JsonResponse({"url": result.url, "link_id": result.link_id})
 
 
-class ServiceRequestCancelView(ClienteRequiredMixin, UpdateView):
-    model = ServiceRequest
-
+class ServiceRequestCancelView(ClienteRequiredMixin, View):
     def get_queryset(self):
         return ServiceRequest.objects.filter(
-            cliente=self.request.user, status__in=["pending", "quoted"]
+            cliente=self.request.user,
+            status__in=[ServiceRequest.Status.PENDING, ServiceRequest.Status.QUOTED],
+            is_active=True,
         )
 
     def post(self, request, *args, **kwargs):
-        service_request = self.get_object()
+        service_request = get_object_or_404(self.get_queryset(), pk=self.kwargs["pk"])
         service_request.status = ServiceRequest.Status.CANCELED
         service_request.save(update_fields=["status", "updated_at"])
+
+        order = service_request.order
+        if order and order.status in (Order.Status.OPEN, Order.Status.AWAITING_PAYMENT):
+            order.status = Order.Status.CANCELED
+            order.save(update_fields=["status", "updated_at"])
+
         messages.info(request, "Solicitação cancelada.")
+        return redirect("services-my-requests")
+
+    def get(self, request, *args, **kwargs):
         return redirect("services-my-requests")
 
 
@@ -304,7 +345,7 @@ class MyServiceRequestListView(ClienteRequiredMixin, ListView):
 
     def get_queryset(self):
         return (
-            ServiceRequest.objects.filter(cliente=self.request.user)
+            ServiceRequest.objects.filter(cliente=self.request.user, is_active=True)
             .select_related("service", "prestador")
             .order_by("-created_at")
         )
@@ -363,6 +404,18 @@ class MaintenancePlanCreateView(SectionEnabledMixin, ClienteRequiredMixin, FormV
             plan_type=plan_type, is_active=True
         )
         next_due = timezone.localdate() + timedelta(days=MaintenancePlan.cycle_days_for(plan_type))
+
+        existing_plan = MaintenancePlan.objects.filter(
+            client=self.request.user,
+            plan_type=plan_type,
+            is_active=True,
+        ).exclude(order__isnull=True).first()
+        if existing_plan:
+            messages.error(
+                self.request,
+                "Você já possui um plano ativo ou aguardando pagamento deste tipo.",
+            )
+            return redirect("services-plan-list")
 
         try:
             with transaction.atomic():
@@ -430,24 +483,21 @@ class MaintenanceVisitListView(ProviderRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        qs = MaintenanceVisit.objects.filter(completed_at__isnull=True)
+        qs = MaintenanceVisit.objects.filter(completed_at__isnull=True, is_active=True)
         if not self.request.user.is_admin:
             qs = qs.filter(plan__prestador=self.request.user)
-        return qs.select_related("plan", "plan__client", "plan__prestador")
+        return qs.select_related("plan", "plan__client", "plan__prestador").filter(plan__is_active=True)
 
 
-class MaintenanceVisitCompleteView(ProviderRequiredMixin, UpdateView):
-    model = MaintenanceVisit
-    fields: list = []
-
+class MaintenanceVisitCompleteView(ProviderRequiredMixin, View):
     def get_queryset(self):
-        qs = MaintenanceVisit.objects.filter(pk=self.kwargs["pk"])
+        qs = MaintenanceVisit.objects.filter(pk=self.kwargs["pk"], is_active=True)
         if not self.request.user.is_admin:
             qs = qs.filter(plan__prestador=self.request.user)
         return qs
 
     def post(self, request, *args, **kwargs):
-        visit = self.get_object()
+        visit = get_object_or_404(self.get_queryset())
         visit.completed_at = timezone.now()
         visit.save(update_fields=["completed_at", "updated_at"])
         messages.success(request, "Visita concluída.")

@@ -4,13 +4,13 @@
   <div class="d-flex flex-column flex-md-row gap-4 align-items-center mb-5">
     <div class="avatar avatar-lg bg-brand-200 text-brand-dark">
       {% if profile_user.avatar %}
-        <img src="{{ profile_user.avatar }}" alt="{{ profile_user.get_full_name|default:profile_user.email }}" class="rounded-circle">
+        <img src="{{ profile_user.avatar }}" alt="{{ profile_user.get_full_name|default:profile_user.username }}" class="rounded-circle">
       {% else %}
-        {{ profile_user.get_full_name|first|upper|default:profile_user.email|first|upper }}
+        {{ profile_user.get_full_name|first|upper|default:profile_user.username|first|upper }}
       {% endif %}
     </div>
     <div class="text-center text-md-start">
-      <h1 class="mb-1">{{ profile_user.get_full_name|default:profile_user.email }}</h1>
+      <h1 class="mb-1">{{ profile_user.get_full_name|default:profile_user.username }}</h1>
       <p class="text-muted mb-2">{{ profile_user.get_role_display }}</p>
       {% if user == profile_user %}
         <a href="{% url 'accounts-me-edit' %}" class="btn btn-brand"><i class="bi bi-pencil me-1"></i> Editar dados</a>

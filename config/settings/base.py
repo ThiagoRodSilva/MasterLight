@@ -6,14 +6,6 @@ import environ
 
 from .env_helpers import asaas_api_key
 
-# Permite usar PyMySQL como driver MySQL drop-in (instalado sem build tools)
-try:
-    import pymysql  # noqa: F401
-
-    pymysql.install_as_MySQLdb()
-except ImportError:  # pragma: no cover
-    pass
-
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 env = environ.Env(
@@ -136,8 +128,6 @@ STORAGES = {
 
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
-# Hospedagem compartilhada (Hostinger/Passenger) não expõe alias de servidor
-# para `media/` fora de public_html; o Django serve os uploads via rota própria.
 SERVE_MEDIA = env.bool("DJANGO_SERVE_MEDIA", default=True)
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
@@ -149,8 +139,7 @@ AUTHENTICATION_BACKENDS = [
     "allauth.account.auth_backends.AuthenticationBackend",
 ]
 ACCOUNT_EMAIL_VERIFICATION = "none"
-ACCOUNT_LOGIN_METHODS = {"email", "username"}
-ACCOUNT_SIGNUP_FIELDS = ["email*", "username*", "password1*", "password2*"]
+ACCOUNT_AUTHENTICATION_METHOD = "email"
 ACCOUNT_SIGNUP_FORM_CLASS = "apps.accounts.forms.CustomSignupForm"
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_UNIQUE_EMAIL = True

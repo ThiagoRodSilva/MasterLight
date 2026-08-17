@@ -1,13 +1,13 @@
 """Utils de uso transversal."""
 
-import random
+import secrets
 import string
 
 
 def generate_code(length: int = 8) -> str:
     """Gera codigo alfanumerico randomico maiusculo (uso: tracking afiliado)."""
     alphabet = string.ascii_uppercase + string.digits
-    return "".join(random.choices(alphabet, k=length))
+    return "".join(secrets.choice(alphabet) for _ in range(length))
 
 
 def money_fmt(value) -> str:

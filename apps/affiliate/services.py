@@ -13,22 +13,37 @@ def approve_referral(tx) -> int | None:
     estoque sao responsabilidade de `apps.payments.services.mark_order_paid`
     (signal em `apps/payments/signals.py`), que mantem a regra no dominio de
     pagamentos. Retorna o pk do referral atualizado ou None sem referral.
+    Idempotente: trava o referral e o perfil do afiliado para evitar credito
+    duplicado em webhooks concorrentes. Se o referral ja estiver APPROVED,
+    retorna o pk sem creditar comissao novamente.
     """
     if tx.status != "paid":
         return None
 
     order = tx.order
-    referral_qs = order.referrals.filter(status="pending") if order is not None else None
-    referral = referral_qs.first() if referral_qs else None
-
-    if referral is None:
+    if order is None:
         return None
 
+    from django.db import transaction as db_transaction
+
     with db_transaction.atomic():
+        # Busca referral pendente OU ja aprovado (idempotente)
+        referral = order.referrals.select_for_update().filter(
+            status__in=["pending", "approved"], is_active=True
+        ).first()
+        if referral is None:
+            return None
+
+        # Se ja aprovado, retorna pk sem creditar novamente
+        if referral.status == referral.Status.APPROVED:
+            return referral.pk
+
         referral.status = referral.Status.APPROVED
         referral.save(update_fields=["status", "updated_at"])
 
-        affiliate = referral.affiliate
+        from apps.affiliate.models import AffiliateProfile
+
+        affiliate = AffiliateProfile.objects.select_for_update().get(pk=referral.affiliate_id)
         commission = referral.commission_amount or Decimal(0)
         affiliate.balance = F("balance") + commission
         affiliate.save(update_fields=["balance", "updated_at"])

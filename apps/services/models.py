@@ -1,6 +1,7 @@
 """Catalogo de servicos e solicitacoes de clientes."""
 
 from django.db import models
+from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
 from apps.accounts.models import CustomUser
@@ -154,6 +155,13 @@ class MaintenancePlanTemplate(BaseModel):
         ordering = ["ordering", "value"]
         verbose_name = "Plano de Manutenção (catálogo)"
         verbose_name_plural = "Planos de Manutenção (catálogo)"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["plan_type"],
+                condition=Q(is_active=True),
+                name="uniq_services_active_plan_type",
+            )
+        ]
 
     def __str__(self) -> str:
         return f"{self.name} — R$ {self.value}"

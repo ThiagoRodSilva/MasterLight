@@ -22,3 +22,26 @@ class TestImageURLValidator(SimpleTestCase):
 
     def test_http_aceito(self):
         validate_image_url("http://exemplo.com/foto.gif")
+
+    def test_ftp_rejeitado(self):
+        with self.assertRaises(ValidationError):
+            validate_image_url("ftp://example.com/foto.png")
+
+    def test_svg_rejeitado(self):
+        with self.assertRaises(ValidationError):
+            validate_image_url("https://exemplo.com/foto.svg")
+
+    def test_jpg_ok(self):
+        validate_image_url("https://exemplo.com/foto.jpg")
+
+    def test_png_ok(self):
+        validate_image_url("https://exemplo.com/foto.png")
+
+    def test_webp_ok(self):
+        validate_image_url("https://exemplo.com/foto.webp")
+
+    def test_avif_ok(self):
+        validate_image_url("https://exemplo.com/foto.avif")
+
+    def test_gif_ok(self):
+        validate_image_url("https://exemplo.com/foto.gif")

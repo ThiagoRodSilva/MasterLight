@@ -192,8 +192,6 @@ python manage.py runserver
 - O `manage.py` usa `config.settings.dev` por padrão.
 - **Testes não usam o banco de dev**: `config.settings.test` força SQLite em memória (ver [Testes](#testes-e-qualidade)).
 
-> **Docker (legado)**: o `docker-compose.yml` ainda provisiona MySQL. Com Supabase como banco padrão, o serviço `db` é dispensável — use apenas para subir a web se preferir.
-
 ## Pagamentos — Asaas
 
 1. Crie uma conta no Asaas (sandbox para testes).
@@ -270,7 +268,7 @@ venv/bin/coverage report --fail-under=70
 
 ### Vercel (padrão atual)
 
-- Runtime **Python 3.12** pinned em `.python-version` (paridade com CI/Docker).
+- Runtime **Python 3.12** pinned em `.python-version` (paridade com CI).
 - Entrypoint WSGI `config/wsgi.py`; settings `config.settings.vercel` via env `DJANGO_SETTINGS_MODULE` (obrigatória).
 - Build command `python build.py` (em `[tool.vercel.scripts]`): roda `migrate` + `bootstrap_social` em todo deploy (idempotentes). A Vercel roda `collectstatic` e serve estáticos do CDN.
 - `vercel.json`: `maxDuration=60` + `excludeFiles` para a function `config/wsgi.py`; cron `0 * * * *` em `/pagamentos/reconciliar` (autenticado por `Authorization: Bearer <CRON_SECRET>`).
@@ -287,10 +285,6 @@ venv/bin/coverage report --fail-under=70
 5. Suba os dados após o primeiro build (ou carregue no Supabase diretamente).
 
 > **Media**: não há upload. Imagens (produtos, serviços, portfólio, avatar) são **links** (`URLField` com `validate_image_url`) — sem bucket, sem `django-storages`. `SERVE_MEDIA=False` na Vercel (filesystem efêmero).
-
-### Hostinger (legado)
-
-Hospedagem compartilhada via Passenger (`passenger_wsgi.py` → `config.settings.prod`). Referência: `deploy/setup_prod.sh` (instala deps, valida MySQL, migrate, `bootstrap_social`, collectstatic) e `deploy/.env.prod`. Este caminho é **legado** — o padrão atual é Supabase + Vercel.
 
 ### Migração de dados MySQL → Postgres
 

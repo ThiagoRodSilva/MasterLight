@@ -28,6 +28,7 @@ class AffiliateReferralMiddleware:
                     max_age=max_age,
                     httponly=True,
                     samesite="Lax",
+                    secure=not settings.DEBUG,
                 )
                 return response
         return self.get_response(request)

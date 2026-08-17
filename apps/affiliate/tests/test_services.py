@@ -3,6 +3,7 @@
 from django.conf import settings
 from django.test import Client, TestCase
 
+from apps.affiliate.models import Referral
 from apps.affiliate.services import create_payout_request
 from apps.checkout.models import Order
 from apps.tests.helpers import create_order, make_affiliate, make_user
@@ -78,6 +79,35 @@ class TestApproveReferral(TestCase):
         tx.save(update_fields=["status", "updated_at"])
         order.refresh_from_db()
         assert order.status == Order.Status.AWAITING_PAYMENT
+
+    def test_approve_referral_called_twice_credits_once(self):
+        """Duas chamadas concorrentes de approve_referral creditam comissao so uma vez."""
+        from apps.affiliate.services import approve_referral
+
+        user = make_user()
+        order = create_order(user, with_referral=True, qty=1)
+        referral = order.referrals.first()
+        affiliate = referral.affiliate
+        tx = order.transactions.first()
+
+        tx.status = "paid"
+        tx.save(update_fields=["status", "updated_at"])
+
+        # Primeira chamada
+        pk1 = approve_referral(tx)
+        referral.refresh_from_db()
+        affiliate.refresh_from_db()
+        assert pk1 == referral.pk
+        assert referral.status == Referral.Status.APPROVED
+        assert affiliate.balance == referral.commission_amount
+
+        # Segunda chamada (simula webhook duplicado)
+        pk2 = approve_referral(tx)
+        referral.refresh_from_db()
+        affiliate.refresh_from_db()
+        assert pk2 == referral.pk  # retorna o mesmo pk
+        assert referral.status == Referral.Status.APPROVED
+        assert affiliate.balance == referral.commission_amount  # saldo nao dobra
 
 
 class TestCreatePayoutRequest(TestCase):

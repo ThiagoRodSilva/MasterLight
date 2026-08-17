@@ -111,6 +111,20 @@ def resolve_billing(request, user, address=None) -> BillingParams:
     )
 
 
+def _cancel_order_if_pending(order) -> bool:
+    """Cancela a Order apenas se estiver em status pendente (OPEN/AWAITING_PAYMENT).
+
+    Retorna True se cancelou, False se não cancelou (já PAID/REFUNDED/etc).
+    """
+    from apps.checkout.models import Order as OrderModel
+
+    if order.status in (OrderModel.Status.OPEN, OrderModel.Status.AWAITING_PAYMENT):
+        order.status = OrderModel.Status.CANCELED
+        order.save(update_fields=["status", "updated_at"])
+        return True
+    return False
+
+
 def charge_with_rollback(
     order,
     request,
@@ -122,11 +136,10 @@ def charge_with_rollback(
 
     Unifica o fluxo cartão/tokenize + `charge_order` + cancelamento que estava
     duplicado entre checkout e aprovação de orçamento. Em falha (`ValueError`
-    ou `ok=False`), cancela a Order, registra `messages.error` e retorna
-    `None`; a view faz apenas o redirect. Em sucesso, retorna o `ChargeResult`.
+    ou `ok=False`), cancela a Order apenas se estiver pendente (OPEN/AWAITING_PAYMENT),
+    registra `messages.error` e retorna `None`; a view faz apenas o redirect.
+    Em sucesso, retorna o `ChargeResult`.
     """
-    from apps.checkout.models import Order
-
     try:
         params = resolve_billing(request, order.user, address=address)
         result = charge_order(
@@ -136,14 +149,12 @@ def charge_with_rollback(
             remote_ip=params.remote_ip,
         )
     except ValueError as exc:
-        order.status = Order.Status.CANCELED
-        order.save(update_fields=["status", "updated_at"])
+        _cancel_order_if_pending(order)
         messages.error(request, str(exc) or fail_message)
         return None
 
     if not result.ok:
-        order.status = Order.Status.CANCELED
-        order.save(update_fields=["status", "updated_at"])
+        _cancel_order_if_pending(order)
         messages.error(request, result.message or fail_message)
         return None
     return result
@@ -227,21 +238,23 @@ def mark_order_paid(tx) -> None:
     Responsabilidade unica do dominio de pagamentos (C1): o signal de
     `post_save` em `apps/payments/signals.py` chama esta funcao, e a comissao
     de afiliado e tratada em `approve_referral` (somente comissao). Idempotente:
-    so age na transicao para PAGO.
+    so age na transicao para PAGO. Bloqueia transicoes indevidas: se o pedido
+    ja estiver PAID ou REFUNDED, nao re-baixa estoque nem ressuscita reembolsado.
     """
     from django.db import transaction as db_transaction
 
     from apps.checkout.models import Order
 
     order = tx.order
-    if order is None or order.status == Order.Status.PAID:
+    if order is None:
         return
     with db_transaction.atomic():
-        if order.status == Order.Status.PAID:
+        locked_order = Order.objects.select_for_update().get(pk=order.pk)
+        if locked_order.status in (Order.Status.PAID, Order.Status.REFUNDED):
             return
-        order.status = Order.Status.PAID
-        order.save(update_fields=["status", "updated_at"])
-        order.decrement_stock()
+        locked_order.status = Order.Status.PAID
+        locked_order.save(update_fields=["status", "updated_at"])
+        locked_order.decrement_stock()
 
 
 def reverse_order_refund(tx) -> None:
@@ -260,17 +273,19 @@ def reverse_order_refund(tx) -> None:
     from apps.checkout.models import Order
 
     order = tx.order
-    if order is None or order.status != Order.Status.PAID:
+    if order is None:
         return
     with db_transaction.atomic():
-        order.refresh_from_db()
-        if order.status != Order.Status.PAID:
+        locked_order = Order.objects.select_for_update().get(pk=order.pk)
+        if locked_order.status != Order.Status.PAID:
             return
-        order.status = Order.Status.REFUNDED
-        order.save(update_fields=["status", "updated_at"])
-        order.restore_stock()
+        locked_order.status = Order.Status.REFUNDED
+        locked_order.save(update_fields=["status", "updated_at"])
+        locked_order.restore_stock()
 
-        referral = order.referrals.filter(status=Referral.Status.APPROVED).first()
+        referral = locked_order.referrals.select_for_update().filter(
+            status=Referral.Status.APPROVED
+        ).first()
         if referral is None:
             return
         affiliate = AffiliateProfile.objects.select_for_update().get(pk=referral.affiliate_id)
@@ -327,13 +342,11 @@ def checkout_or_charge(
 
     Usa Checkout hosted quando `PAYMENT_PROVIDER == "asaas"`; caso contrário
     cai no fluxo embutido (`charge_with_rollback`). Em qualquer falha, cancela
-    a Order, registra `messages.error` e retorna `None`. Em sucesso, retorna um
-    dict com a URL de redirecionamento: `{"url": <hosted>}` ou
-    `{"redirect_url": <embutido>}`.
+    a Order apenas se estiver pendente (OPEN/AWAITING_PAYMENT), registra
+    `messages.error` e retorna `None`. Em sucesso, retorna um dict com a URL
+    de redirecionamento: `{"url": <hosted>}` ou `{"redirect_url": <embutido>}`.
     """
     from django.conf import settings
-
-    from apps.checkout.models import Order
 
     if getattr(settings, "PAYMENT_PROVIDER", "manual") == "asaas":
         try:
@@ -346,13 +359,11 @@ def checkout_or_charge(
                 next_due_date=next_due_date,
             )
         except ValueError as exc:
-            order.status = Order.Status.CANCELED
-            order.save(update_fields=["status", "updated_at"])
+            _cancel_order_if_pending(order)
             messages.error(request, str(exc) or fail_message)
             return None
         if not result.ok or not result.url:
-            order.status = Order.Status.CANCELED
-            order.save(update_fields=["status", "updated_at"])
+            _cancel_order_if_pending(order)
             messages.error(request, result.message or fail_message)
             return None
         return {"url": result.url}

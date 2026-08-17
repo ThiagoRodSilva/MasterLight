@@ -27,7 +27,11 @@ class ProfileDetailView(DetailView):
     context_object_name = "profile_user"
 
     def get_queryset(self):
-        return CustomUser.objects.filter(is_active=True)
+        return CustomUser.objects.filter(
+            is_active=True,
+            role__in=[CustomUser.Role.PRESTADOR, CustomUser.Role.AFILIADO],
+            public_profile__is_active=True,
+        )
 
 
 class ProfileEditView(LoginRequiredMixin, FormView):

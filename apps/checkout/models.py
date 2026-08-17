@@ -72,19 +72,40 @@ class Order(BaseModel):
         return total
 
     def decrement_stock(self) -> None:
-        """Baixa o estoque dos produtos de um pedido pago (atômico)."""
+        """Baixa o estoque dos produtos de um pedido pago (atômico).
+
+        Usa atualização condicional com F() para evitar lost update/oversell.
+        Se o estoque for insuficiente, loga warning e não silencía a falha.
+        """
+        import logging
+
+        from django.db.models import F
+
+        logger = logging.getLogger(__name__)
         for item in self.items.filter(product__isnull=False).select_related("product"):
-            product = item.product
-            if product.stock >= item.qty:
-                product.stock -= item.qty
-                product.save(update_fields=["stock", "updated_at"])
+            from apps.shop.models import Product
+
+            updated = Product.objects.filter(pk=item.product_id, stock__gte=item.qty).update(
+                stock=F("stock") - item.qty
+            )
+            if updated == 0:
+                logger.warning(
+                    "Estoque insuficiente ao baixar: product_id=%s qty=%s",
+                    item.product_id,
+                    item.qty,
+                )
 
     def restore_stock(self) -> None:
-        """Repõe o estoque dos produtos de um pedido reembolsado (atômico)."""
+        """Repõe o estoque dos produtos de um pedido reembolsado (atômico).
+
+        Usa F() para adição atômica sem condição (sempre repõe).
+        """
+        from django.db.models import F
+
+        from apps.shop.models import Product
+
         for item in self.items.filter(product__isnull=False).select_related("product"):
-            product = item.product
-            product.stock += item.qty
-            product.save(update_fields=["stock", "updated_at"])
+            Product.objects.filter(pk=item.product_id).update(stock=F("stock") + item.qty)
 
 
 class OrderItem(BaseModel):

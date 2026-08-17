@@ -8,6 +8,7 @@
 """
 
 import json
+from unittest import mock
 
 from django.test import TestCase, override_settings
 
@@ -16,7 +17,12 @@ from apps.checkout.models import Address, Order
 from apps.payments.checks import payment_provider_check
 from apps.payments.gateways.base import can_transition
 from apps.payments.models import Transaction
-from apps.payments.services import AsaasGateway, ManualGateway
+from apps.payments.services import (
+    AsaasGateway,
+    ManualGateway,
+    charge_with_rollback,
+    checkout_or_charge,
+)
 from apps.tests.helpers import AsaasMockMixin, create_order, make_user
 
 ASAAS_SETTINGS = {
@@ -317,3 +323,159 @@ class TestChargeResultSemantics(AsaasMockMixin, TestCase):
         assert result.transaction_id
         tx = Transaction.objects.get(pk=result.transaction_id)
         assert tx.external_id == self.asaas.payment_id
+
+
+class TestMarkOrderPaidRaceConditions(TestCase):
+    """Testes de condicao de corrida em mark_order_paid e approve_referral."""
+
+    def test_mark_order_paid_refunded_order_does_not_restore_stock(self):
+        """Pedido REFUNDED nao deve ter estoque baixado novamente ao virar PAID."""
+        user = make_user()
+        order = create_order(user, qty=2)
+        product = order.items.first().product
+        initial_stock = product.stock
+        tx = order.transactions.first()
+
+        # Primeiro: pago -> baixa estoque
+        tx.status = "paid"
+        tx.save(update_fields=["status", "updated_at"])
+        order.refresh_from_db()
+        product.refresh_from_db()
+        assert order.status == Order.Status.PAID
+        assert product.stock == initial_stock - 2
+
+        # Segundo: reembolsado -> repõe estoque
+        tx.status = "refunded"
+        tx.save(update_fields=["status", "updated_at"])
+        order.refresh_from_db()
+        product.refresh_from_db()
+        assert order.status == Order.Status.REFUNDED
+        assert product.stock == initial_stock
+
+        # Terceiro: tentar marcar como pago novamente (race: webhook duplicado)
+        # O status travado eh REFUNDED, entao nao deve baixar estoque
+        tx.status = "paid"
+        tx.save(update_fields=["status", "updated_at"])
+        order.refresh_from_db()
+        product.refresh_from_db()
+        assert order.status == Order.Status.REFUNDED  # mantem REFUNDED
+        assert product.stock == initial_stock  # estoque nao baixa novamente
+
+    def test_mark_order_paid_paid_order_does_not_double_decrement(self):
+        """Pedido ja PAID nao deve ter estoque baixado 2x em chamada duplicada."""
+        user = make_user()
+        order = create_order(user, qty=3)
+        product = order.items.first().product
+        initial_stock = product.stock
+        tx = order.transactions.first()
+
+        tx.status = "paid"
+        tx.save(update_fields=["status", "updated_at"])
+        order.refresh_from_db()
+        product.refresh_from_db()
+        assert product.stock == initial_stock - 3
+
+        # Chamada duplicada (webhook reentregue)
+        tx.status = "paid"
+        tx.save(update_fields=["status", "updated_at"])
+        order.refresh_from_db()
+        product.refresh_from_db()
+        assert product.stock == initial_stock - 3  # nao decrementa novamente
+
+
+class TestApproveReferralIdempotent(TestCase):
+    def test_approve_referral_called_twice_credits_once(self):
+        """Duas chamadas concorrentes de approve_referral creditam comissao so uma vez."""
+        from apps.affiliate.services import approve_referral
+
+        user = make_user()
+        order = create_order(user, with_referral=True, qty=1)
+        referral = order.referrals.first()
+        affiliate = referral.affiliate
+        tx = order.transactions.first()
+
+        tx.status = "paid"
+        tx.save(update_fields=["status", "updated_at"])
+
+        # Primeira chamada
+        pk1 = approve_referral(tx)
+        referral.refresh_from_db()
+        affiliate.refresh_from_db()
+        assert pk1 == referral.pk
+        assert referral.status == Referral.Status.APPROVED
+        assert affiliate.balance == referral.commission_amount
+
+        # Segunda chamada (simula webhook duplicado)
+        pk2 = approve_referral(tx)
+        referral.refresh_from_db()
+        affiliate.refresh_from_db()
+        assert pk2 == referral.pk  # retorna o mesmo pk
+        assert referral.status == Referral.Status.APPROVED
+        assert affiliate.balance == referral.commission_amount  # saldo nao dobra
+
+
+class TestChargeWithRollbackDoesNotCancelPaid(TestCase):
+    def test_charge_with_rollback_does_not_cancel_paid_order(self):
+        """Falha no charge_with_rollback nao cancela pedido ja PAID."""
+
+        user = make_user()
+        order = create_order(user, qty=1)
+        product = order.items.first().product
+        initial_stock = product.stock
+
+        # Coloca o pedido como PAID (simula webhook ja processado)
+        tx = order.transactions.first()
+        tx.status = "paid"
+        tx.save(update_fields=["status", "updated_at"])
+        order.refresh_from_db()
+        product.refresh_from_db()
+        assert order.status == Order.Status.PAID
+        assert product.stock == initial_stock - 1
+
+        # Mock resolve_billing para levantar ValueError (simula falha)
+        with mock.patch("apps.payments.services.resolve_billing", side_effect=ValueError("erro")):
+            with mock.patch("apps.payments.services.messages.error") as mock_messages:
+                from django.test import RequestFactory
+
+                factory = RequestFactory()
+                request = factory.post("/")
+                request.user = user
+
+                result = charge_with_rollback(order, request, fail_message="Falha")
+
+        # Pedido deve permanecer PAID (nao cancelado)
+        order.refresh_from_db()
+        assert order.status == Order.Status.PAID
+        assert result is None
+        mock_messages.assert_called_once()
+
+    def test_checkout_or_charge_does_not_cancel_paid_order(self):
+        """Falha no checkout_or_charge nao cancela pedido ja PAID."""
+
+        user = make_user()
+        order = create_order(user, qty=1)
+
+        # Coloca o pedido como PAID
+        tx = order.transactions.first()
+        tx.status = "paid"
+        tx.save(update_fields=["status", "updated_at"])
+        order.refresh_from_db()
+        assert order.status == Order.Status.PAID
+
+        # Mock create_checkout_for_order para levantar ValueError
+        with mock.patch("apps.payments.services.create_checkout_for_order", side_effect=ValueError("erro")):
+            with mock.patch("apps.payments.services.messages.error") as mock_messages:
+                from django.test import RequestFactory
+
+                factory = RequestFactory()
+                request = factory.post("/")
+                request.user = user
+
+                with self.settings(PAYMENT_PROVIDER="asaas"):
+                    result = checkout_or_charge(order, request, fail_message="Falha")
+
+        # Pedido deve permanecer PAID
+        order.refresh_from_db()
+        assert order.status == Order.Status.PAID
+        assert result is None
+        mock_messages.assert_called_once()

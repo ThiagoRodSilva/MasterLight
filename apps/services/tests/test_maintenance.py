@@ -246,6 +246,77 @@ class TestAsaasSubscribe(AsaasMockMixin, TestCase):
         visit = MaintenanceVisit.objects.get(plan=plan)
         assert visit.scheduled_at.date() == original_due
 
+    def test_checkout_paid_then_payment_confirmed_schedules_single_visit(self):
+        """Hosted RECURRENT: CHECKOUT_PAID nao agenda; PAYMENT_CONFIRMED agenda 1x."""
+        prestador = _make_prestador()
+        cliente = _make_cliente()
+
+        with mock_asaas() as fake:
+            self.client.force_login(cliente)
+            resp = self.client.post(
+                "/servicos/planos/assinar/",
+                {"plan_type": "mensal", "prestador": prestador.pk},
+            )
+            assert resp.status_code == 302
+            assert resp.url == fake.checkout_url
+            plan = MaintenancePlan.objects.get(client=cliente)
+            original_due = plan.next_due_date
+            checkout_tx = Transaction.objects.get(order=plan.order, kind=Transaction.Kind.CHECKOUT)
+            assert checkout_tx.external_id == fake.checkout_id
+
+            payload = json.dumps(
+                {
+                    "event": "CHECKOUT_PAID",
+                    "checkout": {
+                        "id": fake.checkout_id,
+                        "externalReference": str(plan.order.pk),
+                        "subscription": {"cycle": "MONTHLY"},
+                    },
+                }
+            )
+            AsaasGateway().webhook(payload, {"x-webhook-token": "segredo"})
+            checkout_tx.refresh_from_db()
+            plan.refresh_from_db()
+            assert checkout_tx.status == Transaction.Status.PAID
+            assert plan.asaas_subscription_id == fake.checkout_subscription_id
+            assert MaintenanceVisit.objects.filter(plan=plan).count() == 0
+
+            payment_payload = json.dumps(
+                {"event": "PAYMENT_CONFIRMED", "payment": {"id": fake.payment_id, "subscription": fake.checkout_subscription_id}}
+            )
+            AsaasGateway().webhook(payment_payload, {"x-webhook-token": "segredo"})
+            plan.refresh_from_db()
+        visits = MaintenanceVisit.objects.filter(plan=plan)
+        assert visits.count() == 1
+        assert visits.first().scheduled_at.date() == original_due
+        assert plan.next_due_date == original_due + timedelta(days=30)
+
+    def test_informational_save_of_paid_tx_does_not_reschedule(self):
+        """Re-save de tx paga com update_fields=['raw_payload'] nao re-dispara."""
+        prestador = _make_prestador()
+        cliente = _make_cliente()
+        plan = _make_plan(cliente, prestador=prestador)
+        original_due = plan.next_due_date
+
+        with mock_asaas() as fake:
+            AsaasGateway().subscribe(plan)
+            tx = Transaction.objects.get(order=plan.order)
+            payload = json.dumps({"event": "PAYMENT_CONFIRMED", "payment": {"id": fake.payment_id}})
+            AsaasGateway().webhook(payload, {"x-webhook-token": "segredo"})
+            tx.refresh_from_db()
+            plan.refresh_from_db()
+            assert tx.status == Transaction.Status.PAID
+            visit = MaintenanceVisit.objects.get(plan=plan)
+            assert visit.scheduled_at.date() == original_due
+            first_due = plan.next_due_date
+
+            tx.raw_payload = '{"event": "PAYMENT_UPDATED", "payment": {"id": "' + tx.external_id + '"}}'
+            tx.save(update_fields=["raw_payload", "updated_at"])
+            plan.refresh_from_db()
+            tx.refresh_from_db()
+        assert MaintenanceVisit.objects.filter(plan=plan).count() == 1
+        assert plan.next_due_date == first_due
+
 
 class TestMaintenanceViews(TestCase):
     def test_plan_list_200_when_enabled(self):
@@ -352,6 +423,8 @@ class TestMaintenancePlanTemplateAdmin(TestCase):
 
     def test_admin_can_create_plan(self):
         self._login_admin()
+        # Deactivate existing trimestral to avoid unique constraint on (plan_type, is_active)
+        MaintenancePlanTemplate.objects.filter(plan_type="trimestral").update(is_active=False)
         resp = self.client.post(
             "/admin/services/maintenanceplantemplate/add/",
             {
@@ -368,6 +441,8 @@ class TestMaintenancePlanTemplateAdmin(TestCase):
 
     def test_admin_can_edit_plan_value(self):
         self._login_admin()
+        # Delete seed plan first due to unique constraint on active plan_type
+        MaintenancePlanTemplate.objects.filter(plan_type="mensal").delete()
         template = MaintenancePlanTemplate.objects.create(
             name="Manutenção mensal",
             plan_type="mensal",
@@ -391,12 +466,7 @@ class TestMaintenancePlanTemplateAdmin(TestCase):
 
     def test_admin_can_deactivate_plan(self):
         self._login_admin()
-        template = MaintenancePlanTemplate.objects.create(
-            name="Manutenção anual",
-            plan_type="anual",
-            value="799.90",
-            ordering=3,
-        )
+        template = MaintenancePlanTemplate.objects.get(plan_type="anual")
         resp = self.client.post(
             f"/admin/services/maintenanceplantemplate/{template.pk}/change/",
             {

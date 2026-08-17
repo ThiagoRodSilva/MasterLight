@@ -37,5 +37,5 @@ jobs:
           coverage run manage.py test apps
           coverage report --fail-under=70
         env:
-          DJANGO_SETTINGS_MODULE: config.settings.dev
+          DJANGO_SETTINGS_MODULE: config.settings.test
           DJANGO_SECRET_KEY: ci-secret

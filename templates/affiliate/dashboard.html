@@ -26,7 +26,7 @@
       <div class="stat-card stat-card--brand h-100">
         <div class="stat-card__body">
           <small>Taxa de comissão</small>
-          <h3 class="m-0">{{ profile.commission_rate|floatformat:2 }}%</h3>
+          <h3 class="m-0">{% widthratio profile.commission_rate 1 100 %}%</h3>
         </div>
       </div>
     </div>
@@ -34,7 +34,7 @@
       <div class="stat-card h-100">
         <div class="stat-card__body">
           <small>Indicações totais</small>
-          <h3 class="m-0">{{ referrals|length }}</h3>
+          <h3 class="m-0">{{ referral_count }}</h3>
         </div>
       </div>
     </div>

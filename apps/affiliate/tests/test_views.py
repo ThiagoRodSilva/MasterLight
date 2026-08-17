@@ -3,7 +3,7 @@
 from django.test import TestCase
 from django.urls import reverse
 
-from apps.affiliate.models import PayoutRequest
+from apps.affiliate.models import PayoutRequest, Referral
 from apps.tests.helpers import make_affiliate, make_user
 
 
@@ -46,6 +46,40 @@ class TestAffiliateDashboard(TestCase):
         self.client.force_login(user)
         response = self.client.get(reverse("affiliate-dashboard"))
         assert response.status_code == 404
+
+    def test_dashboard_shows_total_referral_count_not_page_length(self):
+        """Dashboard mostra total de indicações (referral_count), não apenas a página atual."""
+        affiliate = make_affiliate()
+        self.client.force_login(affiliate.user)
+
+        # Cria 25 referrals (paginate_by=20, então página 1 tem 20)
+        for i in range(25):
+            Referral.objects.create(
+                affiliate=affiliate,
+                referred=make_user(email=f"ref{i}@ex.com"),
+                commission_amount=10.00,
+                commission_rate=0.10,
+                status=Referral.Status.APPROVED,
+            )
+
+        response = self.client.get(reverse("affiliate-dashboard"))
+        content = response.content.decode()
+        # Deve mostrar "25" (total), não "20" (página atual)
+        self.assertIn("25", content)
+        self.assertNotIn(">20<", content)  # não deve mostrar só 20 no card de totais
+
+    def test_dashboard_shows_commission_rate_as_percentage(self):
+        """Dashboard mostra taxa de comissão como porcentagem (ex.: 10%), não decimal (0.10%)."""
+        affiliate = make_affiliate()
+        # commission_rate default é 0.10 (10%)
+        self.client.force_login(affiliate.user)
+
+        response = self.client.get(reverse("affiliate-dashboard"))
+        content = response.content.decode()
+        # Deve mostrar "10%" (widthratio multiplica por 100)
+        self.assertIn("10%", content)
+        # Não deve mostrar "0.10%"
+        self.assertNotIn("0.10%", content)
 
 
 class TestPixKeyView(TestCase):

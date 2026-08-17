@@ -1,10 +1,10 @@
 #!/usr/bin/env python
-"""WSGI config para produção (Hostinger / gunicorn)."""
+"""WSGI config para produção (Vercel / serverless)."""
 
 import os
 
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.prod")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.production")
 
 application = get_wsgi_application()

@@ -263,3 +263,59 @@ class TestApprovalPayLink(AsaasMockMixin, TestCase):
         result = AsaasGateway().webhook(payload, {"x-webhook-token": "segredo"})
         assert result.ok is True
         assert Order.objects.filter(user=cliente).count() == 0
+
+    def test_paid_order_does_not_resurrect_canceled_request(self):
+        """Pedido PAGO nao ressuscita ServiceRequest CANCELED.
+        Aprovar request CANCELED retorna 404 (nao encontrado na queryset QUOTED).
+        Mas se houver Order+Transaction (criados antes do cancelamento), o pagamento
+        confirma a Order mas nao reverte o status da request."""
+        provider = make_user(role=CustomUser.Role.PRESTADOR)
+        cliente = make_user(role=CustomUser.Role.CLIENTE)
+        sr = self._make_quoted_request(cliente, provider)
+        sr.status = ServiceRequest.Status.CANCELED
+        sr.save(update_fields=["status", "updated_at"])
+
+        # Create order directly (bypassing approve view which requires QUOTED status)
+        from apps.checkout.models import Order, OrderItem
+        from apps.payments.models import Transaction
+        order = Order.objects.create(
+            user=cliente,
+            status=Order.Status.AWAITING_PAYMENT,
+            kind=Order.Kind.SERVICE,
+        )
+        OrderItem.objects.create(
+            order=order,
+            service=sr.service,
+            name=sr.service.name,
+            qty=1,
+            unit_price=sr.final_price if sr.final_price is not None else sr.service.base_price,
+        )
+        order.recompute_total()
+        sr.order = order
+        sr.save(update_fields=["order", "updated_at"])
+
+        # Create transaction as if checkout_or_charge was called
+        tx = Transaction.objects.create(
+            order=order,
+            user=cliente,
+            provider="asaas",
+            external_id=self.asaas.checkout_id,
+            amount=order.total,
+            status=Transaction.Status.PENDING,
+            kind=Transaction.Kind.CHECKOUT,
+        )
+
+        payload = json.dumps(
+            {
+                "event": "CHECKOUT_PAID",
+                "checkout": {"id": self.asaas.checkout_id, "externalReference": str(order.pk)},
+            }
+        )
+        AsaasGateway().webhook(payload, {"x-webhook-token": "segredo"})
+
+        order.refresh_from_db()
+        sr.refresh_from_db()
+        tx.refresh_from_db()
+        assert order.status == Order.Status.PAID
+        assert tx.status == Transaction.Status.PAID
+        assert sr.status == ServiceRequest.Status.CANCELED

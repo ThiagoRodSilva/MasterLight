@@ -43,7 +43,7 @@ class AffiliateDashboardView(SectionEnabledMixin, AffiliateRequiredMixin, ListVi
     def get_queryset(self):
         profile = self.get_profile()
         return (
-            Referral.objects.filter(affiliate=profile)
+            Referral.objects.filter(affiliate=profile, is_active=True)
             .select_related("order", "referred")
             .order_by("-created_at")
         )
@@ -52,8 +52,9 @@ class AffiliateDashboardView(SectionEnabledMixin, AffiliateRequiredMixin, ListVi
         ctx = super().get_context_data(**kwargs)
         profile = self.get_profile()
         ctx["profile"] = profile
-        ctx["payouts"] = PayoutRequest.objects.filter(affiliate=profile)
+        ctx["payouts"] = PayoutRequest.objects.filter(affiliate=profile, is_active=True)
         ctx["ref_url"] = self.request.build_absolute_uri(f"/?ref={profile.code}")
+        ctx["referral_count"] = Referral.objects.filter(affiliate=profile, is_active=True).count()
         return ctx
 
 

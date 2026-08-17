@@ -66,21 +66,30 @@ class SiteSettings(models.Model):
         verbose_name = "Configuração do site"
         verbose_name_plural = "Configurações do site"
 
+    _FLAGS = (
+        "store_enabled",
+        "services_enabled",
+        "affiliates_enabled",
+        "maintenance_enabled",
+        "provider_registration_enabled",
+    )
+
     def save(self, *args, **kwargs):
         # Garante a linha única (singleton) sempre com pk=1: se a linha já
         # existe, atualiza-a no lugar de tentar inserir um duplicado.
         self.pk = 1
         now = timezone.now()
+        update_fields = kwargs.get("update_fields")
         if self.__class__.objects.filter(pk=1).exists():
-            self.__class__.objects.filter(pk=1).update(
-                store_enabled=self.store_enabled,
-                services_enabled=self.services_enabled,
-                affiliates_enabled=self.affiliates_enabled,
-                maintenance_enabled=self.maintenance_enabled,
-                provider_registration_enabled=self.provider_registration_enabled,
-                updated_at=now,
-            )
-            self.updated_at = now
+            if update_fields is None:
+                flag_fields = self._FLAGS
+            else:
+                flag_fields = [f for f in update_fields if f in self._FLAGS]
+            if flag_fields:
+                update_data = {f: getattr(self, f) for f in flag_fields}
+                update_data["updated_at"] = now
+                self.__class__.objects.filter(pk=1).update(**update_data)
+                self.updated_at = now
             return
         self.updated_at = now
         super().save(*args, **kwargs)

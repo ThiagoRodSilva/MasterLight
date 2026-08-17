@@ -1,13 +1,15 @@
 """Settings de producao para Vercel (serverless).
 
-Herda de prod.py (Secure, HSTS, email SMTP, LOGGING) e sobrescreve o que e
-especifico da Vercel:
+Herda de production.py (Secure, HSTS, email SMTP, LOGGING, static) e
+sobrescreve o que e especifico da Vercel:
   - Banco: Postgres serverless via DATABASE_URL (Vercel Postgres/Neon).
   - Static: coletado no build e servido pelo CDN da Vercel.
+  - Dominios: adiciona *.vercel.app
+  - CRON_SECRET para /pagamentos/reconciliar
 """
 
 from .base import env
-from .prod import *  # noqa: F401,F403
+from .production import *  # noqa: F401,F403
 
 DEBUG = False  # noqa: F811
 
