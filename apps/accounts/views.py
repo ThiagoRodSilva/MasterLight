@@ -1,13 +1,14 @@
 """Views de accounts."""
 
 from django.contrib import messages
+from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 from django.views.generic import DetailView, FormView
 
-from .forms import ProfileEditForm
+from .forms import ProfileEditForm, SocialSignupCompleteForm
 from .models import CustomUser
 
 
@@ -49,4 +50,34 @@ class ProfileEditView(LoginRequiredMixin, FormView):
     def form_valid(self, form):
         form.save()
         messages.success(self.request, "Dados atualizados.")
+        return super().form_valid(form)
+
+
+class SocialSignupCompleteView(FormView):
+    """Tela obrigatória de completamento após login social."""
+
+    template_name = "accounts/social_signup_complete.html"
+    form_class = SocialSignupCompleteForm
+    success_url = reverse_lazy("home")
+
+    def dispatch(self, request, *args, **kwargs):
+        # Exige sociallogin na sessão
+        if "sociallogin" not in request.session:
+            return redirect("account_login")
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["request"] = self.request
+        return kwargs
+
+    def form_valid(self, form):
+        from allauth.socialaccount.models import SocialLogin
+
+        sociallogin = SocialLogin.deserialize(self.request.session.pop("sociallogin"))
+        user = sociallogin.user
+        user = form.save(user, sociallogin)
+        # Loga o usuário
+        login(self.request, user, backend="allauth.account.auth_backends.AuthenticationBackend")
+        messages.success(self.request, "Cadastro completado! Bem-vindo à MasterLight.")
         return super().form_valid(form)

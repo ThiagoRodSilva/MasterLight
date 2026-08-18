@@ -1,11 +1,14 @@
 """Context processors globais."""
 
+from typing import Any
+
 from django.conf import settings
+from django.http import HttpRequest
 
 from .models import SiteSettings
 
 
-def branding(request):
+def branding(request: HttpRequest) -> dict[str, Any]:
     flags = SiteSettings.load()
     return {
         "BRAND_NAME": getattr(request, "brand_name", "MasterLight"),

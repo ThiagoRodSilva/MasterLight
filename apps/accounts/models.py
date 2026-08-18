@@ -1,10 +1,15 @@
-"""CustomUser eAMPLO de role perfis."""
+"""CustomUser e perfis de role."""
+
+from typing import TYPE_CHECKING
 
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 from apps.core.models import BaseModel
 from apps.core.validators import validate_image_url
+
+if TYPE_CHECKING:
+    from apps.affiliate.models import AffiliateProfile
 
 
 class CustomUser(AbstractUser):
@@ -38,6 +43,20 @@ class CustomUser(AbstractUser):
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["username"]
 
+    if TYPE_CHECKING:
+        public_profile: "AffiliateProfile"
+        provider_application: "ProviderApplication"
+        addresses: models.Manager["Address"]
+        orders: models.Manager["Order"]
+        referrals: models.Manager["Referral"]
+        service_requests: models.Manager["ServiceRequest"]
+        assigned_service_requests: models.Manager["ServiceRequest"]
+        created_services: models.Manager["Service"]
+        services: models.Manager["Service"]
+        maintenance_plans: models.Manager["MaintenancePlan"]
+        maintenance_plans_as_provider: models.Manager["MaintenancePlan"]
+        reviewed_applications: models.Manager["ProviderApplication"]
+
     def __str__(self) -> str:
         return f"{self.get_full_name() or self.email} ({self.get_role_display()})"
 
@@ -57,7 +76,7 @@ class CustomUser(AbstractUser):
     def is_cliente(self) -> bool:
         return self.role == self.Role.CLIENTE or self.is_admin
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs) -> None:
         # role=admin concede acesso ao Django admin (is_staff); superuser
         # mantém staff mesmo com outra role. Sincronizado em todo save.
         self.is_staff = self.is_superuser or self.role == self.Role.ADMIN

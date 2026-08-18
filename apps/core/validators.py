@@ -43,3 +43,8 @@ def validate_brazilian_cpf(value: str) -> None:
         check = (total * 10) % 11 % 10
         if int(digits[length]) != check:
             raise ValidationError(_("Informe um CPF válido."))
+    for length in (9, 10):
+        total = sum(int(digits[i]) * (length + 1 - i) for i in range(length))
+        check = (total * 10) % 11 % 10
+        if int(digits[length]) != check:
+            raise ValidationError(_("Informe um CPF válido."))

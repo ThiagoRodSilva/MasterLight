@@ -2,6 +2,7 @@
 
 import secrets
 import uuid
+from typing import ClassVar
 
 from django.db import models
 from django.utils import timezone
@@ -31,10 +32,12 @@ class RandomSlugMixin(models.Model):
     é preservado (URLs estáveis); apenas a criação gera um valor aleatório.
     """
 
+    slug: models.SlugField
+
     class Meta:
         abstract = True
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs) -> None:
         if not self.slug:
             self.slug = random_slug()
         super().save(*args, **kwargs)
@@ -66,7 +69,7 @@ class SiteSettings(models.Model):
         verbose_name = "Configuração do site"
         verbose_name_plural = "Configurações do site"
 
-    _FLAGS = (
+    _FLAGS: ClassVar[tuple[str, ...]] = (
         "store_enabled",
         "services_enabled",
         "affiliates_enabled",
@@ -74,7 +77,7 @@ class SiteSettings(models.Model):
         "provider_registration_enabled",
     )
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs) -> None:
         # Garante a linha única (singleton) sempre com pk=1: se a linha já
         # existe, atualiza-a no lugar de tentar inserir um duplicado.
         self.pk = 1

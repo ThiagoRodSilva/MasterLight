@@ -263,3 +263,58 @@ a:hover {
   color: var(--brand-dark);
   background-color: var(--brand-light);
 }
+
+/* Botões sociais (Google) */
+.btn-social {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--text-strong);
+  background-color: #fff;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn-social:hover {
+  background-color: var(--bg-hover);
+  border-color: var(--border-hover);
+  color: var(--text-strong);
+  text-decoration: none;
+}
+
+.btn-social:focus-visible {
+  outline: 2px solid var(--brand-500);
+  outline-offset: 2px;
+}
+
+.btn-social img {
+  flex-shrink: 0;
+}
+
+/* Loading state nos botões */
+[data-loading] .btn:disabled,
+.btn[disabled][data-loading] {
+  position: relative;
+  color: transparent !important;
+  pointer-events: none;
+}
+[data-loading] .btn:disabled::after,
+.btn[disabled][data-loading]::after {
+  content: "";
+  position: absolute;
+  width: 1rem;
+  height: 1rem;
+  top: 50%;
+  left: 50%;
+  margin: -0.5rem 0 0 -0.5rem;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }

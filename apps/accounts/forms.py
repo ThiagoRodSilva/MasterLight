@@ -112,6 +112,79 @@ class CustomSignupForm(forms.Form):
         )
 
 
+class SocialSignupCompleteForm(forms.Form):
+    """Completamento obrigatório após login social (Google)."""
+
+    def __init__(self, *args, **kwargs):
+        self.request = kwargs.pop("request", None)
+        super().__init__(*args, **kwargs)
+        choices = [
+            (CustomUser.Role.CLIENTE, "Cliente"),
+            (CustomUser.Role.AFILIADO, "Afiliado"),
+        ]
+        if SiteSettings.load().provider_registration_enabled:
+            choices.append((CustomUser.Role.PRESTADOR, "Prestador"))
+        self.fields["role"] = CustomUser._meta.get_field("role").formfield(
+            choices=choices,
+            initial=CustomUser.Role.CLIENTE,
+            required=True,
+        )
+        self.fields["cpf"] = forms.CharField(
+            max_length=14,
+            label="CPF",
+            validators=[validate_brazilian_cpf],
+            help_text="Obrigatório para pagamentos (Asaas).",
+        )
+        self.fields["telefone"] = forms.CharField(
+            max_length=20,
+            label="Telefone",
+            help_text="Obrigatório para pagamentos.",
+        )
+        for name, field in _address_common_fields():
+            self.fields[name] = field
+
+    def clean_role(self):
+        role = self.cleaned_data.get("role")
+        if (role == CustomUser.Role.PRESTADOR) and not SiteSettings.load().provider_registration_enabled:
+            raise forms.ValidationError("O cadastro de prestadores está desabilitado.")
+        return role
+
+    def clean_cpf(self):
+        return _only_digits(self.cleaned_data.get("cpf"))
+
+    def clean_telefone(self):
+        return _only_digits(self.cleaned_data.get("telefone"))
+
+    def clean_zip_code(self):
+        return _only_digits(self.cleaned_data.get("zip_code"))
+
+    def save(self, user, sociallogin):
+        """Atualiza usuário + cria Address + conecta SocialAccount."""
+        from apps.checkout.models import Address
+
+        user.cpf = self.cleaned_data["cpf"]
+        user.telefone = self.cleaned_data["telefone"]
+        role = self.cleaned_data.get("role")
+        if role == CustomUser.Role.PRESTADOR and not SiteSettings.load().provider_registration_enabled:
+            role = CustomUser.Role.CLIENTE
+        user.role = role
+        user.save(update_fields=["cpf", "telefone", "role"])
+
+        Address.objects.create(
+            user=user,
+            street=self.cleaned_data["street"],
+            number=self.cleaned_data["number"],
+            city=self.cleaned_data["city"],
+            state=self.cleaned_data["state"],
+            zip_code=self.cleaned_data["zip_code"],
+            country=self.cleaned_data["country"],
+        )
+
+        # Conecta SocialAccount definitivamente
+        sociallogin.connect(self.request, user)
+        return user
+
+
 class ProfileEditForm(forms.Form):
     """Edição de dados pessoais e de pagamento do usuário.
 

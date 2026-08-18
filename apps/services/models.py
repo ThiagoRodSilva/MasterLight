@@ -1,5 +1,7 @@
 """Catalogo de servicos e solicitacoes de clientes."""
 
+from typing import TYPE_CHECKING
+
 from django.db import models
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
@@ -7,6 +9,9 @@ from django.utils.translation import gettext_lazy as _
 from apps.accounts.models import CustomUser
 from apps.core.models import BaseModel, RandomSlugMixin
 from apps.core.validators import validate_image_url
+
+if TYPE_CHECKING:
+    from apps.checkout.models import Order
 
 
 class ServiceCategory(BaseModel, RandomSlugMixin):
@@ -70,7 +75,7 @@ class MaintenancePlan(BaseModel):
         QUARTERLY = "trimestral", _("Trimestral")
         ANNUAL = "anual", _("Anual")
 
-    DESCRIPTIONS = {
+    DESCRIPTIONS: dict[str, str] = {
         "mensal": _("Uma visita por mês, com acompanhamento contínuo."),
         "trimestral": _("Uma visita a cada 3 meses. Melhor custo-benefício."),
         "anual": _("Visitas para o ano inteiro, com desconto no ciclo."),

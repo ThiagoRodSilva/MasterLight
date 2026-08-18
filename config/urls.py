@@ -5,12 +5,14 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
+from apps.accounts.views import SocialSignupCompleteView
 from apps.core.views import home_view
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("", home_view, name="home"),
     path("accounts/", include("apps.accounts.urls")),
+    path("social/completar-cadastro/", SocialSignupCompleteView.as_view(), name="social_signup_complete"),
     path("portfolio/", include("apps.portfolio.urls")),
     path("servicos/", include("apps.services.urls")),
     path("loja/", include("apps.shop.urls")),

@@ -1,7 +1,10 @@
 """Mixins reutilizaveis para views."""
 
+from typing import Any, ClassVar
+
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import Http404
+from django.db.models import QuerySet
 
 from .models import SiteSettings
 
@@ -13,9 +16,9 @@ class SectionEnabledMixin:
         SectionEnabledMixin.section_flag = "store_enabled"
     """
 
-    section_flag = "store_enabled"
+    section_flag: ClassVar[str] = "store_enabled"
 
-    def dispatch(self, request, *args, **kwargs):
+    def dispatch(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         if not getattr(SiteSettings.load(), self.section_flag, True):
             raise Http404("Seção indisponível no momento.")
         return super().dispatch(request, *args, **kwargs)
@@ -28,9 +31,9 @@ class RoleRequiredMixin(LoginRequiredMixin):
     admins (`role="admin"`) e superusers — os únicos com acesso a tudo.
     """
 
-    allowed_roles = set()
+    allowed_roles: ClassVar[set[str]] = set()
 
-    def dispatch(self, request, *args, **kwargs):
+    def dispatch(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         user = request.user
         if not user.is_authenticated:
             return self.handle_no_permission()
@@ -45,7 +48,7 @@ class OwnerRequiredMixin(LoginRequiredMixin):
     Admins/superusers (acesso a tudo) enxergam todos os objetos.
     """
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[Any]:
         qs = super().get_queryset()
         if self.request.user.is_admin:
             return qs
@@ -55,16 +58,16 @@ class OwnerRequiredMixin(LoginRequiredMixin):
 class ProviderRequiredMixin(RoleRequiredMixin):
     """Limita acesso a prestadores/admin."""
 
-    allowed_roles = {"prestador", "admin"}
+    allowed_roles: ClassVar[set[str]] = {"prestador", "admin"}
 
 
 class AffiliateRequiredMixin(RoleRequiredMixin):
     """Limita acesso a afiliados/admin."""
 
-    allowed_roles = {"afiliado", "admin"}
+    allowed_roles: ClassVar[set[str]] = {"afiliado", "admin"}
 
 
 class ClienteRequiredMixin(RoleRequiredMixin):
     """Limita acesso a clientes/admin (ex.: solicitar orçamento de serviço)."""
 
-    allowed_roles = {"cliente", "admin"}
+    allowed_roles: ClassVar[set[str]] = {"cliente", "admin"}

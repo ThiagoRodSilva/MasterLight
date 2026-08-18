@@ -1,28 +1,20 @@
 {% extends "base.html" %}
-{% load socialaccount %}
+{% load socialaccount static %}
 {% block content %}
 <div class="container py-5">
   <div class="auth-panel card card-elevated border-0 shadow-brand">
     <div class="card-body p-4 p-md-5">
       <h1>Entrar com rede social</h1>
-      {% if request.GET.next %}<p class="text-muted small">Continuando para: {{ request.GET.next }}</p>{% endif %}
-
-      <div class="list-group my-3">
-        {% get_providers as providers %}
-        {% for provider in providers %}
-          {% if provider.app and provider.app.client_id %}
-            <a class="list-group-item list-group-item-action" href="{% provider_login_url provider.id %}?next={{ request.GET.next|default:'' }}">
-              <strong>{{ provider.name }}</strong> — entrar com {{ provider.id|title }}
-            </a>
-          {% endif %}
+      {% get_providers as providers %}
+      <div class="d-flex flex-column gap-2 my-3">
+        {% for p in providers %}
+          <a href="{% provider_login_url p.id %}?next={{ request.GET.next|default:'' }}" class="btn btn-social d-flex align-items-center justify-content-center gap-2">
+            <img src="{% static 'img/social/google.svg' %}" alt="Google" width="20" height="20">
+            <span>Entrar com {{ p.name }}</span>
+          </a>
         {% endfor %}
       </div>
-
-      <p class="text-muted small">
-        Nenhum provedor habilitado? Cadastre via Django Admin → Social Applications
-        e defina as variáveis <code>GOOGLE_CLIENT_ID/SECRET</code> ou <code>FACEBOOK_CLIENT_ID/SECRET</code> no <code>.env</code>.
-      </p>
-      <a href="{% url 'account_login' %}" class="btn btn-brand w-100">Entrar com email/senha</a>
+      <a href="{% url 'account_login' %}" class="btn btn-brand w-100 mt-2">Entrar com email/senha</a>
     </div>
   </div>
 </div>

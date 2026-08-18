@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     "allauth",
     "allauth.account",
     "allauth.socialaccount",
+    "allauth.socialaccount.providers.google",
     "crispy_forms",
     "crispy_bootstrap5",
     "widget_tweaks",
@@ -57,6 +58,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "apps.accounts.middleware.SocialSignupRequiredMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "allauth.account.middleware.AccountMiddleware",
@@ -138,43 +140,20 @@ AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
     "allauth.account.auth_backends.AuthenticationBackend",
 ]
-ACCOUNT_EMAIL_VERIFICATION = "none"
+ACCOUNT_ADAPTER = "apps.accounts.adapters.CustomAccountAdapter"
+SOCIALACCOUNT_ADAPTER = "apps.accounts.adapters.CustomSocialAccountAdapter"
+ACCOUNT_EMAIL_VERIFICATION = "mandatory"
 ACCOUNT_AUTHENTICATION_METHOD = "email"
 ACCOUNT_SIGNUP_FORM_CLASS = "apps.accounts.forms.CustomSignupForm"
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_USERNAME_REQUIRED = False
 ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 7
-SOCIALACCOUNT_AUTO_SIGNUP = True
 SOCIALACCOUNT_LOGIN_ON_GET = True
 SOCIALACCOUNT_STORE_TOKENS = False
 
-# Chave privada do "Sign in with Apple" (arquivo .p8). Aceita o PEM direto em
-# APPLE_PRIVATE_KEY ou um caminho em APPLE_PRIVATE_KEY_PATH.
-APPLE_PRIVATE_KEY = env("APPLE_PRIVATE_KEY", default="")
-if not APPLE_PRIVATE_KEY:
-    _apple_key_path_value = env("APPLE_PRIVATE_KEY_PATH", default="").strip()
-    if _apple_key_path_value:
-        _apple_key_path = Path(_apple_key_path_value)
-        if _apple_key_path.exists():
-            APPLE_PRIVATE_KEY = _apple_key_path.read_text()
-
 SOCIALACCOUNT_PROVIDERS = {
     "google": {"SCOPE": ["email", "profile"], "AUTH_PARAMS": {"access_type": "online"}},
-    "facebook": {"SCOPE": ["email"], "FIELDS": ["email", "name"]},
-    "apple": {
-        "SCOPE": ["email", "name"],
-        "APPS": [
-            {
-                "name": "Apple",
-                # Services ID (ex.: com.masterlight.app) usado como client_id
-                "client_id": env("APPLE_CLIENT_ID", default=""),
-                "secret": env("APPLE_KEY_ID", default=""),
-                "key": env("APPLE_TEAM_ID", default=""),
-                "settings": {"certificate_key": APPLE_PRIVATE_KEY},
-            }
-        ],
-    },
 }
 
 # crispy forms
