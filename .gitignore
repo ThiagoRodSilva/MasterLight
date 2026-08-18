@@ -183,3 +183,4 @@ deploy/.env.prod
 .vercel
 .env
 .env.local
+.env*
