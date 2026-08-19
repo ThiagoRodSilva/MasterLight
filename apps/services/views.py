@@ -251,6 +251,9 @@ class ServiceRequestApproveView(ClienteRequiredMixin, View):
                 unit_price=final_price,
             )
             order.recompute_total()
+            from apps.affiliate.services import create_referral_from_request
+
+            create_referral_from_request(request, order)
             service_request.order = order
             service_request.save(update_fields=["order", "updated_at"])
 
@@ -281,9 +284,14 @@ class ServiceRequestPayLinkView(ClienteRequiredMixin, View):
         return get_object_or_404(self.get_queryset(), pk=self.kwargs["pk"])
 
     def post(self, request, *args, **kwargs):
+        from django.conf import settings
         from apps.payments.services import create_payment_link
 
         service_request = self.get_object()
+        ref_code = request.COOKIES.get(settings.AFFILIATE_COOKIE_NAME)
+        if ref_code:
+            service_request.affiliate_ref_code = ref_code
+            service_request.save(update_fields=["affiliate_ref_code", "updated_at"])
         final_price = (
             service_request.final_price
             if service_request.final_price is not None
@@ -431,6 +439,9 @@ class MaintenancePlanCreateView(SectionEnabledMixin, ClienteRequiredMixin, FormV
                     unit_price=value,
                 )
                 order.recompute_total()
+                from apps.affiliate.services import create_referral_from_request
+
+                create_referral_from_request(self.request, order)
                 plan = MaintenancePlan.objects.create(
                     plan_type=plan_type,
                     value=value,

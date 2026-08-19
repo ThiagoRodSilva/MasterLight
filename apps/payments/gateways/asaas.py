@@ -758,6 +758,21 @@ class AsaasGateway(PaymentGateway, BasePaymentGateway):
                 unit_price=unit_price,
             )
             order.recompute_total()
+            # Cria referral se houver codigo de afiliado na solicitacao
+            if service_request.affiliate_ref_code:
+                from apps.affiliate.models import AffiliateProfile, Referral
+
+                affil = AffiliateProfile.objects.filter(
+                    code=service_request.affiliate_ref_code, is_active=True
+                ).first()
+                if affil and affil.user_id != service_request.cliente_id:
+                    Referral.objects.create(
+                        affiliate=affil,
+                        referred=service_request.cliente,
+                        order=order,
+                        commission_rate=affil.commission_rate,
+                        commission_amount=order.total * affil.commission_rate,
+                    )
             service_request.order = order
             service_request.save(update_fields=["order", "updated_at"])
 

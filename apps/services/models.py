@@ -262,6 +262,13 @@ class ServiceRequest(BaseModel):
         db_index=True,
         help_text="Id do paymentLink avulso; usado para reconciliar o pagamento via webhook.",
     )
+    affiliate_ref_code = models.CharField(
+        _("código de afiliado (referral)"),
+        max_length=20,
+        blank=True,
+        default="",
+        help_text="Código do afiliado que indicou esta solicitação (cookie ref).",
+    )
 
     class Meta:
         ordering = ["-created_at"]

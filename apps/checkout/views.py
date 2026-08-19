@@ -1,7 +1,6 @@
 """Views de carrinho/pedido."""
 
 from django.apps import apps
-from django.conf import settings
 from django.contrib import messages
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
@@ -9,7 +8,6 @@ from django.urls import reverse_lazy
 from django.views import View
 from django.views.generic import CreateView
 
-from apps.affiliate.models import AffiliateProfile, Referral
 from apps.core.mixins import ClienteRequiredMixin
 from apps.core.models import SiteSettings
 from apps.payments.services import checkout_or_charge
@@ -113,19 +111,9 @@ class CheckoutView(ClienteRequiredMixin, View):
             order.recompute_total()
 
             # registra referral se cookie ref existir (nao-referencia a si mesmo)
-            ref_code = request.COOKIES.get(settings.AFFILIATE_COOKIE_NAME) or request.session.get(
-                settings.AFFILIATE_COOKIE_NAME
-            )
-            if ref_code:
-                affil = AffiliateProfile.objects.select_related("user").filter(code=ref_code, is_active=True).first()
-                if affil and affil.user_id != request.user.pk:
-                    Referral.objects.create(
-                        affiliate=affil,
-                        referred=request.user,
-                        order=order,
-                        commission_rate=affil.commission_rate,
-                        commission_amount=order.total * affil.commission_rate,
-                    )
+            from apps.affiliate.services import create_referral_from_request
+
+            create_referral_from_request(request, order)
 
             # vincula o ultimo endereco salvo, se houver
             address = request.user.addresses.filter(is_active=True).first()

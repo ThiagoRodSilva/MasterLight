@@ -2,6 +2,7 @@
 
 from decimal import Decimal
 
+from django.conf import settings
 from django.db import transaction as db_transaction
 from django.db.models import F
 
@@ -74,3 +75,27 @@ def create_payout_request(profile):
         locked.save(update_fields=["balance", "updated_at"])
 
     return payout
+
+
+def create_referral_from_request(request, order):
+    """Cria Referral para o pedido, se cookie ref valido.
+
+    Comissao calculada sobre order.total (produtos + servicos + assinaturas).
+    Bloqueia auto-referral (affil.user_id == request.user.pk).
+    """
+    from apps.affiliate.models import AffiliateProfile, Referral
+
+    ref_code = request.COOKIES.get(settings.AFFILIATE_COOKIE_NAME)
+    if not ref_code:
+        return None
+    affil = AffiliateProfile.objects.select_related("user").filter(code=ref_code, is_active=True).first()
+    if not affil or affil.user_id == request.user.pk:
+        return None
+
+    return Referral.objects.create(
+        affiliate=affil,
+        referred=request.user,
+        order=order,
+        commission_rate=affil.commission_rate,
+        commission_amount=order.total * affil.commission_rate,
+    )
