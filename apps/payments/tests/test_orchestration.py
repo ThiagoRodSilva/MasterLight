@@ -98,7 +98,7 @@ class TestChargeWithRollback(TestCase):
     def test_gateway_error_cancels_order_and_returns_none(self):
         request = _with_middleware(self.factory.post("/", {}))
         with patch(
-            "apps.payments.services.charge_order",
+            "apps.payments.services.charge.charge_order",
             side_effect=ValueError("gateway fora"),
         ):
             result = charge_with_rollback(self.order, request)
@@ -109,7 +109,7 @@ class TestChargeWithRollback(TestCase):
     def test_not_ok_cancels_order_and_returns_none(self):
         request = _with_middleware(self.factory.post("/", {}))
         fake = ChargeResult(ok=False, redirect_url="", message="falha ao gerar")
-        with patch("apps.payments.services.charge_order", return_value=fake):
+        with patch("apps.payments.services.charge.charge_order", return_value=fake):
             result = charge_with_rollback(self.order, request)
         assert result is None
         self.order.refresh_from_db()

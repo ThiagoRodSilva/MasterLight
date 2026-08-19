@@ -1,7 +1,7 @@
 """Views programa afiliados."""
 
 from django.contrib import messages
-from django.db.models import ObjectDoesNotExist
+from django.db.models import ObjectDoesNotExist, Prefetch
 from django.http import Http404
 from django.shortcuts import redirect
 from django.views.generic import FormView, ListView, TemplateView, View
@@ -45,6 +45,13 @@ class AffiliateDashboardView(SectionEnabledMixin, AffiliateRequiredMixin, ListVi
         return (
             Referral.objects.filter(affiliate=profile, is_active=True)
             .select_related("order", "referred")
+            .prefetch_related(
+                Prefetch(
+                    "affiliate__payouts",
+                    queryset=PayoutRequest.objects.filter(is_active=True).order_by("-created_at"),
+                    to_attr="prefetched_payouts",
+                )
+            )
             .order_by("-created_at")
         )
 
@@ -52,7 +59,16 @@ class AffiliateDashboardView(SectionEnabledMixin, AffiliateRequiredMixin, ListVi
         ctx = super().get_context_data(**kwargs)
         profile = self.get_profile()
         ctx["profile"] = profile
-        ctx["payouts"] = PayoutRequest.objects.filter(affiliate=profile, is_active=True)
+        # payouts prefetched via Referral queryset -> get from first referral's affiliate
+        referrals = ctx.get("referrals")
+        if referrals:
+            first_referral = referrals[0]
+            if hasattr(first_referral.affiliate, "prefetched_payouts"):
+                ctx["payouts"] = first_referral.affiliate.prefetched_payouts
+            else:
+                ctx["payouts"] = PayoutRequest.objects.filter(affiliate=profile, is_active=True).order_by("-created_at")
+        else:
+            ctx["payouts"] = PayoutRequest.objects.filter(affiliate=profile, is_active=True).order_by("-created_at")
         ctx["ref_url"] = self.request.build_absolute_uri(f"/?ref={profile.code}")
         ctx["referral_count"] = Referral.objects.filter(affiliate=profile, is_active=True).count()
         return ctx

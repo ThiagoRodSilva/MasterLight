@@ -4,16 +4,20 @@ Garante suíte rápida/offline mesmo com DATABASE_URL apontando para Postgres.
 Uso: DJANGO_SETTINGS_MODULE=config.settings.test python manage.py test apps [--keepdb]
 """
 
-from .dev import *  # noqa: F401,F403
-
 import os
 
-DATABASES = {  # noqa: F405
+from .base import BASE_DIR  # noqa: F401
+from .dev import *  # noqa: F401,F403
+
+DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "test_db.sqlite3",
     }
 }
+
+# Permitir testserver do Django test client
+ALLOWED_HOSTS = ["testserver", "localhost", "127.0.0.1", "0.0.0.0"]
 
 # Suíte hermética: não depende do .env de dev (que pode apontar para o Asaas
 # sandbox). Testes que exercitam o Asaas usam `override_settings`/mock.

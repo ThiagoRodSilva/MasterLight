@@ -11,7 +11,7 @@ from apps.core.models import BaseModel, RandomSlugMixin
 from apps.core.validators import validate_image_url
 
 if TYPE_CHECKING:
-    from apps.checkout.models import Order
+    pass
 
 
 class ServiceCategory(BaseModel, RandomSlugMixin):

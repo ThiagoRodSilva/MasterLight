@@ -18,7 +18,7 @@ class PortfolioListView(ListView):
         cat = self.request.GET.get("categoria")
         if cat:
             qs = qs.filter(category=cat)
-        return qs
+        return qs.select_related("created_by")
 
 
 class PortfolioDetailView(DetailView):
@@ -26,7 +26,7 @@ class PortfolioDetailView(DetailView):
     context_object_name = "item"
 
     def get_queryset(self):
-        return PortfolioItem.objects.filter(published=True, is_active=True)
+        return PortfolioItem.objects.filter(published=True, is_active=True).select_related("created_by")
 
 
 class PortfolioCreateView(ProviderRequiredMixin, CreateView):

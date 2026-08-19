@@ -1,0 +1,1 @@
+"""Testes de integração ponta a ponta (end-to-end) para fluxos críticos."""

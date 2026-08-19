@@ -6,7 +6,6 @@ import uuid
 from datetime import date, timedelta
 
 from django.conf import settings
-from django.db import IntegrityError
 from django.urls import reverse_lazy
 
 from .asaas_client import AsaasApiClient
@@ -18,11 +17,12 @@ from .base import (
     WebhookAuthError,
     can_transition,
 )
+from .base_gateway import BasePaymentGateway
 
 logger = logging.getLogger(__name__)
 
 
-class AsaasGateway(PaymentGateway):
+class AsaasGateway(PaymentGateway, BasePaymentGateway):
     """Gateway real via API v3 do Asaas (Pix e MultiCartão).
 
     - `charge` cria cobrança e salva `Transaction.external_id` = id Asaas.
@@ -87,60 +87,6 @@ class AsaasGateway(PaymentGateway):
 
     def __init__(self):
         self.client = AsaasApiClient()
-
-    def _upsert_transaction(
-        self,
-        *,
-        order,
-        user,
-        external_id,
-        amount,
-        status,
-        raw_payload,
-        kind="payment",
-    ):
-        """Cria a Transaction de forma idempotente por (provider, external_id).
-
-        Evita duplicar transações locais quando o mesmo id externo chega de novo
-        (retry de webhook, idempotency do Asaas, reenvio de renovação) — I4. A
-        constraint parcial `uniq_payments_provider_external_id` é o fallback de
-        segurança. Se já existe, apenas atualiza amount/raw_payload.
-        """
-        from apps.payments.models import Transaction
-
-        if external_id:
-            tx = Transaction.objects.filter(
-                provider=self.name, external_id=external_id
-            ).first()
-            if tx is not None:
-                tx.amount = amount
-                tx.raw_payload = raw_payload
-                tx.save(update_fields=["amount", "raw_payload", "updated_at"])
-                return tx
-        try:
-            return Transaction.objects.create(
-                order=order,
-                user=user,
-                provider=self.name,
-                external_id=external_id,
-                amount=amount,
-                status=status,
-                kind=kind,
-                raw_payload=raw_payload,
-            )
-        except IntegrityError:
-            # Race condition: outro webhook criou a transação entre o filter e o create.
-            # Busca a existente e atualiza (idempotente).
-            tx = Transaction.objects.filter(
-                provider=self.name, external_id=external_id
-            ).first()
-            if tx is not None:
-                tx.amount = amount
-                tx.raw_payload = raw_payload
-                tx.save(update_fields=["amount", "raw_payload", "updated_at"])
-                return tx
-            # Se ainda não existe (improvável), re-levanta.
-            raise
 
     _CUSTOMER_MISSING_FIELDS = ("cpfcnpj", "postalcode", "addressnumber", "province", "phonenumber")
     _CUSTOMER_STALE_MARKERS = ("invalid_customer", "customer not found", "customer nao encontrado")

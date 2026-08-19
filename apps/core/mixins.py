@@ -3,8 +3,10 @@
 from typing import Any, ClassVar
 
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import Http404
 from django.db.models import QuerySet
+from django.http import Http404
+
+from apps.accounts.models import CustomUser
 
 from .models import SiteSettings
 
@@ -28,7 +30,7 @@ class RoleRequiredMixin(LoginRequiredMixin):
     """Base dos mixins de separação de contas.
 
     Permite apenas usuários cuja `role` esteja em `allowed_roles`, além de
-    admins (`role="admin"`) e superusers — os únicos com acesso a tudo.
+    admins (`role=CustomUser.Role.ADMIN`) e superusers — os únicos com acesso a tudo.
     """
 
     allowed_roles: ClassVar[set[str]] = set()
@@ -58,16 +60,16 @@ class OwnerRequiredMixin(LoginRequiredMixin):
 class ProviderRequiredMixin(RoleRequiredMixin):
     """Limita acesso a prestadores/admin."""
 
-    allowed_roles: ClassVar[set[str]] = {"prestador", "admin"}
+    allowed_roles: ClassVar[set[str]] = {CustomUser.Role.PRESTADOR, CustomUser.Role.ADMIN}
 
 
 class AffiliateRequiredMixin(RoleRequiredMixin):
     """Limita acesso a afiliados/admin."""
 
-    allowed_roles: ClassVar[set[str]] = {"afiliado", "admin"}
+    allowed_roles: ClassVar[set[str]] = {CustomUser.Role.AFILIADO, CustomUser.Role.ADMIN}
 
 
 class ClienteRequiredMixin(RoleRequiredMixin):
     """Limita acesso a clientes/admin (ex.: solicitar orçamento de serviço)."""
 
-    allowed_roles: ClassVar[set[str]] = {"cliente", "admin"}
+    allowed_roles: ClassVar[set[str]] = {CustomUser.Role.CLIENTE, CustomUser.Role.ADMIN}

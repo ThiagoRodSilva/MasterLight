@@ -17,7 +17,7 @@ def _unset(flag):
 
 class TestStoreDisabled(TestCase):
     def _login(self):
-        user = make_user()
+        user = make_user(is_superuser=True)
         self.client.force_login(user)
         return user
 
@@ -88,7 +88,7 @@ class TestAffiliateDisabled(TestCase):
     def test_dashboard_404(self):
         from apps.affiliate.models import AffiliateProfile
 
-        user = make_user(role=CustomUser.Role.AFILIADO)
+        user = make_user(role=CustomUser.Role.AFILIADO, is_superuser=True)
         AffiliateProfile.objects.get_or_create(user=user)
         _unset("affiliates_enabled")
         self.client.force_login(user)

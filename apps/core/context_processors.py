@@ -28,4 +28,5 @@ def branding(request: HttpRequest) -> dict[str, Any]:
         "SERVICES_ENABLED": flags.services_enabled,
         "AFFILIATES_ENABLED": flags.affiliates_enabled,
         "MAINTENANCE_ENABLED": flags.maintenance_enabled,
+        "PROVIDER_REGISTRATION_ENABLED": flags.provider_registration_enabled,
     }

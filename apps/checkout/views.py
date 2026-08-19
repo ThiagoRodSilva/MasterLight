@@ -87,8 +87,12 @@ class CheckoutView(ClienteRequiredMixin, View):
 
         with transaction.atomic():
             order = Order.objects.create(user=request.user, status=Order.Status.AWAITING_PAYMENT)
+            product_pks = [line["pk"] for line in cart]
+            products_qs = Product.objects.filter(pk__in=product_pks, is_active=True)
+            # in_bulk() com field_name='pk' retorna dict com chaves string para compatibilidade
+            products = {str(p.pk): p for p in products_qs}
             for line in cart:
-                product = Product.objects.filter(pk=line["pk"], is_active=True).first()
+                product = products.get(line["pk"])
                 qty = int(line.get("qty", 0) or 0)
                 if product is None or qty < 1 or qty > product.stock:
                     messages.error(
@@ -113,7 +117,7 @@ class CheckoutView(ClienteRequiredMixin, View):
                 settings.AFFILIATE_COOKIE_NAME
             )
             if ref_code:
-                affil = AffiliateProfile.objects.filter(code=ref_code, is_active=True).first()
+                affil = AffiliateProfile.objects.select_related("user").filter(code=ref_code, is_active=True).first()
                 if affil and affil.user_id != request.user.pk:
                     Referral.objects.create(
                         affiliate=affil,

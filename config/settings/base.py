@@ -37,6 +37,8 @@ INSTALLED_APPS = [
     "allauth.account",
     "allauth.socialaccount",
     "allauth.socialaccount.providers.google",
+    "allauth.socialaccount.providers.facebook",
+    "allauth.socialaccount.providers.apple",
     "crispy_forms",
     "crispy_bootstrap5",
     "widget_tweaks",
@@ -154,6 +156,8 @@ SOCIALACCOUNT_STORE_TOKENS = False
 
 SOCIALACCOUNT_PROVIDERS = {
     "google": {"SCOPE": ["email", "profile"], "AUTH_PARAMS": {"access_type": "online"}},
+    "facebook": {"SCOPE": ["email", "public_profile"]},
+    "apple": {"SCOPE": ["name", "email"]},
 }
 
 # crispy forms

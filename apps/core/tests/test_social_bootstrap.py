@@ -12,6 +12,7 @@ from apps.core.social_bootstrap import bootstrap_site, bootstrap_social_apps
 
 
 class TestBootstrapSite(TestCase):
+    @mock.patch.dict(os.environ, {}, clear=True)
     def test_default_domain_and_name(self):
         bootstrap_site()
         site = Site.objects.get(id=1)
@@ -23,12 +24,13 @@ class TestBootstrapSite(TestCase):
             "DJANGO_SITE_DOMAIN": "eletrica.test",
             "DJANGO_SITE_NAME": "MasterLight",
         }
-        with mock.patch.dict(os.environ, env, clear=False):
+        with mock.patch.dict(os.environ, env, clear=True):
             bootstrap_site()
         site = Site.objects.get(id=1)
         assert site.domain == "eletrica.test"
         assert site.name == "MasterLight"
 
+    @mock.patch.dict(os.environ, {}, clear=True)
     def test_updates_existing_site(self):
         Site.objects.create(domain="antigo.test", name="Antigo")
         bootstrap_site()
@@ -36,6 +38,7 @@ class TestBootstrapSite(TestCase):
 
 
 class TestBootstrapSocialApps(TestCase):
+    @mock.patch.dict(os.environ, {}, clear=True)
     def test_no_apps_without_env(self):
         bootstrap_social_apps()
         assert not SocialApp.objects.exists()
@@ -45,7 +48,7 @@ class TestBootstrapSocialApps(TestCase):
             "GOOGLE_CLIENT_ID": "id-google",
             "GOOGLE_CLIENT_SECRET": "segredo-google",
         }
-        with mock.patch.dict(os.environ, env, clear=False):
+        with mock.patch.dict(os.environ, env, clear=True):
             bootstrap_social_apps()
         app = SocialApp.objects.get(provider="google")
         assert app.client_id == "id-google"
@@ -58,7 +61,7 @@ class TestBootstrapSocialApps(TestCase):
             "FACEBOOK_CLIENT_ID": "id-fb",
             "FACEBOOK_CLIENT_SECRET": "segredo-fb",
         }
-        with mock.patch.dict(os.environ, env, clear=False):
+        with mock.patch.dict(os.environ, env, clear=True):
             bootstrap_social_apps()
         assert SocialApp.objects.filter(provider="facebook").exists()
 
@@ -69,26 +72,28 @@ class TestBootstrapSocialApps(TestCase):
             "GOOGLE_CLIENT_ID": "novo-id",
             "GOOGLE_CLIENT_SECRET": "novo-segredo",
         }
-        with mock.patch.dict(os.environ, env, clear=False):
+        with mock.patch.dict(os.environ, env, clear=True):
             bootstrap_social_apps()
         app.refresh_from_db()
         assert app.client_id == "novo-id"
         assert app.secret == "novo-segredo"
         assert SocialApp.objects.filter(provider="google").count() == 1
 
+    @mock.patch.dict(os.environ, {}, clear=True)
     def test_partial_env_ignored(self):
         env = {"GOOGLE_CLIENT_ID": "so-id"}
-        with mock.patch.dict(os.environ, env, clear=False):
+        with mock.patch.dict(os.environ, env, clear=True):
             bootstrap_social_apps()
         assert not SocialApp.objects.exists()
 
+    @mock.patch.dict(os.environ, {}, clear=True)
     def test_no_site_returns_quietly(self):
         Site.objects.all().delete()
         env = {
             "GOOGLE_CLIENT_ID": "id",
             "GOOGLE_CLIENT_SECRET": "sec",
         }
-        with mock.patch.dict(os.environ, env, clear=False):
+        with mock.patch.dict(os.environ, env, clear=True):
             bootstrap_social_apps()
         assert not SocialApp.objects.exists()
 
@@ -100,7 +105,7 @@ class TestBootstrapSocialCommand(TestCase):
             "GOOGLE_CLIENT_ID": "id-cmd",
             "GOOGLE_CLIENT_SECRET": "sec-cmd",
         }
-        with mock.patch.dict(os.environ, env, clear=False):
+        with mock.patch.dict(os.environ, env, clear=True):
             call_command("bootstrap_social")
         site = Site.objects.get(id=1)
         assert site.domain == "teste.test"

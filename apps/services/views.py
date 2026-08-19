@@ -50,7 +50,7 @@ class ServiceListView(SectionEnabledMixin, ListView):
         cat = self.request.GET.get("categoria")
         if cat:
             qs = qs.filter(category__slug=cat)
-        return qs.select_related("category")
+        return qs.select_related("category").prefetch_related("providers")
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -64,7 +64,7 @@ class ServiceDetailView(SectionEnabledMixin, DetailView):
     context_object_name = "service"
 
     def get_queryset(self):
-        return Service.objects.filter(is_active=True).select_related("category")
+        return Service.objects.filter(is_active=True).select_related("category", "created_by").prefetch_related("providers")
 
 
 # ---- Prestador self-service (CRUD de serviços) ------------------------------
@@ -115,7 +115,7 @@ class ServiceListViewMine(ProviderRequiredMixin, ListView):
     context_object_name = "services"
 
     def get_queryset(self):
-        return Service.objects.filter(created_by=self.request.user, is_active=True).select_related("category")
+        return Service.objects.filter(created_by=self.request.user, is_active=True).select_related("category", "created_by").prefetch_related("providers")
 
 
 # -------------------------------------------------------------------------
@@ -180,7 +180,7 @@ class ServiceQuoteView(ProviderRequiredMixin, UpdateView):
             qs = qs.filter(service__providers=self.request.user) | qs.filter(
                 service__created_by=self.request.user
             )
-        return qs
+        return qs.select_related("service", "cliente", "prestador")
 
     def form_valid(self, form):
         form.instance.status = ServiceRequest.Status.QUOTED

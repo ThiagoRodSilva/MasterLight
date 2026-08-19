@@ -79,12 +79,7 @@ class PixConfirmationView(ClienteRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         order = get_object_or_404(Order, pk=self.kwargs["order_pk"], user=self.request.user)
-        tx = (
-            order.transactions.filter(provider="asaas", status="pending")
-            .order_by("-created_at")
-            .first()
-            or order.transactions.filter(provider="asaas").order_by("-created_at").first()
-        )
+        tx = order.get_latest_asaas_transaction()
         pix = {}
         if tx and tx.raw_payload:
             try:
@@ -117,12 +112,7 @@ class BoletoConfirmationView(ClienteRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         order = get_object_or_404(Order, pk=self.kwargs["order_pk"], user=self.request.user)
-        tx = (
-            order.transactions.filter(provider="asaas", status="pending")
-            .order_by("-created_at")
-            .first()
-            or order.transactions.filter(provider="asaas").order_by("-created_at").first()
-        )
+        tx = order.get_latest_asaas_transaction()
         bank_slip = {}
         if tx and tx.raw_payload:
             try:

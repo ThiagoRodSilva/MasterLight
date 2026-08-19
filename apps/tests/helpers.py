@@ -23,8 +23,26 @@ def _next() -> int:
     return next(_counter)
 
 
-def make_user(role=CustomUser.Role.CLIENTE, is_superuser=False, email=None, **extra):
-    """Cria um CustomUser com dados únicos e senha conhecida (dispara signals)."""
+def make_user(
+    role=CustomUser.Role.CLIENTE,
+    is_superuser=False,
+    email=None,
+    cpf="",
+    telefone="",
+    address=None,
+    **extra,
+):
+    """Cria um CustomUser com dados únicos e senha conhecida (dispara signals).
+
+    Args:
+        role: Role do usuário (cliente, prestador, afiliado, admin)
+        is_superuser: Se True, cria superuser (bypassa middleware/mixins)
+        email: Email customizado
+        cpf: CPF do usuário (apenas dígitos)
+        telefone: Telefone do usuário (apenas dígitos)
+        address: Address instance ou dict com dados do endereço
+        **extra: Campos adicionais para create_user
+    """
     n = _next()
     user = CustomUser.objects.create_user(
         username=f"user{n}",
@@ -32,8 +50,21 @@ def make_user(role=CustomUser.Role.CLIENTE, is_superuser=False, email=None, **ex
         password="senha#123",
         role=role,
         is_superuser=is_superuser,
+        cpf=cpf,
+        telefone=telefone,
         **extra,
     )
+
+    if address:
+        from apps.checkout.models import Address
+
+        if isinstance(address, dict):
+            Address.objects.create(user=user, is_active=True, **address)
+        else:
+            address.user = user
+            address.is_active = True
+            address.save()
+
     return user
 
 

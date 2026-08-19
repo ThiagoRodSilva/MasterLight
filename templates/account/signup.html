@@ -6,7 +6,7 @@
     <div class="card-body p-4 p-md-5">
       <h1 class="h3 mb-3">Criar conta</h1>
       {% get_providers as providers %}
-      {% if providers %}
+      {% if providers and PROVIDER_REGISTRATION_ENABLED %}
       <div class="d-flex flex-column gap-2 mb-3">
         {% for p in providers %}
           <a href="{% provider_login_url p.id process='signup' %}" class="btn btn-social d-flex align-items-center justify-content-center gap-2">

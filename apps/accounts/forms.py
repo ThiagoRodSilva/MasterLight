@@ -41,11 +41,11 @@ class CustomSignupForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        choices = [
-            (CustomUser.Role.CLIENTE, "Cliente"),
-            (CustomUser.Role.AFILIADO, "Afiliado"),
-        ]
-        if SiteSettings.load().provider_registration_enabled:
+        settings = SiteSettings.load()
+        choices = [(CustomUser.Role.CLIENTE, "Cliente")]
+        if settings.affiliates_enabled:
+            choices.append((CustomUser.Role.AFILIADO, "Afiliado"))
+        if settings.provider_registration_enabled:
             choices.append((CustomUser.Role.PRESTADOR, "Prestador"))
         self.fields["role"] = CustomUser._meta.get_field("role").formfield(
             choices=choices,
@@ -118,11 +118,11 @@ class SocialSignupCompleteForm(forms.Form):
     def __init__(self, *args, **kwargs):
         self.request = kwargs.pop("request", None)
         super().__init__(*args, **kwargs)
-        choices = [
-            (CustomUser.Role.CLIENTE, "Cliente"),
-            (CustomUser.Role.AFILIADO, "Afiliado"),
-        ]
-        if SiteSettings.load().provider_registration_enabled:
+        settings = SiteSettings.load()
+        choices = [(CustomUser.Role.CLIENTE, "Cliente")]
+        if settings.affiliates_enabled:
+            choices.append((CustomUser.Role.AFILIADO, "Afiliado"))
+        if settings.provider_registration_enabled:
             choices.append((CustomUser.Role.PRESTADOR, "Prestador"))
         self.fields["role"] = CustomUser._meta.get_field("role").formfield(
             choices=choices,
@@ -145,8 +145,11 @@ class SocialSignupCompleteForm(forms.Form):
 
     def clean_role(self):
         role = self.cleaned_data.get("role")
-        if (role == CustomUser.Role.PRESTADOR) and not SiteSettings.load().provider_registration_enabled:
+        settings = SiteSettings.load()
+        if (role == CustomUser.Role.PRESTADOR) and not settings.provider_registration_enabled:
             raise forms.ValidationError("O cadastro de prestadores está desabilitado.")
+        if (role == CustomUser.Role.AFILIADO) and not settings.affiliates_enabled:
+            raise forms.ValidationError("O cadastro de afiliados está desabilitado.")
         return role
 
     def clean_cpf(self):
@@ -165,7 +168,10 @@ class SocialSignupCompleteForm(forms.Form):
         user.cpf = self.cleaned_data["cpf"]
         user.telefone = self.cleaned_data["telefone"]
         role = self.cleaned_data.get("role")
-        if role == CustomUser.Role.PRESTADOR and not SiteSettings.load().provider_registration_enabled:
+        settings = SiteSettings.load()
+        if role == CustomUser.Role.PRESTADOR and not settings.provider_registration_enabled:
+            role = CustomUser.Role.CLIENTE
+        if role == CustomUser.Role.AFILIADO and not settings.affiliates_enabled:
             role = CustomUser.Role.CLIENTE
         user.role = role
         user.save(update_fields=["cpf", "telefone", "role"])

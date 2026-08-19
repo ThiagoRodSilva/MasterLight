@@ -433,8 +433,8 @@ class TestChargeWithRollbackDoesNotCancelPaid(TestCase):
         assert product.stock == initial_stock - 1
 
         # Mock resolve_billing para levantar ValueError (simula falha)
-        with mock.patch("apps.payments.services.resolve_billing", side_effect=ValueError("erro")):
-            with mock.patch("apps.payments.services.messages.error") as mock_messages:
+        with mock.patch("apps.payments.services.charge.resolve_billing", side_effect=ValueError("erro")):
+            with mock.patch("apps.payments.services.charge.messages.error") as mock_messages:
                 from django.test import RequestFactory
 
                 factory = RequestFactory()
@@ -464,7 +464,7 @@ class TestChargeWithRollbackDoesNotCancelPaid(TestCase):
 
         # Mock create_checkout_for_order para levantar ValueError
         with mock.patch("apps.payments.services.create_checkout_for_order", side_effect=ValueError("erro")):
-            with mock.patch("apps.payments.services.messages.error") as mock_messages:
+            with mock.patch("apps.payments.services.charge.messages.error") as mock_messages:
                 from django.test import RequestFactory
 
                 factory = RequestFactory()

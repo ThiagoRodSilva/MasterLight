@@ -1,11 +1,12 @@
 """Testes da view de completamento social."""
 
 from unittest import mock
-from django.test import TestCase, RequestFactory
-from django.urls import reverse
-from django.contrib.sessions.middleware import SessionMiddleware
-from django.contrib.messages.middleware import MessageMiddleware
+
 from allauth.socialaccount.models import SocialLogin
+from django.contrib.messages.middleware import MessageMiddleware
+from django.contrib.sessions.middleware import SessionMiddleware
+from django.test import RequestFactory, TestCase
+from django.urls import reverse
 
 from apps.accounts.models import CustomUser
 from apps.accounts.views import SocialSignupCompleteView

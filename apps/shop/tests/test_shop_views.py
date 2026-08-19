@@ -59,3 +59,13 @@ class TestProductDetail(TestCase):
         product = make_product(is_active=False)
         response = self.client.get(reverse("shop-detail", args=[product.slug]))
         assert response.status_code == 404
+
+    def test_detail_uses_select_related_for_category(self):
+        """ProductDetailView deve usar select_related para category."""
+        product = make_product()
+        # Framework: session + user + socialaccount = 3 (user not logged in = no session/user queries?)
+        # Actually: sitesettings (1) + product with category (1) + images (prefetch, 1) + variants (prefetch, 1) + sitesettings again (1)
+        # Total: 5
+        with self.assertNumQueries(5):
+            response = self.client.get(reverse("shop-detail", args=[product.slug]))
+        assert response.status_code == 200

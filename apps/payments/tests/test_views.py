@@ -171,13 +171,21 @@ class TestAsaasWebhookView(TestCase):
 
 class TestManualConfirmationView(TestCase):
     def test_manual_tokenize_credit_card_raises(self):
-        user = make_user()
+        user = make_user(
+            cpf="12345678901",
+            telefone="11999999999",
+            address={"street": "Rua Teste", "number": "123", "city": "São Paulo", "state": "SP", "zip_code": "01234567"},
+        )
         gateway = ManualGateway()
         with self.assertRaisesRegex(ValueError, "asaas"):
             gateway.tokenize_credit_card(user, card={}, holder={})
 
     def test_manual_confirm_200_for_owner(self):
-        user = make_user()
+        user = make_user(
+            cpf="12345678901",
+            telefone="11999999999",
+            address={"street": "Rua Teste", "number": "123", "city": "São Paulo", "state": "SP", "zip_code": "01234567"},
+        )
         self.client.force_login(user)
         order = create_order(user, with_referral=False)
         response = self.client.get(reverse("payments-manual-confirm", kwargs={"order_pk": order.pk}))
@@ -185,9 +193,17 @@ class TestManualConfirmationView(TestCase):
         assert str(order.pk)[:5] in response.content.decode()
 
     def test_manual_confirm_404_other_user(self):
-        user = make_user()
+        user = make_user(
+            cpf="12345678901",
+            telefone="11999999999",
+            address={"street": "Rua Teste", "number": "123", "city": "São Paulo", "state": "SP", "zip_code": "01234567"},
+        )
         self.client.force_login(user)
-        other = make_user()
+        other = make_user(
+            cpf="12345678902",
+            telefone="11999999998",
+            address={"street": "Rua Teste", "number": "456", "city": "São Paulo", "state": "SP", "zip_code": "01234567"},
+        )
         order = create_order(other, with_referral=False)
         response = self.client.get(reverse("payments-manual-confirm", kwargs={"order_pk": order.pk}))
         assert response.status_code == 404
@@ -195,7 +211,11 @@ class TestManualConfirmationView(TestCase):
 
 class TestCardConfirmationView(TestCase):
     def setUp(self):
-        self.user = make_user()
+        self.user = make_user(
+            cpf="12345678901",
+            telefone="11999999999",
+            address={"street": "Rua Teste", "number": "123", "city": "São Paulo", "state": "SP", "zip_code": "01234567"},
+        )
         self.client.force_login(self.user)
         self.order = create_order(self.user, with_referral=False)
 
@@ -207,7 +227,11 @@ class TestCardConfirmationView(TestCase):
         assert response.status_code == 200
 
     def test_card_confirm_404_other_user(self):
-        other = make_user()
+        other = make_user(
+            cpf="12345678902",
+            telefone="11999999998",
+            address={"street": "Rua Teste", "number": "456", "city": "São Paulo", "state": "SP", "zip_code": "01234567"},
+        )
         order = create_order(other, with_referral=False)
         response = self.client.get(self._url(order))
         assert response.status_code == 404
@@ -220,7 +244,11 @@ class TestCardConfirmationView(TestCase):
 
 class TestOrderStatusView(TestCase):
     def test_status_json_for_owner(self):
-        user = make_user()
+        user = make_user(
+            cpf="12345678901",
+            telefone="11999999999",
+            address={"street": "Rua Teste", "number": "123", "city": "São Paulo", "state": "SP", "zip_code": "01234567"},
+        )
         self.client.force_login(user)
         order = create_order(user, with_referral=False)
         response = self.client.get(reverse("payments-status", kwargs={"order_pk": order.pk}))
@@ -230,9 +258,17 @@ class TestOrderStatusView(TestCase):
         assert data["order_status"] == "awaiting_payment"
 
     def test_status_404_other_user(self):
-        user = make_user()
+        user = make_user(
+            cpf="12345678901",
+            telefone="11999999999",
+            address={"street": "Rua Teste", "number": "123", "city": "São Paulo", "state": "SP", "zip_code": "01234567"},
+        )
         self.client.force_login(user)
-        other = make_user()
+        other = make_user(
+            cpf="12345678902",
+            telefone="11999999998",
+            address={"street": "Rua Teste", "number": "456", "city": "São Paulo", "state": "SP", "zip_code": "01234567"},
+        )
         order = create_order(other, with_referral=False)
         response = self.client.get(reverse("payments-status", kwargs={"order_pk": order.pk}))
         assert response.status_code == 404
@@ -249,7 +285,12 @@ class TestPaymentConfirmationRoleSeparation(TestCase):
 
         for role in (CustomUser.Role.PRESTADOR, CustomUser.Role.AFILIADO):
             with self.subTest(role=role):
-                user = make_user(role=role)
+                user = make_user(
+                    role=role,
+                    cpf="12345678901",
+                    telefone="11999999999",
+                    address={"street": "Rua Teste", "number": "123", "city": "São Paulo", "state": "SP", "zip_code": "01234567"},
+                )
                 self.client.force_login(user)
                 order = create_order(user, with_referral=False)
                 for url_name in ("payments-manual-confirm", "payments-status"):
@@ -261,10 +302,89 @@ class TestPaymentConfirmationRoleSeparation(TestCase):
     def test_admin_pode_acessar_confirmacoes(self):
         from apps.accounts.models import CustomUser
 
-        admin = make_user(role=CustomUser.Role.ADMIN)
+        admin = make_user(
+            role=CustomUser.Role.ADMIN,
+            is_superuser=True,
+        )
         self.client.force_login(admin)
         order = create_order(admin, with_referral=False)
         response = self.client.get(
             reverse("payments-manual-confirm", kwargs={"order_pk": order.pk})
         )
+        assert response.status_code == 200
+
+
+class TestPixConfirmationView(TestCase):
+    def setUp(self):
+        self.user = make_user(
+            cpf="12345678901",
+            telefone="11999999999",
+            address={"street": "Rua Teste", "number": "123", "city": "São Paulo", "state": "SP", "zip_code": "01234567"},
+        )
+        self.client.force_login(self.user)
+        self.order = create_order(self.user, with_referral=False)
+        Transaction.objects.create(
+            order=self.order, provider="asaas", external_id="pay_123", amount=self.order.total, status=Transaction.Status.PENDING
+        )
+
+    def _url(self, order=None):
+        return reverse("payments-pix-confirm", kwargs={"order_pk": (order or self.order).pk})
+
+    def test_pix_confirm_200_for_owner(self):
+        response = self.client.get(self._url())
+        assert response.status_code == 200
+
+    def test_pix_confirm_404_other_user(self):
+        other = make_user(
+            cpf="12345678902",
+            telefone="11999999998",
+            address={"street": "Rua Teste", "number": "456", "city": "São Paulo", "state": "SP", "zip_code": "01234567"},
+        )
+        order = create_order(other, with_referral=False)
+        response = self.client.get(self._url(order))
+        assert response.status_code == 404
+
+    def test_pix_confirm_uses_select_related(self):
+        """Pix confirmation deve usar select_related para order e user."""
+        # 6 queries: session + user + socialaccount + order + transaction(select_related order,user) + sitesettings
+        with self.assertNumQueries(6):
+            response = self.client.get(self._url())
+        assert response.status_code == 200
+
+
+class TestBoletoConfirmationView(TestCase):
+    def setUp(self):
+        self.user = make_user(
+            cpf="12345678901",
+            telefone="11999999999",
+            address={"street": "Rua Teste", "number": "123", "city": "São Paulo", "state": "SP", "zip_code": "01234567"},
+        )
+        self.client.force_login(self.user)
+        self.order = create_order(self.user, with_referral=False)
+        Transaction.objects.create(
+            order=self.order, provider="asaas", external_id="pay_123", amount=self.order.total, status=Transaction.Status.PENDING
+        )
+
+    def _url(self, order=None):
+        return reverse("payments-boleto-confirm", kwargs={"order_pk": (order or self.order).pk})
+
+    def test_boleto_confirm_200_for_owner(self):
+        response = self.client.get(self._url())
+        assert response.status_code == 200
+
+    def test_boleto_confirm_404_other_user(self):
+        other = make_user(
+            cpf="12345678902",
+            telefone="11999999998",
+            address={"street": "Rua Teste", "number": "456", "city": "São Paulo", "state": "SP", "zip_code": "01234567"},
+        )
+        order = create_order(other, with_referral=False)
+        response = self.client.get(self._url(order))
+        assert response.status_code == 404
+
+    def test_boleto_confirm_uses_select_related(self):
+        """Boleto confirmation deve usar select_related para order e user."""
+        # 6 queries: session + user + socialaccount + order + transaction(select_related order,user) + sitesettings
+        with self.assertNumQueries(6):
+            response = self.client.get(self._url())
         assert response.status_code == 200

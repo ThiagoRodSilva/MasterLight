@@ -8,6 +8,7 @@ from unittest import mock
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
+from apps.accounts.models import CustomUser
 from apps.checkout.models import Order
 from apps.payments.models import Transaction
 from apps.payments.services import AsaasGateway, WebhookAuthError
@@ -387,7 +388,7 @@ class TestAsaasWebhook(AsaasMockMixin, TestCase):
 class TestPixConfirmationView(AsaasMockMixin, TestCase):
     def test_pix_confirmation_shows_qr(self):
 
-        user = make_user()
+        user = make_user(role=CustomUser.Role.CLIENTE)
         self.client.force_login(user)
         order = create_order(user, with_referral=False)
         AsaasGateway().charge(order, billing_type="PIX")

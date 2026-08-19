@@ -225,7 +225,7 @@ class TestServiceRequestFlow(TestCase):
         sr = self._quoted_request(cliente, provider)
         self.client.force_login(cliente)
         with mock.patch(
-            "apps.payments.services.charge_order", side_effect=ValueError("gateway fora")
+            "apps.payments.services.charge.charge_order", side_effect=ValueError("gateway fora")
         ):
             response = self.client.post(reverse("services-request-approve", kwargs={"pk": sr.pk}))
         assert response.status_code == 302
@@ -243,7 +243,7 @@ class TestServiceRequestFlow(TestCase):
         sr = self._quoted_request(cliente, provider)
         self.client.force_login(cliente)
         fake = ChargeResult(ok=False, redirect_url="", message="falha ao gerar")
-        with mock.patch("apps.payments.services.charge_order", return_value=fake):
+        with mock.patch("apps.payments.services.charge.charge_order", return_value=fake):
             response = self.client.post(reverse("services-request-approve", kwargs={"pk": sr.pk}))
         assert response.status_code == 302
         order = Order.objects.get(user=cliente)
@@ -274,6 +274,36 @@ class TestCatalogo(TestCase):
             category=self.category,
         )
         response = self.client.get(reverse("services-detail", kwargs={"slug": service.slug}))
+        assert response.status_code == 200
+
+    def test_list_uses_select_related_and_prefetch(self):
+        """ServiceListView deve usar select_related para category e prefetch para providers."""
+        Service.objects.create(
+            name="Serviço A", slug="servico-a", base_price=5, category=self.category
+        )
+        Service.objects.create(
+            name="Serviço B", slug="servico-b", base_price=10, category=self.category
+        )
+        # Framework: session + user + socialaccount + sitesettings = 4
+        # View: services (1) + categories (1) = 2
+        # Total: 6
+        with self.assertNumQueries(6):
+            response = self.client.get(reverse("services-list"))
+        assert response.status_code == 200
+
+    def test_detail_uses_select_related_and_prefetch(self):
+        """ServiceDetailView deve usar select_related para category/created_by e prefetch para providers."""
+        service = Service.objects.create(
+            name="Serviço Detalhe",
+            slug="servico-detalhe",
+            base_price=5,
+            category=self.category,
+        )
+        # Framework: session + user + socialaccount + sitesettings = 4
+        # View: service (1 query, includes category, created_by, providers via prefetch)
+        # Total: 4
+        with self.assertNumQueries(4):
+            response = self.client.get(reverse("services-detail", kwargs={"slug": service.slug}))
         assert response.status_code == 200
 
 
@@ -320,4 +350,64 @@ class TestServiceRoleSeparation(TestCase):
         admin = make_user(role=CustomUser.Role.ADMIN)
         self.client.force_login(admin)
         response = self.client.get(reverse("services-update", kwargs={"slug": self.service.slug}))
+        assert response.status_code == 200
+
+
+class TestProviderRequestListQueries(TestCase):
+    """Testes de contagem de queries para views de prestador."""
+
+    def setUp(self):
+        super().setUp()
+        self.category = ServiceCategory.objects.create(name="Elétrica", slug="eletrica-query")
+        self.provider = make_user(role=CustomUser.Role.PRESTADOR)
+        self.cliente = make_user(role=CustomUser.Role.CLIENTE)
+        self.service = Service.objects.create(
+            name="Serviço Query",
+            slug="servico-query",
+            base_price=10,
+            category=self.category,
+            created_by=self.provider,
+        )
+        self.service.providers.add(self.provider)
+
+    def test_provider_requests_uses_select_related(self):
+        """ProviderServiceRequestListView deve usar select_related para service, cliente, prestador."""
+        ServiceRequest.objects.create(cliente=self.cliente, service=self.service, prestador=self.provider)
+        self.client.force_login(self.provider)
+        # Framework: session + user + socialaccount = 3
+        # Sitesettings: 1
+        # View: count (1) + list with select_related (1) = 2
+        # Total: 6
+        with self.assertNumQueries(6):
+            response = self.client.get(reverse("services-provider-requests"))
+        assert response.status_code == 200
+
+
+class TestMyRequestsQueries(TestCase):
+    """Testes de contagem de queries para minhas solicitações."""
+
+    def setUp(self):
+        super().setUp()
+        self.category = ServiceCategory.objects.create(name="Elétrica", slug="eletrica-myreq")
+        self.provider = make_user(role=CustomUser.Role.PRESTADOR)
+        self.cliente = make_user(role=CustomUser.Role.CLIENTE)
+        self.service = Service.objects.create(
+            name="Serviço MyReq",
+            slug="servico-myreq",
+            base_price=10,
+            category=self.category,
+            created_by=self.provider,
+        )
+        self.service.providers.add(self.provider)
+
+    def test_my_requests_uses_select_related(self):
+        """MyServiceRequestListView deve usar select_related para service, prestador."""
+        ServiceRequest.objects.create(cliente=self.cliente, service=self.service, prestador=self.provider)
+        self.client.force_login(self.cliente)
+        # Framework: session + user + socialaccount = 3
+        # Sitesettings: 1
+        # View: count (1) + list with select_related (1) = 2
+        # Total: 6
+        with self.assertNumQueries(6):
+            response = self.client.get(reverse("services-my-requests"))
         assert response.status_code == 200

@@ -252,6 +252,22 @@ class TestCheckoutView(TestCase):
         assert tx.provider == "asaas"
         assert tx.external_id == _fake.checkout_id
 
+    def test_checkout_uses_in_bulk_for_products(self):
+        """Checkout deve usar in_bulk() para buscar produtos (1 query para produtos)."""
+        self._login()
+        product1 = make_product(stock=10, price=50)
+        product2 = make_product(stock=10, price=75)
+        self._with_cart(product1, qty=1)
+        self._with_cart(product2, qty=2)
+
+        # Framework: session + user + socialaccount + sitesettings = 4
+        # View: order + 2 items + products (1 query) + affiliate + address + recompute + transaction = 8
+        # Savepoints + session save = 7 more
+        # Total: 19
+        with self.assertNumQueries(19):
+            response = self.client.post(reverse("checkout"))
+        assert response.status_code == 302
+
 
 class TestReferralCreation(TestCase):
     def test_checkout_creates_referral_with_cookie(self):

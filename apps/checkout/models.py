@@ -107,6 +107,19 @@ class Order(BaseModel):
         for item in self.items.filter(product__isnull=False).select_related("product"):
             Product.objects.filter(pk=item.product_id).update(stock=F("stock") + item.qty)
 
+    def get_latest_asaas_transaction(self):
+        """Retorna a transação Asaas mais recente (pending ou qualquer status)."""
+        return (
+            self.transactions.filter(provider="asaas", status="pending")
+            .select_related("order", "user")
+            .order_by("-created_at")
+            .first()
+            or self.transactions.filter(provider="asaas")
+            .select_related("order", "user")
+            .order_by("-created_at")
+            .first()
+        )
+
 
 class OrderItem(BaseModel):
     order = models.ForeignKey(

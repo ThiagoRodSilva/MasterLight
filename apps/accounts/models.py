@@ -9,7 +9,10 @@ from apps.core.models import BaseModel
 from apps.core.validators import validate_image_url
 
 if TYPE_CHECKING:
-    from apps.affiliate.models import AffiliateProfile
+    from apps.accounts.models import ProviderApplication
+    from apps.affiliate.models import AffiliateProfile, Referral
+    from apps.checkout.models import Address, Order
+    from apps.services.models import MaintenancePlan, Service, ServiceRequest
 
 
 class CustomUser(AbstractUser):

@@ -32,7 +32,7 @@ class ProfileDetailView(DetailView):
             is_active=True,
             role__in=[CustomUser.Role.PRESTADOR, CustomUser.Role.AFILIADO],
             public_profile__is_active=True,
-        )
+        ).select_related("public_profile")
 
 
 class ProfileEditView(LoginRequiredMixin, FormView):

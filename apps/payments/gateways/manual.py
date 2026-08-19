@@ -14,9 +14,10 @@ from .base import (
     WebhookAuthError,
     can_transition,
 )
+from .base_gateway import BasePaymentGateway
 
 
-class ManualGateway(PaymentGateway):
+class ManualGateway(PaymentGateway, BasePaymentGateway):
     """Gateway testes: marca transacao como pendente sem cobrar fato.
 
     webhook recebe payload JSON com `transaction_id` e `status` (paid/refunded)
@@ -107,22 +108,7 @@ class ManualGateway(PaymentGateway):
         raise ValueError("Checkout hospedado requer o provider 'asaas'.")
 
     def refund(self, transaction_id, amount) -> ChargeResult:
-        from apps.payments.models import Transaction
-
-        tx = Transaction.objects.filter(pk=transaction_id).first()
-        if tx:
-            new_status = Transaction.Status.REFUNDED
-            if can_transition(tx.status, new_status):
-                tx.status = new_status
-                tx.save(update_fields=["status", "updated_at"])
-                return ChargeResult(ok=True, redirect_url="/", transaction_id=str(tx.pk))
-            return ChargeResult(
-                ok=False,
-                redirect_url="/",
-                transaction_id=str(tx.pk),
-                message=f"Transição '{tx.status} -> {new_status}' bloqueada.",
-            )
-        return ChargeResult(ok=False, redirect_url="/", message="Tx não encontrada.")
+        return self._process_refund(transaction_id, amount)
 
     def webhook(self, payload, headers) -> ChargeResult:
         from apps.payments.models import Transaction

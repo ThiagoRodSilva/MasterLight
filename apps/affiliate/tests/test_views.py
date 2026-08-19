@@ -81,6 +81,18 @@ class TestAffiliateDashboard(TestCase):
         # Não deve mostrar "0.10%"
         self.assertNotIn("0.10%", content)
 
+    def test_dashboard_prefetches_payouts(self):
+        """Dashboard deve usar prefetch para payouts (referrals + payouts prefetched)."""
+        affiliate = make_affiliate()
+        self.client.force_login(affiliate.user)
+
+        # Framework: session + user + socialaccount + sitesettings = 4
+        # View: profile (1) + referrals (1) + payouts (1 via prefetch) + referral_count (1) + sitesettings again (1)
+        # Total: 9
+        with self.assertNumQueries(9):
+            response = self.client.get(reverse("affiliate-dashboard"))
+        assert response.status_code == 200
+
 
 class TestPixKeyView(TestCase):
     def _login(self, affiliate):

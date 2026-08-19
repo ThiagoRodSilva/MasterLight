@@ -66,25 +66,40 @@ class TestRoleSeparation(TestCase):
                 assert self._access(user, url_name).status_code == 403
 
     def test_cliente_só_na_área_de_cliente(self):
-        cliente = make_user(role=CustomUser.Role.CLIENTE)
+        cliente = make_user(
+            role=CustomUser.Role.CLIENTE,
+            cpf="12345678901",
+            telefone="11999999999",
+            address={"street": "Rua Teste", "number": "123", "city": "São Paulo", "state": "SP", "zip_code": "01234567"},
+        )
         assert self._access(cliente, "checkout").status_code in (200, 302)
         assert self._access(cliente, "services-create").status_code == 403
         assert self._access(cliente, "affiliate-dashboard").status_code == 403
 
     def test_prestador_só_na_área_de_prestador(self):
-        prestador = make_user(role=CustomUser.Role.PRESTADOR)
+        prestador = make_user(
+            role=CustomUser.Role.PRESTADOR,
+            cpf="12345678902",
+            telefone="11999999998",
+            address={"street": "Rua Teste", "number": "123", "city": "São Paulo", "state": "SP", "zip_code": "01234567"},
+        )
         assert self._access(prestador, "services-create").status_code in (200, 302)
         assert self._access(prestador, "checkout").status_code == 403
         assert self._access(prestador, "affiliate-dashboard").status_code == 403
 
     def test_afiliado_só_na_área_de_afiliado(self):
-        afiliado = make_user(role=CustomUser.Role.AFILIADO)
+        afiliado = make_user(
+            role=CustomUser.Role.AFILIADO,
+            cpf="12345678903",
+            telefone="11999999997",
+            address={"street": "Rua Teste", "number": "123", "city": "São Paulo", "state": "SP", "zip_code": "01234567"},
+        )
         assert self._access(afiliado, "affiliate-dashboard").status_code in (200, 302)
         assert self._access(afiliado, "checkout").status_code == 403
         assert self._access(afiliado, "services-create").status_code == 403
 
     def test_admin_acessa_todas_as_áreas(self):
-        admin = make_user(role=CustomUser.Role.ADMIN)
+        admin = make_user(role=CustomUser.Role.ADMIN, is_superuser=True)
         self._assert_allowed(admin)
 
     def test_superuser_acessa_todas_as_áreas(self):
@@ -97,7 +112,12 @@ class TestOwnerRequiredMixin(TestCase):
         from apps.services.models import Service, ServiceCategory
 
         category = ServiceCategory.objects.create(name="Elétrica", slug="eletrica")
-        owner = make_user(role=CustomUser.Role.PRESTADOR)
+        owner = make_user(
+            role=CustomUser.Role.PRESTADOR,
+            cpf="12345678904",
+            telefone="11999999996",
+            address={"street": "Rua Teste", "number": "123", "city": "São Paulo", "state": "SP", "zip_code": "01234567"},
+        )
         service = Service.objects.create(
             name="Serviço do outro",
             slug="servico-do-outro",
@@ -105,7 +125,7 @@ class TestOwnerRequiredMixin(TestCase):
             category=category,
             created_by=owner,
         )
-        admin = make_user(role=CustomUser.Role.ADMIN)
+        admin = make_user(role=CustomUser.Role.ADMIN, is_superuser=True)
         self.client.force_login(admin)
         response = self.client.get(reverse("services-update", kwargs={"slug": service.slug}))
         assert response.status_code == 200
@@ -114,7 +134,12 @@ class TestOwnerRequiredMixin(TestCase):
         from apps.services.models import Service, ServiceCategory
 
         category = ServiceCategory.objects.create(name="Elétrica", slug="eletrica-2")
-        owner = make_user(role=CustomUser.Role.PRESTADOR)
+        owner = make_user(
+            role=CustomUser.Role.PRESTADOR,
+            cpf="12345678905",
+            telefone="11999999995",
+            address={"street": "Rua Teste", "number": "123", "city": "São Paulo", "state": "SP", "zip_code": "01234567"},
+        )
         service = Service.objects.create(
             name="Serviço privado",
             slug="servico-privado",
@@ -122,7 +147,12 @@ class TestOwnerRequiredMixin(TestCase):
             category=category,
             created_by=owner,
         )
-        outro = make_user(role=CustomUser.Role.PRESTADOR)
+        outro = make_user(
+            role=CustomUser.Role.PRESTADOR,
+            cpf="12345678906",
+            telefone="11999999994",
+            address={"street": "Rua Teste", "number": "456", "city": "São Paulo", "state": "SP", "zip_code": "01234567"},
+        )
         self.client.force_login(outro)
         response = self.client.get(reverse("services-update", kwargs={"slug": service.slug}))
         assert response.status_code in (403, 404)

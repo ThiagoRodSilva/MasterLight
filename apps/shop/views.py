@@ -38,4 +38,4 @@ class ProductDetailView(SectionEnabledMixin, DetailView):
     context_object_name = "product"
 
     def get_queryset(self):
-        return Product.objects.filter(is_active=True).prefetch_related("images", "variants")
+        return Product.objects.filter(is_active=True).select_related("category").prefetch_related("images", "variants")

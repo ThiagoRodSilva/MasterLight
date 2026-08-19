@@ -1,8 +1,9 @@
 """Testes do CustomSocialAccountAdapter."""
 
 from unittest import mock
-from django.test import TestCase, RequestFactory
+
 from allauth.socialaccount.models import SocialLogin
+from django.test import RequestFactory, TestCase
 
 from apps.accounts.adapters import CustomSocialAccountAdapter
 from apps.accounts.models import CustomUser
