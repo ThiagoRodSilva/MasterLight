@@ -1,4 +1,4 @@
-"""Gateway real via API v3 do Asaas (Pix, cartão, boleto e assinaturas)."""
+"""Gateway real via API v3 do Asaas (Pix, cartão e assinaturas)."""
 
 import json
 import logging
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 class AsaasGateway(PaymentGateway, BasePaymentGateway):
-    """Gateway real via API v3 do Asaas (Pix e MultiCartão).
+    """Gateway real via API v3 do Asaas (Pix e Cartão).
 
     - `charge` cria cobrança e salva `Transaction.external_id` = id Asaas.
     - `webhook` valida token em `asaas-access-token` (header atual do Asaas) e
@@ -38,8 +38,8 @@ class AsaasGateway(PaymentGateway, BasePaymentGateway):
     # Formas de pagamento aceitas pelo Asaas. DEBIT_CARD usa a mesma mecânica
     # de token do cartão; UNDEFINED deixa o Asaas decidir e TRANSFER depende de
     # transferência manual do cliente. Todos são aceitos no gateway, mas apenas
-    # Pix/Cartão/Boleto são expostos na UI.
-    _BILLING_TYPES = {"PIX", "CREDIT_CARD", "BOLETO", "DEBIT_CARD", "UNDEFINED", "TRANSFER"}
+    # Pix/Cartão são expostos na UI.
+    _BILLING_TYPES = {"PIX", "CREDIT_CARD", "DEBIT_CARD", "UNDEFINED", "TRANSFER"}
     _TOKEN_BILLING_TYPES = {"CREDIT_CARD", "DEBIT_CARD"}
 
     # Eventos informativos: cobrança criada/vencendo/cobrança em andamento não
@@ -200,8 +200,7 @@ class AsaasGateway(PaymentGateway, BasePaymentGateway):
         """Escolhe a página de confirmação conforme a forma de pagamento."""
         if billing_type in ("CREDIT_CARD", "DEBIT_CARD"):
             name = "payments-card-confirm"
-        elif billing_type == "BOLETO":
-            name = "payments-boleto-confirm"
+
         else:
             # PIX, UNDEFINED e TRANSFER caem na página do PIX; o polling de
             # status funciona para qualquer cobrança.
@@ -273,7 +272,7 @@ class AsaasGateway(PaymentGateway, BasePaymentGateway):
         `payment.paymentLink` — ainda sem reconcilição local nesta etapa.
         """
         normalized = (billing_type or "UNDEFINED").upper()
-        if normalized not in ("UNDEFINED", "BOLETO", "CREDIT_CARD", "PIX"):
+        if normalized not in ("UNDEFINED", "CREDIT_CARD", "PIX"):
             raise ValueError(f"billing_type inválido para link: {billing_type}.")
         charge = (charge_type or "DETACHED").upper()
         if charge not in ("DETACHED", "INSTALLMENT", "RECURRENT"):
@@ -284,8 +283,7 @@ class AsaasGateway(PaymentGateway, BasePaymentGateway):
             body["value"] = self.client._money(value)
         if description:
             body["description"] = description
-        if normalized == "BOLETO" and due_date_limit_days:
-            body["dueDateLimitDays"] = due_date_limit_days
+        # dueDateLimitDays não é necessário (BOLETO removido)
         if charge == "INSTALLMENT" and max_installment_count:
             body["maxInstallmentCount"] = max_installment_count
         if charge == "RECURRENT" and subscription_cycle:
@@ -326,7 +324,7 @@ class AsaasGateway(PaymentGateway, BasePaymentGateway):
         mesmo `checkout.id` (payload tem `checkout`, não `payment`).
 
         Em `charge_type=RECURRENT`, o Asaas só aceita `CREDIT_CARD` — o
-        `billing_types` é fixado em `["CREDIT_CARD"]` (PIX/BOLETO exigem
+        `billing_types` é fixado em `["CREDIT_CARD"]` (PIX exige
         DETACHED).
         """
         from apps.payments.models import Transaction
@@ -336,7 +334,7 @@ class AsaasGateway(PaymentGateway, BasePaymentGateway):
             raise ValueError(f"charge_type inválido: {charge_type}.")
         if charge == "RECURRENT":
             # API do Asaas: em operações RECURRENT o único método de pagamento
-            # permitido é CREDIT_CARD (PIX/BOLETO exigem DETACHED). Fixa o
+            # permitido é CREDIT_CARD (PIX exige DETACHED). Fixa o
             # billingTypes para não enviar combo inválido e tomar 400.
             normalized = ["CREDIT_CARD"]
         else:
@@ -438,7 +436,7 @@ class AsaasGateway(PaymentGateway, BasePaymentGateway):
         credit_card_token: str = "",
         remote_ip: str = "",
     ) -> ChargeResult:
-        """Gera cobranca (Pix/cartao/boleto/etc.) no Asaas e salva Transaction."""
+        """Gera cobranca (Pix/cartão/etc.) no Asaas e salva Transaction."""
         from apps.payments.models import Transaction
 
         normalized = (billing_type or "PIX").upper()
@@ -476,8 +474,7 @@ class AsaasGateway(PaymentGateway, BasePaymentGateway):
                 # ele e o status é atualizado via webhook/reconciliação.
                 logger.warning("Asaas: QR Pix indisponível para o pagamento %s", payment.get("id"))
                 extras["pix"] = {}
-        elif normalized == "BOLETO":
-            extras["bankSlip"] = payment.get("bankSlip") or {}
+
 
         raw = json.dumps({"payment": payment, **extras})
         tx = self._upsert_transaction(
@@ -568,8 +565,7 @@ class AsaasGateway(PaymentGateway, BasePaymentGateway):
                 # Cobrança ainda não possui Pix disponível (ex.: cartão sem emissão
                 # imediata); segue sem QR, o status é atualizado via webhook.
                 extras["pix"] = {}
-        elif normalized == "BOLETO":
-            extras["bankSlip"] = (first_payment or {}).get("bankSlip") or {}
+
 
         raw = json.dumps(
             {"subscription": subscription, "first_payment": external_payment_id, **extras}

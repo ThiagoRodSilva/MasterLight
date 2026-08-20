@@ -104,26 +104,6 @@ class CardConfirmationView(ClienteRequiredMixin, TemplateView):
         return ctx
 
 
-class BoletoConfirmationView(ClienteRequiredMixin, TemplateView):
-    """Mostra o boleto bancário gerado no Asaas (link/linha digitável)."""
-
-    template_name = "payments/boleto_confirm.html"
-
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        order = get_object_or_404(Order, pk=self.kwargs["order_pk"], user=self.request.user)
-        tx = order.get_latest_asaas_transaction()
-        bank_slip = {}
-        if tx and tx.raw_payload:
-            try:
-                payload = json.loads(tx.raw_payload)
-                bank_slip = payload.get("bankSlip") or {}
-            except (ValueError, TypeError):
-                bank_slip = {}
-        ctx["order"] = order
-        ctx["transaction"] = tx
-        ctx["bank_slip"] = bank_slip
-        return ctx
 
 
 class OrderStatusView(ClienteRequiredMixin, View):

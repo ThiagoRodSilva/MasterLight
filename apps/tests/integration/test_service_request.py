@@ -17,7 +17,6 @@ ASAAS_SETTINGS = {
     "ASAAS_SANDBOX": True,
     "ASAAS_WEBHOOK_TOKEN": "segredo",
     "CARD_ENABLED": True,
-    "BOLETO_ENABLED": True,
 }
 
 

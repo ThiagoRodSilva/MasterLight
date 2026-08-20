@@ -136,23 +136,7 @@ class TestAsaasCharge(AsaasMockMixin, TestCase):
         with self.assertRaises(ValueError):
             AsaasGateway().charge(order, billing_type="CHEQUE")
 
-    def test_charge_boleto_creates_transaction_with_bank_slip(self):
-        user = make_user()
-        order = create_order(user, with_referral=False)
-        result = AsaasGateway().charge(order, billing_type="BOLETO")
 
-        assert result.ok is True
-        payload = json.loads(result.raw_payload)
-        assert payload["bankSlip"]["url"].startswith("https://boleto.asaas.com")
-        assert payload["bankSlip"]["barCode"] == "3419179001234567890"
-        tx = Transaction.objects.get(pk=result.transaction_id)
-        assert "bankSlip" in json.loads(tx.raw_payload)
-
-    def test_charge_boleto_redirects_to_boleto_confirm(self):
-        user = make_user()
-        order = create_order(user, with_referral=False)
-        result = AsaasGateway().charge(order, billing_type="BOLETO")
-        assert result.redirect_url == reverse("payments-boleto-confirm", args=[order.pk])
 
     def test_charge_pix_redirects_to_pix_confirm(self):
         user = make_user()
@@ -485,19 +469,6 @@ class TestAsaasSubscription(AsaasMockMixin, TestCase):
         tx = Transaction.objects.get(order=plan.order)
         assert tx.external_id == self.asaas.subscription_id
 
-    def test_subscribe_boleto_stores_bank_slip(self):
-        from apps.accounts.models import CustomUser
-
-        cliente = make_user(role=CustomUser.Role.CLIENTE)
-        plan = _make_plan(cliente)
-        result = AsaasGateway().subscribe(plan, billing_type="BOLETO")
-
-        assert result.ok is True
-        payload = json.loads(result.raw_payload)
-        assert payload["bankSlip"]["barCode"] == "3419179001234567890"
-        tx = Transaction.objects.get(order=plan.order)
-        assert "bankSlip" in json.loads(tx.raw_payload)
-        assert result.redirect_url == reverse("payments-boleto-confirm", args=[plan.order.pk])
 
 
 @override_settings(**ASAAS_SETTINGS)

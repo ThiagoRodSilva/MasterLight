@@ -17,7 +17,6 @@ ASAAS_SETTINGS = {
     "ASAAS_SANDBOX": True,
     "ASAAS_WEBHOOK_TOKEN": "segredo",
     "CARD_ENABLED": True,
-    "BOLETO_ENABLED": True,
 }
 
 
@@ -105,28 +104,6 @@ class TestShopCheckoutFlow(AsaasMockMixin, TestCase):
         self.assertEqual(tx.status, Transaction.Status.PAID)
         self.assertEqual(order.status, Order.Status.PAID)
 
-    def test_shop_checkout_boleto_flow(self):
-        """Fluxo checkout com boleto."""
-        self._add_to_cart(self.product)
-        self.client.force_login(self.client_user)
-
-        response = self.client.post(
-            reverse("checkout"),
-            {"payment_method": "BOLETO"},
-            follow=False,  # Don't follow external redirect
-        )
-        # With Asaas hosted checkout, redirects to Asaas URL (302)
-        self.assertEqual(response.status_code, 302)
-
-        order = Order.objects.filter(user=self.client_user).latest("created_at")
-        self.assertEqual(order.status, Order.Status.AWAITING_PAYMENT)
-
-        from apps.payments.services import AsaasGateway
-
-        # For hosted checkout, use CHECKOUT_PAID webhook
-        checkout_id = self.asaas.checkout_id
-        payload = json.dumps({"event": "CHECKOUT_PAID", "checkout": {"id": checkout_id, "status": "PAID"}})
-        AsaasGateway().webhook(payload, {"x-webhook-token": "segredo"})
 
         order.refresh_from_db()
         self.assertEqual(order.status, Order.Status.PAID)

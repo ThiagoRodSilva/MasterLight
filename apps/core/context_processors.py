@@ -32,7 +32,6 @@ def branding(request: HttpRequest) -> dict[str, Any]:
         },
         "AFFILIATE_COOKIE_NAME": settings.AFFILIATE_COOKIE_NAME,
         "CARD_ENABLED": settings.PAYMENT_PROVIDER == "asaas",
-        "BOLETO_ENABLED": settings.PAYMENT_PROVIDER == "asaas",
         "PAYLINK_ENABLED": settings.PAYMENT_PROVIDER == "asaas",
         "CHECKOUT_HOSTED": settings.PAYMENT_PROVIDER == "asaas",
         "STORE_ENABLED": flags.store_enabled,

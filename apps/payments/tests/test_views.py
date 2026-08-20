@@ -352,25 +352,6 @@ class TestPixConfirmationView(TestCase):
         assert response.status_code == 200
 
 
-class TestBoletoConfirmationView(TestCase):
-    def setUp(self):
-        self.user = make_user(
-            cpf="12345678901",
-            telefone="11999999999",
-            address={"street": "Rua Teste", "number": "123", "city": "São Paulo", "state": "SP", "zip_code": "01234567"},
-        )
-        self.client.force_login(self.user)
-        self.order = create_order(self.user, with_referral=False)
-        Transaction.objects.create(
-            order=self.order, provider="asaas", external_id="pay_123", amount=self.order.total, status=Transaction.Status.PENDING
-        )
-
-    def _url(self, order=None):
-        return reverse("payments-boleto-confirm", kwargs={"order_pk": (order or self.order).pk})
-
-    def test_boleto_confirm_200_for_owner(self):
-        response = self.client.get(self._url())
-        assert response.status_code == 200
 
     def test_boleto_confirm_404_other_user(self):
         other = make_user(

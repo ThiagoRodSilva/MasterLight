@@ -56,7 +56,7 @@ class CustomSignupForm(forms.Form):
             max_length=14,
             label="CPF",
             validators=[validate_brazilian_cpf],
-            help_text="Usado para emitir cobranças e boletos.",
+            help_text="Usado para emitir cobranças.",
         )
         self.fields["telefone"] = forms.CharField(
             max_length=20,

@@ -1,245 +1,154 @@
-"""Factories e helpers compartilhados dos testes (runner nativo Django).
+"""Helpers compartilhados para testes."""
+from __future__ import annotations
 
-Substitui o antigo `conftest.py` do pytest: funções puras (`make_user`,
-`make_product`, ...), `create_order()` e o mock `FakeAsaasApi` usado em
-payments/services via `AsaasMockMixin`.
-"""
-
-import itertools
-import json
 from contextlib import contextmanager
 from decimal import Decimal
 from unittest import mock
 
-from apps.accounts.models import CustomUser
+from django.contrib.auth import get_user_model
+from django.test import TestCase
+
 from apps.affiliate.models import AffiliateProfile
 from apps.checkout.models import Order, OrderItem
-from apps.shop.models import Category, Product
+from apps.shop.models import Category
 
-_counter = itertools.count(1)
-
-
-def _next() -> int:
-    return next(_counter)
+User = get_user_model()
 
 
 def make_user(
-    role=CustomUser.Role.CLIENTE,
-    is_superuser=False,
-    email=None,
-    cpf="",
-    telefone="",
-    address=None,
-    **extra,
+    *,
+    role: str = "cliente",
+    email: str | None = None,
+    cpf: str = "12345678901",
+    telefone: str = "11999999999",
+    address: dict | None = None,
+    is_active: bool = True,
+    **kwargs,
 ):
-    """Cria um CustomUser com dados únicos e senha conhecida (dispara signals).
-
-    Args:
-        role: Role do usuário (cliente, prestador, afiliado, admin)
-        is_superuser: Se True, cria superuser (bypassa middleware/mixins)
-        email: Email customizado
-        cpf: CPF do usuário (apenas dígitos)
-        telefone: Telefone do usuário (apenas dígitos)
-        address: Address instance ou dict com dados do endereço
-        **extra: Campos adicionais para create_user
-    """
-    n = _next()
-    user = CustomUser.objects.create_user(
-        username=f"user{n}",
-        email=email or f"user{n}@example.com",
-        password="senha#123",
+    """Cria um usuário de teste com CPF/telefone/endereço válidos para Asaas."""
+    email = email or f"{role}-{cpf[:6]}@test.com"
+    user = User.objects.create_user(
+        username=email,
+        email=email,
+        password="testpass123",
         role=role,
-        is_superuser=is_superuser,
         cpf=cpf,
         telefone=telefone,
-        **extra,
+        is_active=is_active,
+        **kwargs,
     )
-
     if address:
         from apps.checkout.models import Address
 
-        if isinstance(address, dict):
-            Address.objects.create(user=user, is_active=True, **address)
-        else:
-            address.user = user
-            address.is_active = True
-            address.save()
-
+        Address.objects.create(user=user, **address)
     return user
 
 
-def make_category(name=None, slug=None):
-    n = _next()
-    return Category.objects.create(
-        name=name or f"Categoria {n}",
-        slug=slug or f"categoria-{n}",
+def make_category(name: str = "Teste", slug: str = "teste") -> Category:
+
+    return Category.objects.create(name=name, slug=slug)
+
+
+def make_product(
+    *,
+    name: str = "Produto Teste",
+    slug: str = "produto-teste",
+    sku: str = "SKU-TESTE",
+    price: Decimal = Decimal("49.90"),
+    stock: int = 10,
+    category=None,
+    is_active: bool = True,
+):
+    from apps.shop.models import Product
+
+    if category is None:
+        category = make_category()
+    return Product.objects.create(
+        name=name,
+        slug=slug,
+        sku=sku,
+        price=price,
+        stock=stock,
+        category=category,
+        is_active=is_active,
     )
 
 
-def make_product(name=None, slug=None, sku=None, price=None, stock=10, category=None, **extra):
-    n = _next()
-    defaults = {
-        "sku": sku or f"SKU{n}",
-        "name": name or f"Produto {n}",
-        "slug": slug or f"produto-{n}",
-        "price": price if price is not None else Decimal("29.90"),
-        "stock": stock,
-        "category": category or make_category(),
-    }
-    defaults.update(extra)
-    return Product.objects.create(**defaults)
+def make_affiliate(user=None, commission_rate: Decimal = Decimal("0.10")) -> AffiliateProfile:
 
-
-def make_affiliate(user=None):
-    """Cria (ou reusa) o perfil de afiliado de um usuário."""
-    user = user or make_user(role=CustomUser.Role.AFILIADO)
-    profile, _ = AffiliateProfile.objects.get_or_create(user=user)
-    return profile
-
-
-def create_order(user, product=None, with_referral=False, qty=2):
-    """Cria Order + OrderItem + Transaction (ManualPayment) para um teste."""
-    if product is None:
-        product = make_product(stock=10)
-    order = Order.objects.create(user=user, status=Order.Status.AWAITING_PAYMENT)
-    OrderItem.objects.create(
-        order=order,
-        product=product,
-        name=product.name,
-        qty=qty,
-        unit_price=product.price,
+    if user is None:
+        user = make_user(role="afiliado")
+    affil, _ = AffiliateProfile.objects.get_or_create(
+        user=user, defaults={"commission_rate": commission_rate}
     )
+    return affil
+
+
+def create_order(user=None, with_referral: bool = False) -> Order:
+    """Cria Order mínima com 1 item (produto) — útil para testes de pagamento."""
+    if user is None:
+        user = make_user()
+    order = Order.objects.create(user=user, status=Order.Status.OPEN)
+    product = make_product()
+    OrderItem.objects.create(order=order, product=product, name=product.name, qty=1, unit_price=product.price)
     order.recompute_total()
     if with_referral:
         from apps.affiliate.models import Referral
 
-        affil = make_affiliate(make_user(role=CustomUser.Role.AFILIADO))
-        Referral.objects.create(
-            affiliate=affil,
-            referred=user,
-            order=order,
-            commission_rate=affil.commission_rate,
-            commission_amount=order.total * affil.commission_rate,
-        )
-    from apps.payments.models import Transaction
-
-    Transaction.objects.create(order=order, user=user, provider="manual", amount=order.total)
+        affil = make_affiliate()
+        Referral.objects.create(affiliate=affil, referred=user, order=order)
     return order
 
 
-# ---------------------------------------------------------------------------
-# Mock do Asaas (compartilhado entre payments e services)
-
-
 class FakeResponse:
-    """Objeto 'response' minimalista (ok/json/text) devolvido pelo mock."""
-
+    @property
+    def ok(self):
+        return self.status_code < 400
     def __init__(self, data, status_code=200):
         self._data = data
         self.status_code = status_code
 
-    @property
-    def ok(self):
-        return self.status_code < 400
-
     def json(self):
         return self._data
 
-    @property
-    def text(self):
-        return json.dumps(self._data)
+    def raise_for_status(self):
+        if self.status_code >= 400:
+            raise Exception(f"HTTP {self.status_code}")
 
 
 class FakeAsaasApi:
-    """Mock do `requests.request` usado no AsaasGateway.
+    """Mock da API v3 do Asaas para testes unitários."""
 
-    Simula criacao de cliente/cobranca, consulta de Pix e reembolso.
-    """
+    customer_id = "cus_0001"
+    payment_id = "pay_0001"
+    subscription_id = "sub_0001"
+    payment_link_id = "link_0001"
+    payment_link_url = "https://asaas.com/payment/link_0001"
+    checkout_id = "chk_0001"
+    card_token = "tok_0001"
+    customer_status = "PENDING"
+    empty_subscription_payments = False
+    pix_missing = False
+    calls: list[dict] = []
 
-    def __init__(self):
-        self.calls = []
-        self.customer_id = "cus_0001"
-        self.payment_id = "pay_0001"
-        self.renewal_payment_id = "pay_0002"
-        self.subscription_id = "sub_0001"
-        self.card_token = "tok_0001"
-        self.fail_next = None
-        self.empty_subscription_payments = False
-        self.pix_missing = False
-        self.fail_5xx = 0
-        self.customer_status = "CONFIRMED"
-        self.payment_link_id = "pl_0001"
-        self.payment_link_url = "https://www.asaas.com/c/291089675759"
-        self.checkout_id = "chk_0001"
-        self.checkout_url = "https://asaas.com/checkoutSession/show?id=chk_0001"
-        self.checkout_subscription_id = "sub_0001"
-        self.fail_customer_creation = False
-
-    def __call__(self, method, url, headers, json, params=None, timeout=None):
-        self.calls.append(
-            {"method": method, "url": url, "body": json, "headers": headers, "params": params}
-        )
-        if self.fail_next:
-            status, detail = self.fail_next
-            self.fail_next = None
-            return FakeResponse({"errors": [detail]}, status_code=status)
-        if self.fail_5xx:
-            self.fail_5xx -= 1
-            return FakeResponse({"errors": [{"description": "erro interno"}]}, status_code=502)
+    def __call__(self, method, url, headers=None, json=None, params=None, timeout=None):
+        self.calls.append({"method": method, "url": url, "headers": headers, "json": json, "params": params, "body": json})
+        # POST /customers
         if method == "POST" and url.endswith("/customers"):
-            if self.fail_customer_creation:
-                return FakeResponse(
-                    {
-                        "errors": [
-                            {"code": "invalid_object", "description": "O campo cpfCnpj deve ser informado."},
-                            {"code": "invalid_object", "description": "O campo phoneNumber deve ser informado."},
-                            {"code": "invalid_object", "description": "O campo address deve ser informado."},
-                            {"code": "invalid_object", "description": "O campo addressNumber deve ser informado."},
-                            {"code": "invalid_object", "description": "O campo postalCode deve ser informado."},
-                            {"code": "invalid_object", "description": "O campo province deve ser informado."},
-                        ]
-                    },
-                    status_code=400,
-                )
+            if json and json.get("externalReference"):
+                return FakeResponse({"id": self.customer_id, "externalReference": json["externalReference"]})
             return FakeResponse({"id": self.customer_id})
+        # GET /customers?email=...
         if method == "GET" and url.endswith("/customers"):
             return FakeResponse({"data": []})
+        # POST /payments
         if method == "POST" and url.endswith("/payments"):
-            if json and json.get("billingType") == "BOLETO":
-                return FakeResponse(
-                    {
-                        "id": self.payment_id,
-                        "status": "PENDING",
-                        "bankSlip": {
-                            "url": "https://boleto.asaas.com/emissao/123456",
-                            "barCode": "3419179001234567890",
-                            "identification": "00000000000000000000000000000000000000000000000",
-                        },
-                    }
-                )
-            if json and json.get("billingType") == "CREDIT_CARD":
-                return FakeResponse({"id": self.payment_id, "status": "PENDING"})
             return FakeResponse({"id": self.payment_id, "status": "PENDING"})
-        if method == "GET" and f"payments/{self.payment_id}" in url and not url.endswith("pixQrCode"):
-            return FakeResponse({"id": self.payment_id, "status": self.customer_status})
-        if method == "POST" and url.endswith("/gerarCobranca"):
-            return FakeResponse({"id": self.payment_id, "status": "PENDING"})
-        if method == "GET" and url.endswith("/payments") and "subscriptions/" not in url:
-            return FakeResponse(
-                {
-                    "data": [
-                        {
-                            "id": self.payment_id,
-                            "subscription": self.subscription_id,
-                            "externalReference": (params or {}).get("externalReference"),
-                            "status": "PENDING",
-                        }
-                    ]
-                }
-            )
+        # POST /subscriptions
         if method == "POST" and url.endswith("/subscriptions"):
             self.subscription_id = "sub_0001"
             return FakeResponse({"id": self.subscription_id})
+        # POST /paymentLinks
         if method == "POST" and url.endswith("/paymentLinks"):
             return FakeResponse(
                 {
@@ -250,8 +159,20 @@ class FakeAsaasApi:
                     "active": True,
                 }
             )
+        # GET /checkouts/{id}
+        if method == "GET" and "/checkouts/" in url and not url.endswith("/checkouts"):
+            return FakeResponse(
+                {
+                    "id": self.checkout_id,
+                    "url": f"https://asaas.com/checkout/{self.checkout_id}",
+                    "status": "PAID",
+                    "externalReference": "test-ref",
+                    "subscription": {"id": "sub_0001"},
+                }
+            )
+        # POST /checkouts
         if method == "POST" and url.endswith("/checkouts"):
-            # Regra da API real: RECURRENT só aceita CREDIT_CARD; PIX/BOLETO
+            # Regra da API real: RECURRENT só aceita CREDIT_CARD; PIX
             # exigem DETACHED. Reproduz o 400 para pegar regressão.
             charge_types = (json or {}).get("chargeTypes") or []
             billing = (json or {}).get("billingTypes") or []
@@ -260,39 +181,38 @@ class FakeAsaasApi:
                 and any(b != "CREDIT_CARD" for b in billing)
             ):
                 return FakeResponse(
-                    {
-                        "errors": [
-                            {
-                                "code": "invalid_object",
-                                "description": (
-                                    "O método de pagamento CREDIT_CARD é o único método "
-                                    "de pagamento permitido para operações RECURRENT"
-                                ),
-                            }
-                        ]
-                    },
+                    {"errors": [{"code": "invalid_object", "description": "Recurrent só aceita cartão"}]},
                     status_code=400,
                 )
             return FakeResponse(
                 {
                     "id": self.checkout_id,
-                    "link": self.checkout_url,
-                    "status": "ACTIVE",
-                    "billingTypes": billing,
-                    "chargeTypes": charge_types,
+                    "url": f"https://asaas.com/checkout/{self.checkout_id}",
+                    "status": "PENDING",
                     "externalReference": (json or {}).get("externalReference"),
+                    "subscription": {"id": "sub_0001"} if "RECURRENT" in charge_types else None,
                 }
             )
-        if method == "GET" and f"checkouts/{self.checkout_id}" in url:
+        # GET /payments/{id}
+        if method == "GET" and f"payments/{self.payment_id}" in url and not url.endswith("pixQrCode"):
+            return FakeResponse({"id": self.payment_id, "status": self.customer_status})
+        # GET /payments?externalReference=...
+        if method == "GET" and url.endswith("/payments") and "subscriptions/" not in url:
             return FakeResponse(
                 {
-                    "id": self.checkout_id,
-                    "status": "ACTIVE",
-                    "subscriptions": [{"id": self.checkout_subscription_id}],
+                    "data": [
+                        {
+                            "id": self.payment_id,
+                            "status": self.customer_status,
+                            "subscription": self.subscription_id,
+                        }
+                    ]
                 }
             )
+        # POST /creditCards/tokenizeCreditCard
         if method == "POST" and url.endswith("/creditCards/tokenizeCreditCard"):
             return FakeResponse({"creditCardToken": self.card_token, "creditCardBrand": "VISA"})
+        # GET /subscriptions/{id}/payments
         if method == "GET" and "subscriptions/" in url and url.endswith("/payments"):
             data = (
                 []
@@ -302,22 +222,21 @@ class FakeAsaasApi:
                         "id": self.payment_id,
                         "status": "PENDING",
                         "value": 79.9,
-                        "bankSlip": {
-                            "url": "https://boleto.asaas.com/emissao/123456",
-                            "barCode": "3419179001234567890",
-                        },
                     }
                 ]
             )
             return FakeResponse({"data": data})
+        # GET /payments/{id}/pixQrCode
         if method == "GET" and f"payments/{self.payment_id}/pixQrCode" in url:
             if self.pix_missing:
                 return FakeResponse({"errors": [{"description": "pix indisponivel"}]}, status_code=404)
             return FakeResponse(
                 {"encodedImage": "base64png", "payload": "00020126580014BR.GOV.BCB.PIX"}
             )
+        # GET /payments/{id}/pixQrCode (other ids)
         if method == "GET" and "/pixQrCode" in url:
             return FakeResponse({"errors": [{"description": "cobranca sem pix"}]}, status_code=404)
+        # POST /payments/{id}/refund
         if method == "POST" and "refund" in url:
             return FakeResponse({"id": self.payment_id, "status": "REFUNDED"})
         raise AssertionError(f"Chamada inesperada: {method} {url}")
@@ -349,6 +268,23 @@ class AsaasMockMixin:
     def setUp(self):
         super().setUp()
         self.asaas = FakeAsaasApi()
-        patcher = mock.patch("requests.request", self.asaas)
-        patcher.start()
-        self.addCleanup(patcher.stop)
+        self._patcher = mock.patch("requests.request", self.asaas)
+        self._patcher.start()
+
+    def tearDown(self):
+        self._patcher.stop()
+        super().tearDown()
+
+
+class AsaasMockTestCase(TestCase):
+    """Base que já instala o mock + settings Asaas."""
+
+    def setUp(self):
+        super().setUp()
+        self.asaas = FakeAsaasApi()
+        self._patcher = mock.patch("requests.request", self.asaas)
+        self._patcher.start()
+
+    def tearDown(self):
+        self._patcher.stop()
+        super().tearDown()

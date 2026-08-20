@@ -28,7 +28,7 @@
             {% if CHECKOUT_HOSTED %}
             <div class="mb-3">
               <h6 class="mb-2">Pagamento</h6>
-              <p class="small mb-0">Você será direcionado para a página de pagamento segura do Asaas (Pix, cartão de crédito ou boleto).</p>
+              <p class="small mb-0">Você será direcionado para a página de pagamento segura do Asaas (Pix, cartão de crédito).</p>
             </div>
             <button class="btn btn-gradient w-100" type="submit">Aprovar e pagar</button>
             {% else %}
@@ -50,15 +50,7 @@
                 </label>
               </div>
               {% endif %}
-              {% if BOLETO_ENABLED %}
-              <div class="col-12">
-                <label class="form-check form-check-input-card d-flex flex-column align-items-center p-3 border rounded radius-lg h-100 cursor-pointer" for="pm_boleto">
-                  <input class="form-check-input visually-hidden" type="radio" name="payment_method" id="pm_boleto" value="BOLETO">
-                  <i class="bi bi-bank fs-1 mb-2 text-muted"></i>
-                  <span class="fw-medium">Boleto bancário</span>
-                </label>
-              </div>
-              {% endif %}
+              
             </div>
 
             <div id="card-fields" class="mt-3 d-none">

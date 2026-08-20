@@ -16,7 +16,6 @@ ASAAS_SETTINGS = {
     "ASAAS_SANDBOX": True,
     "ASAAS_WEBHOOK_TOKEN": "segredo",
     "CARD_ENABLED": True,
-    "BOLETO_ENABLED": True,
 }
 
 
@@ -113,23 +112,6 @@ class TestMaintenancePlanSubscriptionFlow(AsaasMockMixin, TestCase):
         # Plan's next_due_date should now be advanced by one cycle
         self.assertEqual(plan.next_due_date, expected_visit_date + timedelta(days=30))
 
-    def test_subscription_boleto_flow(self):
-        """Fluxo assinatura com boleto."""
-        response = self._subscribe_plan("BOLETO")
-        self.assertEqual(response.status_code, 302)
-
-        plan = MaintenancePlan.objects.get(client=self.client_user)
-        order = plan.order
-        self.assertEqual(order.status, Order.Status.AWAITING_PAYMENT)
-
-        from apps.payments.services import AsaasGateway
-
-        AsaasGateway().subscribe(plan, billing_type="BOLETO")
-        payload = json.dumps({"event": "PAYMENT_CONFIRMED", "payment": {"id": self.asaas.payment_id, "subscription": plan.asaas_subscription_id}})
-        AsaasGateway().webhook(payload, {"x-webhook-token": "segredo"})
-
-        order.refresh_from_db()
-        self.assertEqual(order.status, Order.Status.PAID)
 
     def test_subscription_requires_client_role(self):
         """Apenas clientes podem assinar planos."""

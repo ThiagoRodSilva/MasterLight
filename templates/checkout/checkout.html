@@ -32,7 +32,7 @@
               </div>
               <div>
                 <h6 class="mb-1">Pagamento seguro com Asaas</h6>
-                <p class="mb-0 small text-muted-custom">Você será direcionado para a página de pagamento (Pix, cartão de crédito ou boleto).</p>
+                <p class="mb-0 small text-muted-custom">Você será direcionado para a página de pagamento (Pix ou cartão de crédito).</p>
               </div>
             </div>
           </div>
@@ -56,15 +56,6 @@
                   <input class="form-check-input visually-hidden" type="radio" name="payment_method" id="pm_card" value="CREDIT_CARD">
                   <i class="bi bi-credit-card fs-1 mb-2 text-muted"></i>
                   <span class="fw-medium">Cartão de crédito</span>
-                </label>
-              </div>
-              {% endif %}
-              {% if BOLETO_ENABLED %}
-              <div class="col-12 col-md-4">
-                <label class="form-check form-check-input-card d-flex flex-column align-items-center p-3 border rounded radius-lg h-100 cursor-pointer" for="pm_boleto">
-                  <input class="form-check-input visually-hidden" type="radio" name="payment_method" id="pm_boleto" value="BOLETO">
-                  <i class="bi bi-bank fs-1 mb-2 text-muted"></i>
-                  <span class="fw-medium">Boleto bancário</span>
                 </label>
               </div>
               {% endif %}

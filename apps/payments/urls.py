@@ -1,7 +1,6 @@
 from django.urls import path
 
 from .views import (
-    BoletoConfirmationView,
     CardConfirmationView,
     CheckoutCallbackView,
     ManualConfirmationView,
@@ -28,11 +27,6 @@ urlpatterns = [
         "cartao/<uuid:order_pk>/",
         CardConfirmationView.as_view(),
         name="payments-card-confirm",
-    ),
-    path(
-        "boleto/<uuid:order_pk>/",
-        BoletoConfirmationView.as_view(),
-        name="payments-boleto-confirm",
     ),
     path(
         "checkout/<uuid:order_pk>/<str:outcome>/",
