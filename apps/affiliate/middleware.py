@@ -2,6 +2,7 @@
 
 Quando um visitante chega com `?ref=CODE`, o codigo valido e persistido no
 cookie (30 dias) para ser lido no checkout e gerar a Referral.
+Captura tanto em GET quanto em POST.
 """
 
 from django.conf import settings
@@ -16,7 +17,8 @@ class AffiliateReferralMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        ref_code = request.GET.get("ref")
+        # Captura ?ref= tanto em GET quanto em POST
+        ref_code = request.GET.get("ref") or request.POST.get("ref")
         if ref_code:
             valid = AffiliateProfile.objects.filter(code=ref_code, is_active=True).exists()
             if valid:

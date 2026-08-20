@@ -251,9 +251,11 @@ class ServiceRequestApproveView(ClienteRequiredMixin, View):
                 unit_price=final_price,
             )
             order.recompute_total()
-            from apps.affiliate.services import create_referral_from_request
+            from apps.affiliate.services import create_referral
 
-            create_referral_from_request(request, order)
+            ref_code = request.COOKIES.get(settings.AFFILIATE_COOKIE_NAME)
+            if ref_code:
+                create_referral(ref_code, request.user, order)
             service_request.order = order
             service_request.save(update_fields=["order", "updated_at"])
 
@@ -440,9 +442,11 @@ class MaintenancePlanCreateView(SectionEnabledMixin, ClienteRequiredMixin, FormV
                     unit_price=value,
                 )
                 order.recompute_total()
-                from apps.affiliate.services import create_referral_from_request
+                from apps.affiliate.services import create_referral
 
-                create_referral_from_request(self.request, order)
+                ref_code = self.request.COOKIES.get(settings.AFFILIATE_COOKIE_NAME)
+                if ref_code:
+                    create_referral(ref_code, self.request.user, order)
                 plan = MaintenancePlan.objects.create(
                     plan_type=plan_type,
                     value=value,

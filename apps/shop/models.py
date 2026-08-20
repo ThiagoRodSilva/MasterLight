@@ -34,6 +34,20 @@ class Product(BaseModel, RandomSlugMixin):
         related_name="products",
     )
     featured = models.BooleanField(default=False)
+    affiliate_commission_rate = models.DecimalField(
+        max_digits=5,
+        decimal_places=4,
+        null=True,
+        blank=True,
+        help_text="Override da comissão do afiliado para este produto (ex.: 0.15 = 15%)",
+    )
+    affiliate_commission_rate = models.DecimalField(
+        max_digits=5,
+        decimal_places=4,
+        null=True,
+        blank=True,
+        help_text="Override da comissão do afiliado para este produto (ex.: 0.15 = 15%)",
+    )
 
     class Meta:
         ordering = ["name"]

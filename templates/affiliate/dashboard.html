@@ -13,32 +13,7 @@
   </div>
   {% endif %}
 
-  <div class="row g-4 mb-4">
-    <div class="col-12 col-md-4 reveal reveal-delay-1">
-      <div class="stat-card stat-card--brand h-100">
-        <div class="stat-card__body">
-          <small>Saldo disponível</small>
-          <h3 class="m-0">R$ {{ profile.balance|floatformat:2 }}</h3>
-        </div>
-      </div>
-    </div>
-    <div class="col-12 col-md-4 reveal reveal-delay-2">
-      <div class="stat-card stat-card--brand h-100">
-        <div class="stat-card__body">
-          <small>Taxa de comissão</small>
-          <h3 class="m-0">{% widthratio profile.commission_rate 1 100 %}%</h3>
-        </div>
-      </div>
-    </div>
-    <div class="col-12 col-md-4 reveal reveal-delay-3">
-      <div class="stat-card h-100">
-        <div class="stat-card__body">
-          <small>Indicações totais</small>
-          <h3 class="m-0">{{ referral_count }}</h3>
-        </div>
-      </div>
-    </div>
-  </div>
+  {% include "affiliate/partials/_stats.html" %}
 
   <div class="card card-elevated mb-4 form-panel--medium reveal reveal-delay-2">
     <div class="card-body">
@@ -73,99 +48,11 @@
 
   <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3 reveal reveal-delay-4">
     <h2 class="mb-0"><i class="bi bi-people me-2"></i> Indicações</h2>
-    <form method="post" action="{% url 'affiliate-payout' %}">{% csrf_token %}
-      {% if profile.balance and profile.balance > 0 %}
-      <button class="btn btn-gradient" type="submit" data-loading><i class="bi bi-cash-stack me-1"></i> Solicitar saque (R$ {{ profile.balance|floatformat:2 }})</button>
-      {% else %}
-      <button class="btn btn-outline-brand" type="submit" disabled><i class="bi bi-x-circle me-1"></i> Saldo insuficiente</button>
-      {% endif %}
-    </form>
   </div>
 
-  <div class="table-responsive reveal reveal-delay-4">
-    <table class="table table-brand mb-0">
-      <thead>
-        <tr>
-          <th>Pedido</th>
-          <th>Status</th>
-          <th>Comissão</th>
-          <th>Data</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for r in referrals %}
-        <tr>
-          <td>{{ r.order|default:"-" }}</td>
-          <td>
-            {% if r.status == "approved" %}
-              <span class="badge badge-soft-success">{{ r.get_status_display }}</span>
-            {% elif r.status == "pending" %}
-              <span class="badge badge-soft-warning">{{ r.get_status_display }}</span>
-            {% elif r.status == "rejected" %}
-              <span class="badge badge-soft-danger">{{ r.get_status_display }}</span>
-            {% else %}
-              <span class="badge badge-soft">{{ r.get_status_display }}</span>
-            {% endif %}
-          </td>
-          <td><strong>R$ {{ r.commission_amount|floatformat:2 }}</strong></td>
-          <td>{{ r.created_at|date:"d/m/Y" }}</td>
-        </tr>
-        {% empty %}
-        <tr>
-          <td colspan="4" class="text-center py-5">
-            <div class="empty-state m-0">
-              <i class="bi bi-person-dash empty-state__icon"></i>
-              <h4 class="empty-title">Nenhuma indicação ainda</h4>
-              <p class="text-muted-custom mb-0">Suas indicações aparecerão aqui quando houver vendas através do seu link.</p>
-            </div>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+  {% include "affiliate/partials/_referral_table.html" %}
 
-  <h2 class="mt-5 mb-3 reveal reveal-delay-5"><i class="bi bi-wallet2 me-2"></i> Saques</h2>
-  <div class="table-responsive reveal reveal-delay-5">
-    <table class="table table-brand">
-      <thead>
-        <tr>
-          <th>Valor</th>
-          <th>Status</th>
-          <th>Pago em</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for p in payouts %}
-        <tr>
-          <td><strong>R$ {{ p.amount|floatformat:2 }}</strong></td>
-          <td>
-            {% if p.status == "paid" %}
-              <span class="badge badge-soft-success">{{ p.get_status_display }}</span>
-            {% elif p.status == "pending" %}
-              <span class="badge badge-soft-warning">{{ p.get_status_display }}</span>
-            {% elif p.status == "rejected" %}
-              <span class="badge badge-soft-danger">{{ p.get_status_display }}</span>
-            {% else %}
-              <span class="badge badge-soft">{{ p.get_status_display }}</span>
-            {% endif %}
-          </td>
-          <td>{{ p.paid_at|date:"d/m/Y"|default:"-" }}</td>
-        </tr>
-        {% empty %}
-        <tr>
-          <td colspan="3" class="text-center py-5">
-            <div class="empty-state m-0">
-              <i class="bi bi-cash-coin empty-state__icon"></i>
-              <h4 class="empty-title">Nenhuma solicitação ainda</h4>
-              <p class="text-muted-custom mb-0">Solicitações de saque aparecerão aqui.</p>
-            </div>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+  {% include "affiliate/partials/_payout_table.html" %}
 </div>
 {% endblock %}
 

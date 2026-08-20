@@ -1,12 +1,23 @@
 """Modelos do programa de afiliados."""
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
 
 from apps.accounts.models import CustomUser
 from apps.core.models import BaseModel
 from apps.core.utils import generate_code
+
+
+class AffiliateProfileManager(models.Manager):
+    """Manager customizado para AffiliateProfile."""
+
+    def active(self):
+        return self.filter(is_active=True)
+
+    def with_user(self):
+        return self.select_related("user")
 
 
 class AffiliateProfile(BaseModel):
@@ -30,18 +41,48 @@ class AffiliateProfile(BaseModel):
     )
     balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
 
+    objects = AffiliateProfileManager()
+
     class Meta:
         verbose_name = "Perfil de Afiliado"
         verbose_name_plural = "Perfis de Afiliados"
 
+    def clean(self):
+        super().clean()
+        if self.commission_rate is not None:
+            if self.commission_rate <= 0:
+                raise ValidationError({"commission_rate": "A taxa de comissão deve ser maior que zero."})
+            if self.commission_rate > 1:
+                raise ValidationError({"commission_rate": "A taxa de comissão não pode exceder 100% (1.0)."})
+
     def save(self, *args, **kwargs):
         if not self.code:
-            self.code = generate_code(10)
+            # Geração atômica do código com retry para evitar race condition
+            max_attempts = 5
+            for _ in range(max_attempts):
+                candidate = generate_code(10)
+                if not AffiliateProfile.objects.filter(code=candidate).exists():
+                    self.code = candidate
+                    break
+            else:
+                raise RuntimeError("Não foi possível gerar código único de afiliado após várias tentativas.")
         super().save(*args, **kwargs)
 
     def __str__(self) -> str:
         return f"Affiliate {self.user.email} ({self.code})"
 
+
+class ReferralManager(models.Manager):
+    """Manager customizado para Referral."""
+
+    def active(self):
+        return self.filter(is_active=True)
+
+    def with_relations(self):
+        return self.select_related("affiliate", "affiliate__user", "referred", "order")
+
+    def pending_or_approved(self):
+        return self.active().filter(status__in=["pending", "approved"])
 
 class Referral(BaseModel):
     """Indicacao de um pedido a um afiliado (gera comissao quando pago)."""
@@ -93,8 +134,18 @@ class Referral(BaseModel):
             )
         ]
 
+    objects = ReferralManager()
+
     def __str__(self) -> str:
         return f"Referral {self.affiliate.code} -> {self.status}"
+
+
+
+class PayoutRequestManager(models.Manager):
+    """Manager customizado para PayoutRequest."""
+
+    def active(self):
+        return self.filter(is_active=True)
 
 
 class PayoutRequest(BaseModel):
@@ -104,6 +155,8 @@ class PayoutRequest(BaseModel):
         PENDING = "pending", "Pendente"
         PAID = "paid", "Paga"
         REJECTED = "rejected", "Rejeitada"
+
+    objects = PayoutRequestManager()
 
     affiliate = models.ForeignKey(
         AffiliateProfile,

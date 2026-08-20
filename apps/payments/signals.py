@@ -2,15 +2,14 @@
 
 Responsabilidades:
 - `mark_order_paid_on_paid`: marca a Order como PAGO e baixa o estoque (C1).
-- `transaction_post_save`: aprova referral/comissao quando a transacao vira
-  PAGA (somente comissao; a regra de ordem paga ficou no service de payments).
+- `transaction_post_save`: emite signal order_paid quando a transacao vira PAGA.
 - `reverse_order_on_refunded`: reverte pedido pago, estoque e comissao (C2).
 """
 
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-from apps.affiliate.services import approve_referral
+from apps.affiliate.signals import order_paid
 
 from .services import mark_order_paid, reverse_order_refund
 
@@ -27,12 +26,13 @@ def mark_order_paid_on_paid(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender="payments.Transaction")
 def transaction_post_save(sender, instance, created, **kwargs):
-    """Aprova referral/comissao quando transacao passa a PAGA."""
+    """Emite signal order_paid quando transacao passa a PAGA (afiliado ouve)."""
     if created:
         return
     if instance.status != "paid":
         return
-    approve_referral(instance)
+    # Emite signal para que o app affiliate processe a comissao
+    order_paid.send(sender=None, order=instance.order, transaction=instance)
 
 
 @receiver(post_save, sender="payments.Transaction")

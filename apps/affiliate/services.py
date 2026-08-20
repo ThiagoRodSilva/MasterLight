@@ -1,22 +1,124 @@
 """Servicos programa afiliados (camada de aplicacao)."""
 
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
-from django.conf import settings
 from django.db import transaction as db_transaction
 from django.db.models import F
 
+if TYPE_CHECKING:
+    from .models import Referral
+
+
+def _resolve_commission_rate(order_item) -> Decimal:
+    """Resolve a taxa de comissão para um item do pedido.
+
+    Prioridade:
+    1. Product.affiliate_commission_rate
+    2. Service.affiliate_commission_rate
+    3. MaintenancePlanTemplate.affiliate_commission_rate
+    4. AffiliateProfile.commission_rate (fallback global)
+    """
+    # Product (OrderItem.product)
+    if order_item.product_id:
+        rate = getattr(order_item.product, "affiliate_commission_rate", None)
+        if rate is not None:
+            return rate
+
+    # Service (OrderItem.service)
+    if order_item.service_id:
+        rate = getattr(order_item.service, "affiliate_commission_rate", None)
+        if rate is not None:
+            return rate
+
+    # MaintenancePlanTemplate (via Order.kind=SUBSCRIPTION -> MaintenancePlan -> template)
+    if order_item.order and order_item.order.kind == "subscription":
+        from apps.services.models import MaintenancePlan
+        plan = MaintenancePlan.objects.filter(order=order_item.order).first()
+        if plan:
+            template = getattr(plan, "template", None) or plan  # fallback
+            rate = getattr(template, "affiliate_commission_rate", None)
+            if rate is not None:
+                return rate
+
+    # Fallback: taxa global do afiliado (será passada pelo caller)
+    return Decimal("0")
+
+
+def calculate_commission(order_item, affiliate_rate: Decimal) -> Decimal:
+    """Calcula comissão para um OrderItem.
+
+    Args:
+        order_item: OrderItem com product/service e unit_price/qty
+        affiliate_rate: Taxa default do afiliado (AffiliateProfile.commission_rate)
+
+    Returns:
+        Decimal quantizado para 2 casas (centavos)
+    """
+    rate = _resolve_commission_rate(order_item) or affiliate_rate
+    subtotal = order_item.unit_price * order_item.qty
+    commission = (subtotal * rate).quantize(Decimal("0.01"))
+    return commission
+
+
+def create_referral(
+    ref_code: str,
+    user,
+    order,
+    affiliate_rate: Decimal | None = None,
+) -> "Referral | None":
+    """Cria Referral para o pedido, se código de afiliado válido.
+
+    Comissão calculada por item (prioridade: product/service/template > afiliado).
+    Bloqueia auto-referral (affil.user_id == user.pk).
+    Idempotente: se já existe referral para este (affiliate, order), retorna o existente.
+
+    Args:
+        ref_code: Código do afiliado (do cookie ?ref=)
+        user: Usuário que fez o pedido (referred)
+        order: Order recém-criado
+        affiliate_rate: Taxa default do afiliado (opcional, busca do perfil se não passado)
+
+    Returns:
+        Referral criado/buscado ou None
+    """
+    from django.db import IntegrityError
+
+    from apps.affiliate.models import AffiliateProfile, Referral
+
+    affil = AffiliateProfile.objects.select_related("user").filter(code=ref_code, is_active=True).first()
+    if not affil or affil.user_id == user.pk:
+        return None
+
+    rate = affiliate_rate or affil.commission_rate
+
+    # Calcula comissão total somando por item
+    total_commission = Decimal("0")
+    for item in order.items.all():
+        total_commission += calculate_commission(item, rate)
+
+    try:
+        return Referral.objects.create(
+            affiliate=affil,
+            referred=user,
+            order=order,
+            commission_rate=rate,
+            commission_amount=total_commission,
+        )
+    except IntegrityError:
+        return Referral.objects.filter(affiliate=affil, order=order, is_active=True).first()
+
 
 def approve_referral(tx) -> int | None:
-    """Aprova referral pendente e credita a comissao no saldo do afiliado.
+    """Aprova referral pendente e credita a comissão no saldo do afiliado.
 
-    Apenas a parte de comissao: a marcacao do pedido como PAGO e a baixa de
-    estoque sao responsabilidade de `apps.payments.services.mark_order_paid`
-    (signal em `apps/payments/signals.py`), que mantem a regra no dominio de
+    Apenas a parte de comissão: a marcação do pedido como PAGO e a baixa de
+    estoque são responsabilidade de apps.payments.services.mark_order_paid
+    (signal em apps/payments/signals.py), que mantém a regra no domínio de
     pagamentos. Retorna o pk do referral atualizado ou None sem referral.
-    Idempotente: trava o referral e o perfil do afiliado para evitar credito
-    duplicado em webhooks concorrentes. Se o referral ja estiver APPROVED,
-    retorna o pk sem creditar comissao novamente.
+    Idempotente: trava o referral e o perfil do afiliado para evitar crédito
+    duplicado em webhooks concorrentes. Se o referral já estiver APPROVED,
+    retorna o pk sem creditar comissão novamente.
     """
     if tx.status != "paid":
         return None
@@ -28,14 +130,14 @@ def approve_referral(tx) -> int | None:
     from django.db import transaction as db_transaction
 
     with db_transaction.atomic():
-        # Busca referral pendente OU ja aprovado (idempotente)
+        # Busca referral pendente OU já aprovado (idempotente)
         referral = order.referrals.select_for_update().filter(
             status__in=["pending", "approved"], is_active=True
         ).first()
         if referral is None:
             return None
 
-        # Se ja aprovado, retorna pk sem creditar novamente
+        # Se já aprovado, retorna pk sem creditar novamente
         if referral.status == referral.Status.APPROVED:
             return referral.pk
 
@@ -45,7 +147,7 @@ def approve_referral(tx) -> int | None:
         from apps.affiliate.models import AffiliateProfile
 
         affiliate = AffiliateProfile.objects.select_for_update().get(pk=referral.affiliate_id)
-        commission = referral.commission_amount or Decimal(0)
+        commission = referral.commission_amount or Decimal("0")
         affiliate.balance = F("balance") + commission
         affiliate.save(update_fields=["balance", "updated_at"])
 
@@ -53,9 +155,9 @@ def approve_referral(tx) -> int | None:
 
 
 def create_payout_request(profile):
-    """Cria solicitacao de saque atomica para o afiliado.
+    """Cria solicitação de saque atômica para o afiliado.
 
-    Valida saldo > 0, cria PayoutRequest e zera o saldo. Retorna a solicitacao.
+    Valida saldo > 0, cria PayoutRequest e zera o saldo. Retorna a solicitação.
     Levanta ValueError se saldo for menor/igual a zero.
     """
     from .models import AffiliateProfile, PayoutRequest
@@ -66,44 +168,12 @@ def create_payout_request(profile):
         if not (profile.pix_key or "").strip():
             raise ValueError("Cadastre uma chave Pix para realizar o saque.")
         locked = AffiliateProfile.objects.select_for_update().filter(pk=profile.pk).first()
-        if locked is None or locked.balance is None or locked.balance <= Decimal(0):
+        if locked is None or locked.balance is None or locked.balance <= Decimal("0"):
             raise ValueError("Saldo insuficiente para saque.")
 
         amount = locked.balance
         payout = PayoutRequest.objects.create(affiliate=locked, amount=amount)
-        locked.balance = Decimal(0)
+        locked.balance = Decimal("0")
         locked.save(update_fields=["balance", "updated_at"])
 
     return payout
-
-
-def create_referral_from_request(request, order):
-    """Cria Referral para o pedido, se cookie ref valido.
-
-    Comissao calculada sobre order.total (produtos + servicos + assinaturas).
-    Bloqueia auto-referral (affil.user_id == request.user.pk).
-    Idempotente: se ja existe referral para este (affiliate, order), retorna o existente.
-    """
-    from django.db import IntegrityError
-
-    from apps.affiliate.models import AffiliateProfile, Referral
-
-    ref_code = request.COOKIES.get(settings.AFFILIATE_COOKIE_NAME)
-    if not ref_code:
-        return None
-    affil = AffiliateProfile.objects.select_related("user").filter(code=ref_code, is_active=True).first()
-    if not affil or affil.user_id == request.user.pk:
-        return None
-
-    # Tenta criar; se ja existe (unique constraint), busca o existente
-    try:
-        return Referral.objects.create(
-            affiliate=affil,
-            referred=request.user,
-            order=order,
-            commission_rate=affil.commission_rate,
-            commission_amount=order.total * affil.commission_rate,
-        )
-    except IntegrityError:
-        # Unique constraint violada - referral ja existe para este affiliate+order
-        return Referral.objects.filter(affiliate=affil, order=order, is_active=True).first()

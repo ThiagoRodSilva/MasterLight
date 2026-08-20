@@ -59,6 +59,14 @@ class Service(BaseModel, RandomSlugMixin):
         verbose_name="criado por",
     )
     image = models.URLField(blank=True, null=True, validators=[validate_image_url], verbose_name="imagem")
+    affiliate_commission_rate = models.DecimalField(
+        max_digits=5,
+        decimal_places=4,
+        null=True,
+        blank=True,
+        verbose_name="comissão do afiliado",
+        help_text="Override da comissão do afiliado para este serviço (ex.: 0.15 = 15%)",
+    )
 
     class Meta:
         ordering = ["name"]
@@ -155,6 +163,14 @@ class MaintenancePlanTemplate(BaseModel):
     )
     description = models.TextField(blank=True, default="", verbose_name="descrição")
     ordering = models.PositiveIntegerField(default=0, verbose_name="ordem de exibição")
+    affiliate_commission_rate = models.DecimalField(
+        max_digits=5,
+        decimal_places=4,
+        null=True,
+        blank=True,
+        verbose_name="comissão do afiliado",
+        help_text="Override da comissão do afiliado para assinaturas deste plano (ex.: 0.15 = 15%)",
+    )
 
     class Meta:
         ordering = ["ordering", "value"]

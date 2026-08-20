@@ -111,9 +111,13 @@ class CheckoutView(ClienteRequiredMixin, View):
             order.recompute_total()
 
             # registra referral se cookie ref existir (nao-referencia a si mesmo)
-            from apps.affiliate.services import create_referral_from_request
+            from django.conf import settings
 
-            create_referral_from_request(request, order)
+            from apps.affiliate.services import create_referral
+
+            ref_code = request.COOKIES.get(settings.AFFILIATE_COOKIE_NAME)
+            if ref_code:
+                create_referral(ref_code, request.user, order)
 
             # vincula o ultimo endereco salvo, se houver
             address = request.user.addresses.filter(is_active=True).first()

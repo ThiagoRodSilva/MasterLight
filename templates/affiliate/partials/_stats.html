@@ -1,0 +1,27 @@
+{% load static %}
+<div class="row g-4 mb-4">
+  <div class="col-12 col-md-4 reveal reveal-delay-1">
+    <div class="stat-card stat-card--brand h-100">
+      <div class="stat-card__body">
+        <small>Saldo disponível</small>
+        <h3 class="m-0">R$ {{ profile.balance|floatformat:2 }}</h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-md-4 reveal reveal-delay-2">
+    <div class="stat-card stat-card--brand h-100">
+      <div class="stat-card__body">
+        <small>Taxa de comissão</small>
+        <h3 class="m-0">{% widthratio profile.commission_rate 1 100 %}%</h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-md-4 reveal reveal-delay-3">
+    <div class="stat-card h-100">
+      <div class="stat-card__body">
+        <small>Indicações totais</small>
+        <h3 class="m-0">{{ referral_count }}</h3>
+      </div>
+    </div>
+  </div>
+</div>

@@ -178,6 +178,8 @@ MANUAL_WEBHOOK_TOKEN = env("MANUAL_WEBHOOK_TOKEN", default="")
 AFFILIATE_COOKIE_NAME = "ref"
 AFFILIATE_COOKIE_MAX_AGE = 30 * 24 * 60 * 60  # 30 dias
 AFFILIATE_DEFAULT_COMMISSION_RATE = 0.10  # 10%
+AFFILIATE_AUTO_PAYOUT = True  # payout automático habilitado
+AFFILIATE_AUTO_PAYOUT_MIN_AMOUNT = 10.00  # valor mínimo para auto-payout (R$)
 
 LOGIN_REDIRECT_URL = "/"
 # allauth está montado em /social/; sem isso os mixins redirecionam para
