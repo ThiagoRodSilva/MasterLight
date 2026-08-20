@@ -10,7 +10,12 @@
   <style>
     :root {
       --bs-primary: {{ BRAND_PALETTE.primary }};
+      --bs-primary-rgb: 255, 193, 7;
       --bs-dark: {{ BRAND_PALETTE.dark }};
+      --bs-secondary: {{ BRAND_PALETTE.secondary }};
+      --bs-secondary-rgb: 17, 17, 17;
+      --bs-success: {{ BRAND_PALETTE.accent }};
+      --bs-success-rgb: 25, 135, 84;
     }
   </style>
   <link href="{% static 'vendor/bootstrap/bootstrap.min.css' %}" rel="stylesheet">
@@ -19,10 +24,11 @@
   <link href="{% static 'css/components.css' %}" rel="stylesheet">
   <link href="{% static 'css/styles.css' %}" rel="stylesheet">
   {% block extra_head %}{% endblock %}
+  {% block extra_css %}{% endblock %}
 </head>
 <body class="d-flex flex-column min-vh-100">
   <a href="#main-content" class="visually-hidden-focusable skip-link">Pular para o conteúdo principal</a>
-  {% include "partials/navbar.html" %}
+  {% block navbar %}{% include "partials/navbar.html" %}{% endblock navbar %}
 
   {% include "partials/messages.html" %}
 
@@ -30,7 +36,7 @@
     {% block content %}{% endblock %}
   </main>
 
-  {% include "partials/footer.html" %}
+  {% block footer %}{% include "partials/footer.html" %}{% endblock footer %}
 
   <script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}"></script>
   <script src="{% static 'js/main.js' %}"></script>

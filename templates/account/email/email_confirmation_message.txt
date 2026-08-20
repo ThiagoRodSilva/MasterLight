@@ -1,0 +1,22 @@
+{% load i18n %}
+{% autoescape off %}
+{{ BRAND_NAME }} — {{ BRAND_TAGLINE }}
+
+{% trans "Confirme seu endereço de email" %}
+
+Olá{% if user.get_full_name %}, {{ user.get_full_name }}{% elif user.first_name %}, {{ user.first_name }}{% endif %},
+
+Obrigado por se cadastrar na {{ BRAND_NAME }}. Para ativar sua conta e acessar todos os recursos, precisamos confirmar seu endereço de email.
+
+Acesse o link abaixo para confirmar:
+{{ activate_url }}
+
+---
+Este link expira em 7 dias.
+Se você não criou uma conta na {{ BRAND_NAME }}, pode ignorar este email com segurança.
+
+---
+{{ BRAND_NAME }} — {{ BRAND_TAGLINE }}
+Se não deseja receber estes emails, cancele a inscrição: {{ request.scheme }}://{{ current_site.domain }}{% url 'account_email' %}
+{{ request.scheme }}://{{ current_site.domain }}
+{% endautoescape %}

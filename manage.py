@@ -6,7 +6,12 @@ import sys
 
 
 def main() -> None:
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.dev")
+    default_settings = (
+        "config.settings.test"
+        if any(c in sys.argv for c in ("test", "coverage"))
+        else "config.settings.dev"
+    )
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", default_settings)
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:

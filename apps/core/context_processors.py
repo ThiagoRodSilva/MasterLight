@@ -8,6 +8,13 @@ from django.http import HttpRequest
 from .models import SiteSettings
 
 
+def cart_count(request: HttpRequest) -> dict[str, Any]:
+    """Conta total de itens no carrinho da sessão (badge do navbar)."""
+    from apps.checkout.models import Cart
+
+    return {"CART_COUNT": len(Cart(request.session))}
+
+
 def branding(request: HttpRequest) -> dict[str, Any]:
     flags = SiteSettings.load()
     return {
@@ -15,9 +22,13 @@ def branding(request: HttpRequest) -> dict[str, Any]:
         "BRAND_TAGLINE": "Serviços elétricos para sua casa e negócio",
         "BRAND_PALETTE": {
             "primary": "#FFC107",
-            "primary_alt": "#FFD600",
+            "primary_alt": "#E6A800",
+            "secondary": "#111111",
+            "secondary_alt": "#2d2d2d",
+            "accent": "#198754",
             "dark": "#111111",
-            "light": "#FFFFFF",
+            "light": "#ffffff",
+            "bg_light": "#f8f8f6",
         },
         "AFFILIATE_COOKIE_NAME": settings.AFFILIATE_COOKIE_NAME,
         "CARD_ENABLED": settings.PAYMENT_PROVIDER == "asaas",

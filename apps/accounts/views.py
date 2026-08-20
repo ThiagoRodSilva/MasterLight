@@ -72,11 +72,25 @@ class SocialSignupCompleteView(FormView):
         return kwargs
 
     def form_valid(self, form):
-        from allauth.socialaccount.models import SocialLogin
+        from allauth.socialaccount.models import SocialAccount, SocialLogin
 
         sociallogin = SocialLogin.deserialize(self.request.session.pop("sociallogin"))
-        user = sociallogin.user
-        user = form.save(user, sociallogin)
+        # O sociallogin da sessão foi serializado antes do save do allauth:
+        # o usuário está sem pk e a SocialAccount idem. O usuário real (criado
+        # e logado no signup do allauth) é usado no lugar do usuário da sessão,
+        # e a conta real já existente substitui a serializada — evita duplicar
+        # usuário e violar UNIQUE(provider, uid) no connect.
+        sociallogin.user = self.request.user
+        social_account = getattr(sociallogin, "account", None)
+        if social_account is not None:
+            existing_account = SocialAccount.objects.filter(
+                user=self.request.user,
+                provider=social_account.provider,
+                uid=social_account.uid,
+            ).first()
+            if existing_account:
+                sociallogin.account = existing_account
+        user = form.save(sociallogin.user, sociallogin)
         # Loga o usuário
         login(self.request, user, backend="allauth.account.auth_backends.AuthenticationBackend")
         messages.success(self.request, "Cadastro completado! Bem-vindo à MasterLight.")

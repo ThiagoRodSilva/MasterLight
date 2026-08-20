@@ -1,35 +1,32 @@
 html {
-  font-synthesis-weight: none;
+  scroll-behavior: smooth;
 }
 
 body {
   font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: 1.6;
   background-color: var(--surface-page);
   color: var(--text-strong);
-  transition: background-color 0.2s ease, color 0.2s ease;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-::selection {
-  background-color: var(--brand-primary);
-  color: var(--brand-dark);
-}
+/* Headings */
+h1, .display-1 { font-size: var(--text-4xl); font-weight: var(--font-bold); line-height: 1.15; }
+h2, .display-2 { font-size: var(--text-3xl); font-weight: var(--font-bold); line-height: 1.2; }
+h3, .display-3 { font-size: var(--text-2xl); font-weight: var(--font-semibold); line-height: 1.25; }
+h4 { font-size: var(--text-xl); font-weight: var(--font-semibold); line-height: 1.3; }
+h5 { font-size: var(--text-lg); font-weight: var(--font-semibold); line-height: 1.35; }
+h6 { font-size: var(--text-base); font-weight: var(--font-semibold); line-height: 1.4; }
 
-a {
-  color: var(--text-strong);
-}
+/* Links */
+a { color: var(--brand-dark); text-decoration: none; transition: color var(--transition-fast); }
+a:hover { color: var(--brand-700); text-decoration: underline; }
+a:focus-visible { outline: 2px solid var(--brand-dark); outline-offset: 2px; border-radius: var(--radius-sm); }
 
-a:hover {
-  color: var(--brand-700);
-}
-
-.navbar-dark {
-  background-color: var(--brand-dark);
-  border-bottom: 1px solid transparent;
-}
-
-.navbar-brand {
-  font-weight: 700;
-}
+/* Selection */
+::selection { background-color: var(--brand-primary); color: var(--brand-dark); }
 
 .navbar-brand .brand-logo {
   height: 1.5rem;
@@ -38,73 +35,16 @@ a:hover {
   vertical-align: -0.35em;
 }
 
-.hero {
-  background: linear-gradient(135deg, var(--brand-primary), var(--brand-primary-alt));
-  color: var(--brand-dark);
-  position: relative;
-  overflow: hidden;
-}
-
-.hero::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(1200px 400px at 15% -10%, rgba(17, 17, 17, 0.14), transparent 60%),
-    radial-gradient(900px 400px at 110% 10%, rgba(255, 255, 255, 0.35), transparent 55%);
-  pointer-events: none;
-}
-
-.hero > * {
-  position: relative;
-}
-
-.hero .display-4 {
-  font-weight: 700;
-}
-
-.hero .lead {
-  font-size: 1.15rem;
-  max-width: 36rem;
-}
-
-/* Botões sobre o hero: o fundo amarelo é fixo, então o texto é sempre escuro. */
-.hero .btn-brand-ghost {
-  --bs-btn-color: var(--brand-dark);
-  --bs-btn-hover-bg: var(--brand-primary-alt);
-  --bs-btn-hover-border-color: var(--brand-primary-alt);
-  --bs-btn-hover-color: var(--brand-dark);
-  --bs-btn-active-bg: var(--brand-primary);
-  --bs-btn-active-border-color: var(--brand-primary);
-  --bs-btn-active-color: var(--brand-dark);
-}
-
-.btn-brand {
-  --bs-btn-bg: var(--brand-primary);
-  --bs-btn-border-color: var(--brand-primary);
-  --bs-btn-color: var(--brand-dark);
-  --bs-btn-hover-bg: var(--brand-primary-alt);
-  --bs-btn-hover-border-color: var(--brand-primary-alt);
-  --bs-btn-hover-color: var(--brand-dark);
-  --bs-btn-active-bg: var(--brand-primary-alt);
-  --bs-btn-active-border-color: var(--brand-primary-alt);
-  --bs-btn-active-color: var(--brand-dark);
-  --bs-btn-focus-shadow-rgb: 255, 193, 7;
-  --bs-btn-disabled-bg: var(--brand-primary);
-  --bs-btn-disabled-border-color: var(--brand-primary);
-  --bs-btn-disabled-color: var(--brand-dark);
-}
-
 .btn-outline-brand {
-  --bs-btn-color: var(--text-strong);
-  --bs-btn-border-color: var(--border-strong);
-  --bs-btn-hover-bg: var(--brand-primary);
-  --bs-btn-hover-border-color: var(--brand-primary);
-  --bs-btn-hover-color: var(--brand-dark);
-  --bs-btn-active-bg: var(--brand-primary);
-  --bs-btn-active-border-color: var(--brand-primary);
-  --bs-btn-active-color: var(--brand-dark);
-  --bs-btn-focus-shadow-rgb: 255, 193, 7;
+  --bs-btn-color: var(--brand-dark);
+  --bs-btn-border-color: var(--brand-dark);
+  --bs-btn-hover-bg: var(--brand-dark);
+  --bs-btn-hover-border-color: var(--brand-dark);
+  --bs-btn-hover-color: var(--brand-light);
+  --bs-btn-active-bg: var(--brand-dark);
+  --bs-btn-active-border-color: var(--brand-dark);
+  --bs-btn-active-color: var(--brand-light);
+  --bs-btn-focus-shadow-rgb: 17, 17, 17;
 }
 
 .text-brand {
@@ -166,7 +106,7 @@ a:hover {
   box-shadow: var(--shadow-md);
 }
 
-/* ==== Utilitários da Fase 1 (design tokens) ==== */
+/* ==== Utilitários (design tokens) ==== */
 
 .shadow-brand {
   box-shadow: var(--shadow-brand) !important;
@@ -232,7 +172,7 @@ a:hover {
   color: var(--text-strong) !important;
 }
 
-/* ==== Utilitários de layout (Fase 3) ==== */
+/* ==== Utilitários de layout ==== */
 
 .border-brand {
   border-color: var(--brand-primary) !important;
@@ -255,15 +195,6 @@ a:hover {
   object-fit: cover;
 }
 
-/* Inputs sobre o hero (fundo amarelo fixo): texto escuro e fundo claro. */
-.hero .form-control,
-.hero .form-select,
-.hero .form-control:focus,
-.hero .form-select:focus {
-  color: var(--brand-dark);
-  background-color: var(--brand-light);
-}
-
 /* Botões sociais (Google) */
 .btn-social {
   display: inline-flex;
@@ -274,7 +205,7 @@ a:hover {
   font-size: 0.9375rem;
   font-weight: 500;
   color: var(--text-strong);
-  background-color: #fff;
+  background-color: var(--brand-light);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius);
   transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
@@ -288,7 +219,7 @@ a:hover {
 }
 
 .btn-social:focus-visible {
-  outline: 2px solid var(--brand-500);
+  outline: 2px solid var(--brand-dark);
   outline-offset: 2px;
 }
 
@@ -317,4 +248,8 @@ a:hover {
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

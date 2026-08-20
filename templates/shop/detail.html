@@ -1,38 +1,62 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="container py-5">
-  <nav aria-label="breadcrumb" class="mb-4">
-    <ol class="breadcrumb mb-0">
-      <li class="breadcrumb-item"><a href="{% url 'shop-list' %}">Início</a></li>
+  <nav aria-label="breadcrumb" class="mb-4 reveal">
+    <ol class="breadcrumb mb-0 bg-transparent">
+      <li class="breadcrumb-item"><a href="{% url 'home' %}">Início</a></li>
       <li class="breadcrumb-item"><a href="{% url 'shop-list' %}">Loja</a></li>
       <li class="breadcrumb-item active" aria-current="page">{{ product.name }}</li>
     </ol>
   </nav>
   <div class="row g-4">
-    <div class="col-lg-6">
-      <div id="cover" class="ratio ratio-1x1 bg-brand-50 radius-lg overflow-hidden">
-        {% if product.cover %}<img src="{{ product.cover.image }}" class="img-fluid object-fit-cover" alt="{{ product.cover.alt }}">{% endif %}
+    <div class="col-lg-6 reveal">
+      <div id="cover" class="ratio ratio-1x1 bg-light-alt radius-lg overflow-hidden">
+        {% if product.cover %}<img id="cover-img" src="{{ product.cover.image }}" class="img-fluid object-fit-cover" alt="{{ product.cover.alt }}">{% endif %}
       </div>
-      <div class="d-flex gap-2 mt-3">
+      {% if product.images.all %}
+      <div class="gallery-thumb" role="tablist" aria-label="Galeria de imagens">
         {% for img in product.images.all %}
-        <img src="{{ img.image }}" height="60" class="rounded border shadow-sm" alt="{{ product.name }}">
+        <button type="button" class="gallery-thumb__item {% if forloop.first %}is-active{% endif %}" data-gallery-img="{{ img.image }}" data-gallery-alt="{{ img.alt }}" aria-label="Imagem {{ forloop.counter }}">
+          <img src="{{ img.image }}" alt="{{ img.alt }}">
+        </button>
         {% endfor %}
       </div>
+      {% endif %}
     </div>
-    <div class="col-lg-6">
+    <div class="col-lg-6 reveal reveal-delay-1">
       <h1 class="mb-2">{{ product.name }}</h1>
-      <p class="text-muted-brand mb-3">Código: {{ product.sku }} · {{ product.category|default:"Geral" }}</p>
+      <p class="text-muted-custom mb-3">Código: {{ product.sku }} · {{ product.category|default:"Geral" }}</p>
       <h3 class="text-brand-darker fw-bold mb-3">R$ {{ product.price|floatformat:2 }}</h3>
       <p>{{ product.description|linebreaks }}</p>
       <form method="post" action="{% url 'checkout-cart-add' product.pk %}" data-loading>
         {% csrf_token %}
         <label class="form-label">Quantidade</label>
         <input type="number" name="qty" value="1" min="1" max="{{ product.stock }}" class="form-control form-control-brand mb-2 qty-input">
-        <button class="btn btn-brand btn-lg" {% if product.stock == 0 %}disabled{% endif %}>
+        <button class="btn btn-gradient btn-lg" {% if product.stock == 0 %}disabled{% endif %}>
           {% if product.stock > 0 %}<i class="bi bi-cart3"></i> Adicionar ao carrinho{% else %}<i class="bi bi-bag-x"></i> Esgotado{% endif %}
         </button>
       </form>
+      <div class="trust-row mt-4">
+        <span class="trust-item"><i class="bi bi-shield-check"></i> Pagamento seguro</span>
+        <span class="trust-item"><i class="bi bi-arrow-repeat"></i> Troca garantida</span>
+        <span class="trust-item"><i class="bi bi-truck"></i> Envio rápido</span>
+      </div>
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  const coverImg = document.getElementById('cover-img');
+  document.querySelectorAll('.gallery-thumb__item').forEach((thumb) => {
+    thumb.addEventListener('click', () => {
+      if (!coverImg) return;
+      coverImg.src = thumb.dataset.galleryImg;
+      coverImg.alt = thumb.dataset.galleryAlt || coverImg.alt;
+      document.querySelectorAll('.gallery-thumb__item').forEach((t) => t.classList.remove('is-active'));
+      thumb.classList.add('is-active');
+    });
+  });
+</script>
 {% endblock %}

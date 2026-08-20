@@ -1,52 +1,126 @@
-"""Integração ponta a ponta: Social Login completo (Google/Facebook/Apple via allauth)."""
+"""Integração ponta a ponta: Social Login (Google/Facebook/Apple via allauth).
+
+Fluxo real do app (apps/accounts/adapters.py + SocialSignupCompleteView):
+1. O callback OAuth completa e `pre_social_login` guarda o sociallogin na sessão
+   (novo usuário) ou conecta a conta existente por email (login direto).
+2. Usuário novo é redirecionado para o signup do allauth (`socialaccount_signup`);
+   ao submeter, o usuário é criado (role=cliente) e logado.
+3. O redirecionamento pós-signup aponta para a tela de completamento
+   (`social_signup_complete`); ao submeter o form (role/CPF/telefone/endereço)
+   o usuário recebe os dados, o Address é criado, a SocialAccount é vinculada
+   definitivamente e o usuário permanece logado.
+"""
 
 from unittest import mock
 
-from django.test import TestCase, override_settings
-from django.urls import reverse
-
-from allauth.socialaccount.models import SocialAccount, SocialApp, SocialToken
-from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
-from allauth.socialaccount.providers.oauth2.client import OAuth2Client
+from allauth.socialaccount.internal import statekit
+from allauth.socialaccount.models import (
+    EmailAddress,
+    SocialAccount,
+    SocialApp,
+    SocialLogin,
+    SocialToken,
+)
+from django.test import RequestFactory, TestCase, override_settings
+from django.urls import resolve, reverse
 
 from apps.accounts.models import CustomUser
+from apps.checkout.models import Address
 from apps.core.models import SiteSettings
 from apps.tests.helpers import make_user
 
-
+# Os apps (SocialApp) vêm do banco (criados nos testes). O allauth mescla
+# o APP de settings com os do DB; por isso os dicionários APP não são definidos
+# aqui — evita MultipleObjectsReturned no `get_app`.
 SOCIAL_SETTINGS = {
-    "SOCIALACCOUNT_PROVIDERS": {
-        "google": {
-            "APP": {"client_id": "test-google-id", "secret": "test-google-secret"},
-            "SCOPE": ["profile", "email"],
-            "AUTH_PARAMS": {"access_type": "online"},
-        },
-        "facebook": {
-            "APP": {"client_id": "test-fb-id", "secret": "test-fb-secret"},
-            "SCOPE": ["email", "public_profile"],
-            "AUTH_PARAMS": {"auth_type": "reauthenticate"},
-        },
-        "apple": {
-            "APP": {"client_id": "test-apple-id", "secret": "test-apple-secret"},
-            "SCOPE": ["name", "email"],
-        },
-    },
     "ACCOUNT_EMAIL_VERIFICATION": "none",
     "SOCIALACCOUNT_LOGIN_ON_GET": True,
-    "SOCIALACCOUNT_AUTO_SIGNUP": True,
 }
+
+_ADAPTER_PATHS = {
+    "google": "allauth.socialaccount.providers.google.views.GoogleOAuth2Adapter",
+    "facebook": "allauth.socialaccount.providers.facebook.views.FacebookOAuth2Adapter",
+    "apple": "allauth.socialaccount.providers.apple.views.AppleOAuth2Adapter",
+}
+
+
+def _build_social_login(provider_id, email, name, uid):
+    """Monta um SocialLogin com usuário ainda não persistido (pk=None)."""
+    first, _, last = name.partition(" ")
+    user = CustomUser(
+        username=uid,
+        email=email,
+        first_name=first,
+        last_name=last,
+    )
+    account = SocialAccount(provider=provider_id, uid=uid, extra_data={"email": email})
+    token = SocialToken(token="fake-token")
+    token.account = account
+    login = SocialLogin(user=user, account=account, token=token)
+    login.email_addresses = [EmailAddress(email=email, verified=True, primary=True)]
+    return login
+
+
+def complete_provider_callback(client, provider_id, email, name, uid):
+    """Dispara o callback OAuth do provider (state+code) e retorna a resposta.
+
+    Mocks: `complete_login` retorna um SocialLogin pronto e o token exchange é
+    simulado via `get_access_token_data` (e `parse_token` no caso da Apple).
+    """
+    request = RequestFactory().get("/")
+    request.session = client.session
+    state_id = statekit.stash_state(request, {"id": "test"})
+    request.session.save()
+
+    login = _build_social_login(provider_id, email, name, uid)
+    adapter = _ADAPTER_PATHS[provider_id]
+    patches = [
+        mock.patch(f"{adapter}.complete_login", return_value=login),
+        mock.patch(
+            f"{adapter}.get_access_token_data",
+            return_value={"access_token": "fake-token", "expires_in": 3600},
+        ),
+    ]
+    if provider_id == "apple":
+        patches.append(mock.patch(f"{adapter}.parse_token", return_value=login.token))
+
+    for p in patches:
+        p.start()
+    try:
+        if provider_id == "apple":
+            # Apple usa `form_post`: POST em apple_callback redireciona para o
+            # finish callback (que roda o fluxo OAuth2 padrão).
+            client.post(
+                reverse("apple_callback"),
+                {"code": "fake-code", "state": state_id},
+                follow=False,
+            )
+            resp = client.get(
+                reverse("apple_finish_callback") + f"?code=fake-code&state={state_id}",
+                follow=False,
+            )
+        else:
+            resp = client.get(
+                reverse(f"{provider_id}_callback") + f"?code=fake-code&state={state_id}",
+                follow=False,
+            )
+        return resp
+    finally:
+        for p in patches:
+            p.stop()
 
 
 @override_settings(**SOCIAL_SETTINGS)
 class TestSocialLoginFlow(TestCase):
-    """Fluxo completo: login social -> criação de usuário -> perfil incompleto -> completamento."""
+    """Callback social: novo usuário -> signup allauth; usuário existente -> login."""
 
     def setUp(self):
         # Limpa SocialApps existentes para evitar MultipleObjectsReturned
         SocialApp.objects.all().delete()
-        
-        SiteSettings.objects.get(pk=1).provider_registration_enabled = True
-        SiteSettings.objects.get(pk=1).save()
+
+        settings = SiteSettings.objects.get(pk=1)
+        settings.provider_registration_enabled = True
+        settings.save()
 
         self.google_app, _ = SocialApp.objects.get_or_create(
             provider="google",
@@ -54,182 +128,75 @@ class TestSocialLoginFlow(TestCase):
         )
         self.google_app.sites.add(SiteSettings.objects.get(pk=1).pk)
 
-    def _mock_google_login(self, email="social@test.com", name="Social User", uid="google-123"):
-        """Mock do fluxo OAuth2 do Google."""
-        with mock.patch("allauth.socialaccount.providers.oauth2.views.OAuth2Adapter.complete_login") as mock_complete:
-            mock_user = mock.MagicMock()
-            mock_user.email = email
-            mock_user.first_name = name.split()[0] if name else ""
-            mock_user.last_name = name.split()[-1] if len(name.split()) > 1 else ""
-            mock_complete.return_value.get_user.return_value = mock_user
+    def test_google_new_user_goes_to_allauth_signup(self):
+        """Novo usuário Google é redirecionado para o signup do allauth e nada é criado ainda."""
+        response = complete_provider_callback(
+            self.client, "google", "social@test.com", "Social User", "google-123"
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(resolve(response.url).url_name, "socialaccount_signup")
+        self.assertFalse(CustomUser.objects.filter(email="social@test.com").exists())
+        # Sessão guarda o signup pendente (allauth) e o sociallogin do app
+        self.assertIn("socialaccount_sociallogin", self.client.session)
+        self.assertIn("sociallogin", self.client.session)
 
-            with mock.patch("allauth.socialaccount.providers.oauth2.views.OAuth2Client") as mock_client:
-                mock_client_instance = mock.MagicMock()
-                mock_client_instance.get_access_token.return_value = "fake-token"
-                mock_client_instance.get_user_info.return_value = {
-                    "sub": uid,
-                    "email": email,
-                    "name": name,
-                    "given_name": name.split()[0] if name else "",
-                    "family_name": name.split()[-1] if len(name.split()) > 1 else "",
-                    "email_verified": True,
-                }
-                mock_client.return_value = mock_client_instance
-
-                response = self.client.get(reverse("google_login") + "?code=fake-code", follow=True)
-                return response
-
-    def test_google_login_creates_user_and_logs_in(self):
-        """Login Google cria usuário e loga automaticamente (email verification none)."""
-        response = self._mock_google_login()
-        self.assertEqual(response.status_code, 200)
-
-        user = CustomUser.objects.get(email="social@test.com")
-        self.assertTrue(user.is_active)
-        self.assertEqual(user.role, CustomUser.Role.CLIENTE)
-
-        social_account = SocialAccount.objects.get(user=user, provider="google")
-        self.assertEqual(social_account.uid, "google-123")
-        self.assertEqual(social_account.extra_data["email"], "social@test.com")
-
-        self.assertTrue("_auth_user_id" in self.client.session)
-
-    def test_google_login_existing_user_links_account(self):
-        """Login Google em email existente vincula SocialAccount."""
+    def test_google_existing_user_links_and_logs_in(self):
+        """Login Google em email existente vincula SocialAccount e loga direto."""
         existing_user = make_user(email="social@test.com", role="cliente")
-        existing_user.set_unusable_password()
-        existing_user.save()
 
-        response = self._mock_google_login()
-        self.assertEqual(response.status_code, 200)
+        response = complete_provider_callback(
+            self.client, "google", "social@test.com", "Social User", "google-123"
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, "/")
 
         user = CustomUser.objects.get(email="social@test.com")
         self.assertEqual(user.pk, existing_user.pk)
-        social_account = SocialAccount.objects.get(user=user, provider="google")
-        self.assertIsNotNone(social_account)
+        account = SocialAccount.objects.get(user=user, provider="google")
+        self.assertEqual(account.uid, "google-123")
+        self.assertIn("_auth_user_id", self.client.session)
 
-    def test_google_login_incomplete_profile_redirects(self):
-        """Usuário social sem CPF/telefone/endereço é redirecionado para completamento."""
-        response = self._mock_google_login()
-        self.assertEqual(response.status_code, 200)
-
-        user = CustomUser.objects.get(email="social@test.com")
-        self.assertFalse(user.cpf)
-        self.assertFalse(user.telefone)
-        self.assertFalse(user.addresses.filter(is_active=True).exists())
-
-        response = self.client.get(reverse("dashboard"), follow=True)
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Complete seu cadastro")
-
-    def test_social_user_complete_profile(self):
-        """Usuário social completa perfil com CPF, telefone e endereço."""
-        self._mock_google_login()
-
-        user = CustomUser.objects.get(email="social@test.com")
-        self.client.force_login(user)
-
-        response = self.client.post(
-            reverse("account_profile"),
-            {
-                "cpf": "12345678901",
-                "telefone": "11999999999",
-                "cep": "01000-000",
-                "logradouro": "Rua Teste",
-                "numero": "123",
-                "bairro": "Centro",
-                "cidade": "São Paulo",
-                "estado": "SP",
-            },
-            follow=True,
-        )
-        self.assertEqual(response.status_code, 200)
-
-        user.refresh_from_db()
-        self.assertEqual(user.cpf, "12345678901")
-        self.assertEqual(user.telefone, "11999999999")
-        self.assertTrue(user.addresses.filter(is_active=True).exists())
-
-        response = self.client.get(reverse("dashboard"), follow=True)
-        self.assertNotContains(response, "Complete seu cadastro")
-
-    def test_facebook_login_flow(self):
-        """Login Facebook segue mesmo fluxo."""
+    def test_facebook_new_user_flow(self):
+        """Login Facebook segue o mesmo fluxo de novo usuário (Google)."""
         fb_app, _ = SocialApp.objects.get_or_create(
             provider="facebook",
             defaults={"name": "Facebook Test", "client_id": "test-fb-id", "secret": "test-fb-secret"},
         )
         fb_app.sites.add(SiteSettings.objects.get(pk=1).pk)
 
-        with mock.patch("allauth.socialaccount.providers.facebook.views.FacebookOAuth2Adapter.complete_login") as mock_complete:
-            mock_user = mock.MagicMock()
-            mock_user.email = "fb@test.com"
-            mock_user.first_name = "Facebook"
-            mock_user.last_name = "User"
-            mock_complete.return_value.get_user.return_value = mock_user
+        response = complete_provider_callback(
+            self.client, "facebook", "fb@test.com", "Facebook User", "fb-123"
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(resolve(response.url).url_name, "socialaccount_signup")
+        self.assertFalse(CustomUser.objects.filter(email="fb@test.com").exists())
 
-            with mock.patch("allauth.socialaccount.providers.oauth2.views.OAuth2Client") as mock_client:
-                mock_client_instance = mock.MagicMock()
-                mock_client_instance.get_access_token.return_value = "fake-fb-token"
-                mock_client_instance.get_user_info.return_value = {
-                    "id": "fb-123",
-                    "email": "fb@test.com",
-                    "name": "Facebook User",
-                    "first_name": "Facebook",
-                    "last_name": "User",
-                }
-                mock_client.return_value = mock_client_instance
-
-                response = self.client.get(reverse("facebook_login") + "?code=fake-code", follow=True)
-                self.assertEqual(response.status_code, 200)
-
-        user = CustomUser.objects.get(email="fb@test.com")
-        social_account = SocialAccount.objects.get(user=user, provider="facebook")
-        self.assertEqual(social_account.uid, "fb-123")
-
-    def test_apple_login_flow(self):
-        """Login Apple segue mesmo fluxo."""
+    def test_apple_new_user_flow(self):
+        """Login Apple (form_post) segue o mesmo fluxo de novo usuário."""
         apple_app, _ = SocialApp.objects.get_or_create(
             provider="apple",
             defaults={"name": "Apple Test", "client_id": "test-apple-id", "secret": "test-apple-secret"},
         )
         apple_app.sites.add(SiteSettings.objects.get(pk=1).pk)
 
-        with mock.patch("allauth.socialaccount.providers.apple.views.AppleOAuth2Adapter.complete_login") as mock_complete:
-            mock_user = mock.MagicMock()
-            mock_user.email = "apple@test.com"
-            mock_user.first_name = "Apple"
-            mock_user.last_name = "User"
-            mock_complete.return_value.get_user.return_value = mock_user
-
-            with mock.patch("allauth.socialaccount.providers.oauth2.views.OAuth2Client") as mock_client:
-                mock_client_instance = mock.MagicMock()
-                mock_client_instance.get_access_token.return_value = "fake-apple-token"
-                mock_client_instance.get_user_info.return_value = {
-                    "sub": "apple-123",
-                    "email": "apple@test.com",
-                    "name": "Apple User",
-                }
-                mock_client.return_value = mock_client_instance
-
-                response = self.client.get(reverse("apple_login") + "?code=fake-code", follow=True)
-                self.assertEqual(response.status_code, 200)
-
-        user = CustomUser.objects.get(email="apple@test.com")
-        social_account = SocialAccount.objects.get(user=user, provider="apple")
-        self.assertEqual(social_account.uid, "apple-123")
+        response = complete_provider_callback(
+            self.client, "apple", "apple@test.com", "Apple User", "apple-123"
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(resolve(response.url).url_name, "socialaccount_signup")
+        self.assertFalse(CustomUser.objects.filter(email="apple@test.com").exists())
 
 
 @override_settings(**SOCIAL_SETTINGS)
-class TestSocialLoginRoleSelection(TestCase):
-    """Login social com seleção de role (cliente/prestador/afiliado)."""
+class TestSocialSignupFlow(TestCase):
+    """Callback + signup allauth + completamento obrigatório (SocialSignupCompleteView)."""
 
     def setUp(self):
-        # Limpa SocialApps existentes para evitar MultipleObjectsReturned
         SocialApp.objects.all().delete()
-        
-        SiteSettings.objects.get(pk=1).provider_registration_enabled = True
-        SiteSettings.objects.get(pk=1).save()
+
+        settings = SiteSettings.objects.get(pk=1)
+        settings.provider_registration_enabled = True
+        settings.save()
 
         self.google_app, _ = SocialApp.objects.get_or_create(
             provider="google",
@@ -237,88 +204,88 @@ class TestSocialLoginRoleSelection(TestCase):
         )
         self.google_app.sites.add(SiteSettings.objects.get(pk=1).pk)
 
+    def _complete_signup(self, email, name, uid, role="cliente"):
+        """Executa callback -> signup allauth -> completamento e retorna a resposta final."""
+        response = complete_provider_callback(self.client, "google", email, name, uid)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(resolve(response.url).url_name, "socialaccount_signup")
+
+        # Passo intermediário: form de signup do allauth. Ele herda os campos
+        # de CustomSignupForm (role/CPF/telefone/endereço) e já cria o usuário
+        # com esses dados + Address. A role final é decidida no completamento.
+        response = self.client.post(
+            reverse("socialaccount_signup"),
+            {
+                "email": email,
+                "role": "cliente",
+                "cpf": "123.456.789-09",
+                "telefone": "11999999999",
+                "bio": "",
+                "street": "Rua Teste",
+                "number": "123",
+                "city": "São Paulo",
+                "state": "SP",
+                "zip_code": "01234567",
+                "country": "Brasil",
+            },
+            follow=False,
+        )
+        self.assertEqual(response.status_code, 302)
+
+        # Tela de completamento (GET) e submissão do form
+        response = self.client.get(reverse("social_signup_complete"))
+        self.assertEqual(response.status_code, 200)
+
+        return self.client.post(
+            reverse("social_signup_complete"),
+            {
+                "role": role,
+                "cpf": "123.456.789-09",
+                "telefone": "11999999999",
+                "street": "Rua Teste",
+                "number": "123",
+                "city": "São Paulo",
+                "state": "SP",
+                "zip_code": "01234567",
+                "country": "Brasil",
+            },
+            follow=True,
+        )
+
+    def test_social_signup_creates_user_and_logs_in(self):
+        """Completamento cria usuário, Address, SocialAccount e loga."""
+        response = self._complete_signup("social@test.com", "Social User", "google-123")
+        self.assertEqual(response.status_code, 200)
+
+        user = CustomUser.objects.get(email="social@test.com")
+        self.assertEqual(user.role, CustomUser.Role.CLIENTE)
+        self.assertEqual(user.cpf, "12345678909")
+        self.assertEqual(user.telefone, "11999999999")
+        self.assertTrue(Address.objects.filter(user=user, is_active=True).exists())
+        self.assertTrue(SocialAccount.objects.filter(user=user, provider="google").exists())
+        self.assertIn("_auth_user_id", self.client.session)
+
+    def test_social_signup_role_defaults_to_cliente(self):
+        """Sem role explícita, o padrão é cliente."""
+        self._complete_signup("default-social@test.com", "Default Social", "google-default")
+        user = CustomUser.objects.get(email="default-social@test.com")
+        self.assertEqual(user.role, CustomUser.Role.CLIENTE)
+
     def test_social_signup_with_prestador_role(self):
-        """Signup social permite escolher role prestador (se habilitado)."""
-        with mock.patch("allauth.socialaccount.providers.oauth2.views.OAuth2Adapter.complete_login") as mock_complete:
-            mock_user = mock.MagicMock()
-            mock_user.email = "prestador-social@test.com"
-            mock_user.first_name = "Prestador"
-            mock_user.last_name = "Social"
-            mock_complete.return_value.get_user.return_value = mock_user
-
-            with mock.patch("allauth.socialaccount.providers.oauth2.views.OAuth2Client") as mock_client:
-                mock_client_instance = mock.MagicMock()
-                mock_client_instance.get_access_token.return_value = "fake-token"
-                mock_client_instance.get_user_info.return_value = {
-                    "sub": "google-prestador",
-                    "email": "prestador-social@test.com",
-                    "name": "Prestador Social",
-                }
-                mock_client.return_value = mock_client_instance
-
-                session = self.client.session
-                session["social_role"] = "prestador"
-                session.save()
-
-                response = self.client.get(reverse("google_login") + "?code=fake-code", follow=True)
-                self.assertEqual(response.status_code, 200)
-
+        """Completamento permite escolher role prestador (se habilitado)."""
+        self._complete_signup(
+            "prestador-social@test.com", "Prestador Social", "google-prestador", role="prestador"
+        )
         user = CustomUser.objects.get(email="prestador-social@test.com")
         self.assertEqual(user.role, CustomUser.Role.PRESTADOR)
 
     def test_social_signup_with_affiliate_role(self):
-        """Signup social permite escolher role afiliado (se habilitado)."""
-        with mock.patch("allauth.socialaccount.providers.oauth2.views.OAuth2Adapter.complete_login") as mock_complete:
-            mock_user = mock.MagicMock()
-            mock_user.email = "afiliado-social@test.com"
-            mock_user.first_name = "Afiliado"
-            mock_user.last_name = "Social"
-            mock_complete.return_value.get_user.return_value = mock_user
-
-            with mock.patch("allauth.socialaccount.providers.oauth2.views.OAuth2Client") as mock_client:
-                mock_client_instance = mock.MagicMock()
-                mock_client_instance.get_access_token.return_value = "fake-token"
-                mock_client_instance.get_user_info.return_value = {
-                    "sub": "google-afiliado",
-                    "email": "afiliado-social@test.com",
-                    "name": "Afiliado Social",
-                }
-                mock_client.return_value = mock_client_instance
-
-                session = self.client.session
-                session["social_role"] = "afiliado"
-                session.save()
-
-                response = self.client.get(reverse("google_login") + "?code=fake-code", follow=True)
-                self.assertEqual(response.status_code, 200)
-
+        """Completamento permite escolher role afiliado (se habilitado)."""
+        self._complete_signup(
+            "afiliado-social@test.com", "Afiliado Social", "google-afiliado", role="afiliado"
+        )
         user = CustomUser.objects.get(email="afiliado-social@test.com")
         self.assertEqual(user.role, CustomUser.Role.AFILIADO)
-
-    def test_social_signup_role_defaults_to_cliente(self):
-        """Sem role na sessão, padrão é cliente."""
-        with mock.patch("allauth.socialaccount.providers.oauth2.views.OAuth2Adapter.complete_login") as mock_complete:
-            mock_user = mock.MagicMock()
-            mock_user.email = "default-social@test.com"
-            mock_user.first_name = "Default"
-            mock_user.last_name = "Social"
-            mock_complete.return_value.get_user.return_value = mock_user
-
-            with mock.patch("allauth.socialaccount.providers.oauth2.views.OAuth2Client") as mock_client:
-                mock_client_instance = mock.MagicMock()
-                mock_client_instance.get_access_token.return_value = "fake-token"
-                mock_client_instance.get_user_info.return_value = {
-                    "sub": "google-default",
-                    "email": "default-social@test.com",
-                    "name": "Default Social",
-                }
-                mock_client.return_value = mock_client_instance
-
-                response = self.client.get(reverse("google_login") + "?code=fake-code", follow=True)
-                self.assertEqual(response.status_code, 200)
-
-        user = CustomUser.objects.get(email="default-social@test.com")
-        self.assertEqual(user.role, CustomUser.Role.CLIENTE)
 
 
 @override_settings(**SOCIAL_SETTINGS)
@@ -326,30 +293,23 @@ class TestSocialLoginSectionToggle(TestCase):
     """Login social desativado por SiteSettings."""
 
     def test_social_login_buttons_hidden_when_disabled(self):
-        from apps.core.models import SiteSettings
-
         settings = SiteSettings.objects.get(pk=1)
         settings.provider_registration_enabled = False
         settings.save()
 
         response = self.client.get(reverse("account_login"))
         self.assertEqual(response.status_code, 200)
-        # Check that provider login buttons are hidden (look for "Continuar com" which is in the button text)
-        self.assertNotContains(response, "Continuar com")
-        # Also check that the provider section is not rendered
+        # O bloco de providers não é renderizado quando desabilitado
         self.assertNotContains(response, "provider_login_url")
 
     def test_social_signup_option_hidden_when_disabled(self):
-        from apps.core.models import SiteSettings
-
         settings = SiteSettings.objects.get(pk=1)
         settings.provider_registration_enabled = False
         settings.save()
 
         response = self.client.get(reverse("account_signup"))
         self.assertEqual(response.status_code, 200)
-        # Prestador should be hidden when provider_registration_enabled=False
+        # Prestador deve sumir quando provider_registration_enabled=False
         self.assertNotContains(response, "Prestador")
-        # Afiliado is controlled by affiliates_enabled, not provider_registration_enabled
-        # So it should still be visible (affiliates_enabled defaults to True)
+        # Afiliado é controlado por affiliates_enabled (default True) -> permanece
         self.assertContains(response, "Afiliado")

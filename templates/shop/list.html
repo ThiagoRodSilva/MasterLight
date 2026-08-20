@@ -1,55 +1,63 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container py-5">
-  <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
-    <div>
-      <h1 class="mb-1">Loja</h1>
-      <span class="text-muted-brand">{{ page_obj.paginator.count }} produtos disponíveis</span>
+<section class="page-header page-header--alt">
+  <div class="container">
+    <div class="d-flex justify-content-between align-items-end flex-wrap gap-3">
+      <div class="reveal">
+        <span class="page-header__eyebrow">Loja</span>
+        <h1>Loja</h1>
+        <p>{{ page_obj.paginator.count }} produtos disponíveis</p>
+      </div>
+      <div class="page-header__actions reveal reveal-delay-1">
+        <form class="d-flex" method="get">
+          <input name="q" class="form-control form-control-brand me-2" placeholder="Buscar produtos" value="{{ request.GET.q|default:'' }}">
+          <button class="btn btn-gradient" type="submit"><i class="bi bi-search"></i> Buscar</button>
+        </form>
+      </div>
     </div>
-    <form class="d-flex" method="get">
-      <input name="q" class="form-control form-control-brand me-2" placeholder="Buscar produtos" value="{{ request.GET.q|default:'' }}">
-      <button class="btn btn-brand" type="submit"><i class="bi bi-search"></i> Buscar</button>
-    </form>
   </div>
+</section>
 
-  <div class="mb-4 d-flex gap-2 flex-wrap">
-    <a href="{% url 'shop-list' %}" class="chip {% if not active_category %}is-active{% endif %}">Todos</a>
+<div class="container py-4">
+
+  <div class="mb-4 d-flex gap-2 flex-wrap reveal reveal-delay-1">
+    <a href="{% url 'shop-list' %}" class="chip chip-primary {% if not active_category %}is-active{% endif %}">Todos</a>
     {% for c in categories %}
-      <a href="{% url 'shop-category' c.slug %}" class="chip {% if active_category == c.slug %}is-active{% endif %}">{{ c.name }}</a>
+      <a href="{% url 'shop-category' c.slug %}" class="chip chip-primary {% if active_category == c.slug %}is-active{% endif %}">{{ c.name }}</a>
     {% endfor %}
   </div>
 
-    <div class="row g-4">
-      {% for p in products %}
-        <div class="col-sm-6 col-md-4 col-lg-3">
-          <div class="card card-interactive card-elevated h-100 border-0">
-            <a href="{% url 'shop-detail' p.slug %}" class="text-decoration-none text-strong">
-              {% if p.cover %}
-                <div class="ratio ratio-1x1 bg-brand-50">
-                  <img src="{{ p.cover.image }}" class="card-img-top object-fit-cover" alt="{{ p.cover.alt }}">
-                </div>
-              {% endif %}
-              <div class="card-body d-flex flex-column">
-                <h6 class="card-title mb-1">{{ p.name }}</h6>
-                <span class="text-muted-brand small mb-2">{{ p.category|default:"Geral" }}</span>
-                <span class="badge badge-soft mb-3 align-self-start">R$ {{ p.price|floatformat:2 }}</span>
-                <span class="btn btn-brand btn-sm mt-auto w-100">Ver detalhes</span>
-              </div>
-            </a>
-          </div>
+  <div class="row g-4">
+    {% for p in products %}
+      <div class="col-sm-6 col-md-4 col-lg-3 reveal">
+        <div class="card card-elevated card-bordered-start-brand h-100 border-0">
+          <a href="{% url 'shop-detail' p.slug %}" class="text-decoration-none text-strong">
+            {% if p.cover %}
+            <div class="ratio ratio-1x1 bg-light-alt">
+              <img src="{{ p.cover.image }}" class="card-img-top object-fit-cover" alt="{{ p.cover.alt }}">
+            </div>
+            {% endif %}
+            <div class="card-body d-flex flex-column">
+              <h6 class="card-title mb-1">{{ p.name }}</h6>
+              <span class="text-muted-custom small mb-2">{{ p.category|default:"Geral" }}</span>
+              <span class="badge badge-brand mb-3 align-self-start">R$ {{ p.price|floatformat:2 }}</span>
+              <span class="btn btn-gradient btn-sm mt-auto w-100">Ver detalhes</span>
+            </div>
+          </a>
         </div>
-      {% empty %}
-        <div class="col-12">
-          <div class="empty-state">
-            <i class="bi bi-box-seam fs-2 d-block mb-2"></i>
-            <div class="empty-title">Nenhum produto encontrado.</div>
-          </div>
+      </div>
+    {% empty %}
+      <div class="col-12">
+        <div class="empty-state reveal">
+          <i class="bi bi-box-seam fs-2 d-block mb-2"></i>
+          <div class="empty-title">Nenhum produto encontrado.</div>
         </div>
-      {% endfor %}
-    </div>
+      </div>
+    {% endfor %}
+  </div>
 
-    <div class="mt-4">
-      {% include "partials/pagination.html" %}
-    </div>
+  <div class="mt-4 reveal">
+    {% include "partials/pagination.html" %}
+  </div>
 </div>
 {% endblock %}

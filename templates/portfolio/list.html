@@ -1,21 +1,32 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container py-5">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1>Portfólio</h1>
-    {% if user.is_authenticated and user.is_prestador %}
-    <a href="{% url 'portfolio-create' %}" class="btn btn-brand"><i class="bi bi-plus-lg me-1"></i>Novo item</a>
-    {% endif %}
+<section class="page-header page-header--alt">
+  <div class="container">
+    <div class="d-flex justify-content-between align-items-end flex-wrap gap-3">
+      <div class="reveal">
+        <span class="page-header__eyebrow">Portfólio</span>
+        <h1>Portfólio</h1>
+        <p>Trabalhos publicados pelos prestadores.</p>
+      </div>
+      <div class="page-header__actions reveal reveal-delay-1">
+        {% if user.is_authenticated and user.is_prestador %}
+        <a href="{% url 'portfolio-create' %}" class="btn btn-gradient"><i class="bi bi-plus-lg me-1"></i>Novo item</a>
+        {% endif %}
+      </div>
+    </div>
   </div>
+</section>
+
+<div class="container py-4">
 
   {% if request.GET.categoria %}
-    <a href="{% url 'portfolio-list' %}" class="badge badge-soft mb-3">Remover filtro</a>
+    <a href="{% url 'portfolio-list' %}" class="chip chip-primary mb-3">Remover filtro</a>
   {% endif %}
 
   <div class="row g-3">
     {% for item in items %}
-    <div class="col-md-4">
-      <a href="{% url 'portfolio-detail' item.pk %}" class="card card-elevated card-interactive text-decoration-none text-strong h-100">
+    <div class="col-md-4 reveal">
+      <a href="{% url 'portfolio-detail' item.pk %}" class="card card-elevated card-bordered-start-brand text-decoration-none text-strong h-100">
         {% if item.image %}<img src="{{ item.image }}" class="card-img-top">{% endif %}
         <div class="card-body">
           <h5 class="card-title">{{ item.title }}</h5>
@@ -25,7 +36,7 @@
     </div>
     {% empty %}
     <div class="col-12">
-      <div class="empty-state">
+      <div class="empty-state reveal">
         <i class="bi bi-bag-check empty-state__icon d-block mb-2"></i>
         <p class="mb-0">Nenhum item publicado.</p>
       </div>

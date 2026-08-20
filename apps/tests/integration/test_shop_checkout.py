@@ -11,7 +11,6 @@ from apps.payments.models import Transaction
 from apps.shop.models import Category, Product
 from apps.tests.helpers import AsaasMockMixin, make_user
 
-
 ASAAS_SETTINGS = {
     "PAYMENT_PROVIDER": "asaas",
     "ASAAS_API_KEY": "teste-key",

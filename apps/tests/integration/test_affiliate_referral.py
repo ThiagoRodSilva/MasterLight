@@ -8,10 +8,8 @@ from django.urls import reverse
 
 from apps.affiliate.models import AffiliateProfile, Referral
 from apps.checkout.models import Order
-from apps.payments.models import Transaction
 from apps.shop.models import Category, Product
 from apps.tests.helpers import AsaasMockMixin, make_user
-
 
 ASAAS_SETTINGS = {
     "PAYMENT_PROVIDER": "asaas",
@@ -118,7 +116,7 @@ class TestAffiliateReferralFlow(AsaasMockMixin, TestCase):
 
     def test_affiliate_referral_multiple_orders(self):
         """Múltiplos pedidos do mesmo cliente geram múltiplas comissões.
-        
+
         Skipped in Asaas test class due to mock idempotency issues.
         See TestAffiliateReferralMultipleOrdersManual for manual provider test.
         """
@@ -185,7 +183,7 @@ class TestAffiliateReferralMultipleOrdersManual(TestCase):
         """Múltiplos pedidos do mesmo cliente geram múltiplas comissões (provider manual)."""
         self._set_ref_cookie(self.affiliate.code)
 
-        for i in range(3):
+        for _i in range(3):
             response = self._checkout_with_ref("PIX")
             self.assertEqual(response.status_code, 302)
 
@@ -310,8 +308,9 @@ class TestAffiliateDashboardFlow(AsaasMockMixin, TestCase):
         """Saque bem-sucedido com chave Pix cadastrada."""
         self._generate_commission()
 
+        self.affiliate.refresh_from_db()
         self.affiliate.pix_key = "chave-pix@test.com"
-        self.affiliate.save()
+        self.affiliate.save(update_fields=["pix_key", "updated_at"])
 
         self.client.force_login(self.affiliate_user)
         response = self.client.post(reverse("affiliate-payout"), follow=True)

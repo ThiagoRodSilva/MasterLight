@@ -3,20 +3,20 @@
 {% block content %}
 <div class="container py-5">
   <div class="form-panel--medium">
-    <h1 class="mb-3">Assinar plano de manutenção</h1>
-    <p class="text-muted small">
+    <h1 class="mb-3 reveal">Assinar plano de manutenção</h1>
+    <p class="text-muted-custom small reveal reveal-delay-1">
       Valor por ciclo:
-      {% for t, v in prices.items %}<span class="badge badge-soft me-1">{{ t }} — R$ {{ v|floatformat:2 }}</span>{% endfor %}
+      {% for t, v in prices.items %}<span class="badge badge-brand me-1">{{ t }} — R$ {{ v|floatformat:2 }}</span>{% endfor %}
     </p>
     <form method="post" data-loading>{% csrf_token %}{{ form|crispy }}
       {% if CHECKOUT_HOSTED %}
-      <div class="mt-3 mb-2">
+      <div class="mt-3 mb-2 reveal reveal-delay-2">
         <p class="small mb-0">Você será direcionado para a página de pagamento segura do Asaas (cartão de crédito).</p>
       </div>
-      <button class="btn btn-brand w-100" type="submit">Assinar com Asaas</button>
+      <button class="btn btn-gradient w-100 reveal reveal-delay-3" type="submit">Assinar com Asaas</button>
       {% else %}
-      <h6 class="mt-3 mb-2">Forma de pagamento</h6>
-      <div class="row g-3" role="radiogroup" aria-label="Forma de pagamento">
+      <h6 class="mt-3 mb-2 reveal reveal-delay-2">Forma de pagamento</h6>
+      <div class="row g-3 reveal reveal-delay-3" role="radiogroup" aria-label="Forma de pagamento">
         <div class="col-12 col-md-4">
           <label class="form-check form-check-input-card d-flex flex-column align-items-center p-3 border rounded radius-lg h-100 cursor-pointer" for="pm_pix">
             <input class="form-check-input visually-hidden" type="radio" name="payment_method" id="pm_pix" value="PIX" checked>
@@ -43,7 +43,7 @@
         </div>
         {% endif %}
       </div>
-      <div id="card-fields" class="mt-3 d-none">
+      <div id="card-fields" class="mt-3 d-none reveal reveal-delay-4">
         <div class="row g-2">
           <div class="col-12"><label class="form-label small">Titular do cartão</label>
             <input class="form-control form-control-brand" type="text" name="card_holder" required></div>
@@ -59,7 +59,7 @@
             <input class="form-control form-control-brand" type="text" name="card_ccv" inputmode="numeric" maxlength="4" required pattern="[0-9]{3,4}"></div>
         </div>
       </div>
-      <button class="btn btn-brand w-100 mt-3" type="submit">Confirmar e assinar</button>
+      <button class="btn btn-gradient w-100 mt-3 reveal reveal-delay-4" type="submit">Confirmar e assinar</button>
       {% endif %}
     </form>
   </div>

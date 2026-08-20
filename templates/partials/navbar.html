@@ -1,10 +1,10 @@
 {% load static %}
-<nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+<nav class="navbar navbar-expand-lg navbar-brand-custom sticky-top">
   <div class="container">
     <a class="navbar-brand fw-bold" href="{% url 'home' %}">
       <img class="brand-logo" src="{% static 'img/logo.svg' %}" alt="{{ BRAND_NAME }}">{{ BRAND_NAME }}
     </a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-label="Alternar navegação">
       <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse" id="nav">
@@ -34,7 +34,7 @@
       <ul class="navbar-nav align-items-center">
         {% if user.is_authenticated %}
           {% if user.is_cliente and STORE_ENABLED %}
-          <li class="nav-item"><a class="nav-link" href="{% url 'checkout-cart' %}"><i class="bi bi-cart3"></i> Carrinho</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'checkout-cart' %}"><i class="bi bi-cart3"></i> Carrinho{% if CART_COUNT %}<span class="badge badge-brand rounded-pill ms-1">{{ CART_COUNT }}</span>{% endif %}</a></li>
           {% endif %}
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Olá, {{ user.email }}</a>
@@ -56,13 +56,13 @@
               <li><hr class="dropdown-divider"></li>
               <li>
                 <form method="post" action="{% url 'account_logout' %}" data-loading>{% csrf_token %}
-                  <button class="btn btn-brand-ghost w-100 text-start" type="submit">Sair</button>
+                  <button class="btn btn-ghost-light w-100 text-start" type="submit">Sair</button>
                 </form>
               </li>
             </ul>
           </li>
         {% else %}
-          <li class="nav-item"><a class="btn btn-sm btn-brand" href="{% url 'account_login' %}">Entrar</a></li>
+          <li class="nav-item"><a class="btn btn-sm btn-gradient" href="{% url 'account_login' %}">Entrar</a></li>
         {% endif %}
       </ul>
     </div>

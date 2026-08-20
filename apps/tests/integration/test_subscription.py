@@ -7,10 +7,8 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from apps.checkout.models import Order
-from apps.payments.models import Transaction
 from apps.services.models import MaintenancePlan, MaintenancePlanTemplate, ServiceCategory
 from apps.tests.helpers import AsaasMockMixin, make_user
-
 
 ASAAS_SETTINGS = {
     "PAYMENT_PROVIDER": "asaas",
@@ -70,11 +68,10 @@ class TestMaintenancePlanSubscriptionFlow(AsaasMockMixin, TestCase):
         checkout_id = self.asaas.checkout_id
         payload = json.dumps({"event": "CHECKOUT_PAID", "checkout": {"id": checkout_id, "status": "PAID", "subscription": {"id": plan.asaas_subscription_id}}})
         AsaasGateway().webhook(payload, {"x-webhook-token": "segredo"})
-        
+
         # Check if plan has subscription_id now
         plan.refresh_from_db()
-        print(f"Plan asaas_subscription_id after CHECKOUT_PAID: {plan.asaas_subscription_id}")
-        
+
         # Then simulate first subscription payment
         payload = json.dumps({"event": "PAYMENT_CONFIRMED", "payment": {"id": self.asaas.payment_id, "subscription": plan.asaas_subscription_id, "value": float(plan.value)}})
         AsaasGateway().webhook(payload, {"x-webhook-token": "segredo"})
@@ -82,13 +79,6 @@ class TestMaintenancePlanSubscriptionFlow(AsaasMockMixin, TestCase):
     def test_subscription_pix_complete_flow(self):
         """Fluxo completo: assinar -> pagamento -> plano ativo -> primeira visita agendada."""
         response = self._subscribe_plan("PIX")
-        if response.status_code != 302:
-            print(f"Response status: {response.status_code}")
-            print(f"Response content: {response.content[:1000]}")
-            if hasattr(response, 'context') and response.context:
-                form = response.context.get('form')
-                if form:
-                    print(f"Form errors: {form.errors}")
         self.assertEqual(response.status_code, 302)
 
         plan = MaintenancePlan.objects.get(client=self.client_user)

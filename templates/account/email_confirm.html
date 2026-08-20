@@ -1,0 +1,360 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block navbar %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* ===== VARIÁVEIS DO SEU CSS (mapeadas para tokens do projeto) ===== */
+  :root {
+    --primary: #1a2a4a;
+    --secondary: #ff6b00;
+    --secondary-light: #ffcc00;
+    --accent: #00d1b2;
+    --bg-dark: #0a0a0a;
+    --bg-light: #f5f5f5;
+    --text-dark: #2d2d2d;
+    --text-light: #ffffff;
+    --text-muted: #888888;
+  }
+
+  /* ===== RESET LOCAL ===== */
+  .auth-screen,
+  .auth-screen * {
+    box-sizing: border-box;
+  }
+
+  /* ===== TELA FULLSCREEN ===== */
+  .auth-screen {
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-4) var(--space-3);
+    background: linear-gradient(160deg, var(--primary) 0%, var(--bg-dark) 100%);
+    position: relative;
+    overflow: hidden;
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+
+  .auth-screen::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 40% at 20% 0%, rgba(var(--secondary-rgb, 255, 107, 0), 0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 30% at 80% 100%, rgba(var(--accent-rgb, 0, 209, 178), 0.08) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  .auth-screen::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.015'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 36v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 6V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    opacity: 0.6;
+    pointer-events: none;
+  }
+
+  /* ===== CARD CENTRAL ===== */
+  .auth-card {
+    width: 100%;
+    max-width: 460px;
+    background: var(--bg-white, #ffffff);
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(255, 107, 0, 0.08);
+    border-left: 4px solid var(--secondary);
+    position: relative;
+    z-index: 1;
+    opacity: 0;
+    transform: translateY(30px);
+    animation: fadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @keyframes fadeUp {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Animação em cascata para filhos */
+  .auth-card > * {
+    animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  .auth-card > *:nth-child(1) { animation-delay: 0.05s; }
+  .auth-card > *:nth-child(2) { animation-delay: 0.15s; }
+  .auth-card > *:nth-child(3) { animation-delay: 0.25s; }
+  .auth-card > *:nth-child(4) { animation-delay: 0.35s; }
+  .auth-card > *:nth-child(5) { animation-delay: 0.45s; }
+  .auth-card > *:nth-child(6) { animation-delay: 0.55s; }
+
+  /* ===== HEADER DO CARD ===== */
+  .auth-header {
+    text-align: center;
+    padding: 32px 32px 16px;
+  }
+
+  .brand-badge {
+    width: 64px;
+    height: 64px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    padding: 10px;
+    box-shadow: 0 8px 24px rgba(26, 42, 74, 0.35);
+    margin: 0 auto 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .brand-badge img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .auth-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin: 0 0 8px;
+    letter-spacing: -0.02em;
+  }
+
+  .auth-subtitle {
+    color: var(--text-muted);
+    font-size: 1rem;
+    margin: 0;
+    line-height: 1.6;
+  }
+  .auth-subtitle strong {
+    color: var(--text-dark);
+  }
+
+  /* ===== BOTÕES (baseados no seu CSS) ===== */
+  .btn-auth {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 16px 28px;
+    font-weight: 600;
+    font-size: 1rem;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--secondary) 0%, var(--secondary-light) 100%);
+    color: var(--text-dark);
+    box-shadow: 0 6px 20px rgba(255, 107, 0, 0.35);
+  }
+  .btn-primary:hover,
+  .btn-primary:focus {
+    transform: scale(1.02);
+    box-shadow: 0 10px 30px rgba(255, 107, 0, 0.45);
+    color: var(--text-dark);
+  }
+  .btn-primary:active {
+    transform: scale(0.98);
+  }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--primary);
+    border: 2px solid var(--primary);
+  }
+  .btn-secondary:hover,
+  .btn-secondary:focus {
+    background: var(--primary);
+    color: var(--text-light);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(26, 42, 74, 0.3);
+  }
+  .btn-secondary:active {
+    transform: translateY(0);
+  }
+
+  /* ===== ALERTAS SUAVES ===== */
+  .alert-auth {
+    border: none;
+    border-radius: 12px;
+    padding: 18px 20px;
+    font-weight: 500;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .alert-warning {
+    background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
+    color: #7b5b00;
+    border-left: 4px solid var(--secondary-light);
+  }
+
+  .alert-info {
+    background: linear-gradient(135deg, #e8f4fd 0%, #d1e9fc 100%);
+    color: var(--primary);
+    border-left: 4px solid var(--primary);
+  }
+
+  .alert-icon {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .alert-content strong {
+    display: block;
+    margin-bottom: 6px;
+  }
+  .alert-content p {
+    margin: 0;
+    font-weight: 400;
+    opacity: 0.9;
+  }
+
+  /* ===== RODAPÉ DO CARD ===== */
+  .auth-footer {
+    text-align: center;
+    padding: 20px 32px 28px;
+    border-top: 1px solid rgba(17, 17, 17, 0.08);
+    margin-top: 8px;
+  }
+
+  .auth-footer .link {
+    color: var(--primary);
+    font-weight: 500;
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+  .auth-footer .link:hover {
+    color: var(--secondary);
+    text-decoration: underline;
+  }
+
+  .auth-copyright {
+    margin: 12px 0 0;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+
+  /* ===== RESPEITAR PREFERÊNCIA DE MOVIMENTO REDUZIDO ===== */
+  @media (prefers-reduced-motion: reduce) {
+    .auth-card,
+    .auth-card > * {
+      animation: none !important;
+      opacity: 1 !important;
+      transform: none !important;
+    }
+  }
+
+  /* ===== RESPONSIVO ===== */
+  @media (max-width: 480px) {
+    .auth-screen {
+      padding: var(--space-2) var(--space-2);
+      align-items: flex-start;
+      min-height: 100%;
+    }
+    .auth-card {
+      border-radius: 16px 16px 0 0;
+      border-left: none;
+      border-top: 4px solid var(--secondary);
+      max-width: 100%;
+      box-shadow: 0 -4px 40px rgba(0, 0, 0, 0.15), 0 20px 60px rgba(0, 0, 0, 0.18);
+      min-height: 100vh;
+    }
+    .auth-header {
+      padding: 28px 24px 12px;
+    }
+    .auth-footer {
+      padding: 16px 24px 24px;
+    }
+    .btn-auth {
+      padding: 14px 24px;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="auth-screen" aria-labelledby="confirm-title">
+  <div class="container">
+    <div class="auth-card" role="main">
+      <header class="auth-header">
+        <div class="brand-badge" aria-hidden="true">
+          <img src="{% static 'img/logo.svg' %}" alt="{{ BRAND_NAME }}">
+        </div>
+        <h1 id="confirm-title" class="auth-title">Confirme seu email</h1>
+        <p class="auth-subtitle">
+          Enviamos um link de confirmação para
+          <strong>{% if confirmation %}{{ confirmation.email_address.email }}{% else %}seu email{% endif %}</strong>
+        </p>
+      </header>
+
+      {% if confirmation %}
+        {% if can_confirm %}
+          <form method="post" action="{% url 'account_confirm_email' confirmation.key %}" class="px-3 pb-2" data-loading>
+            {% csrf_token %}
+            {{ redirect_field }}
+            <button type="submit" class="btn-auth btn-primary">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              Confirmar email
+            </button>
+          </form>
+        {% else %}
+          <div class="alert-auth alert-warning mx-3 mb-3" role="alert">
+            <svg class="alert-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <div class="alert-content">
+              <strong>Email já confirmado</strong>
+              <p>Este endereço de email já foi verificado por outra conta.</p>
+            </div>
+          </div>
+          <div class="px-3 pb-3">
+            <a href="{% url 'account_login' %}" class="btn-auth btn-secondary">Entrar na conta</a>
+          </div>
+        {% endif %}
+      {% else %}
+        <div class="alert-auth alert-info mx-3 mb-3" role="alert">
+          <svg class="alert-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <div class="alert-content">
+            <strong>Link inválido ou expirado</strong>
+            <p>O link de confirmação expirou ou não é válido. Solicite um novo email de verificação.</p>
+          </div>
+        </div>
+        <div class="px-3 pb-3">
+          <a href="{% url 'account_email' %}" class="btn-auth btn-secondary">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" class="me-1">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            Solicitar novo email
+          </a>
+        </div>
+      {% endif %}
+
+      <footer class="auth-footer">
+        <a href="{% url 'account_login' %}" class="link">Voltar ao login</a>
+        <p class="auth-copyright">&copy; {% now "Y" %} {{ BRAND_NAME }}. Todos os direitos reservados.</p>
+      </footer>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -114,16 +114,16 @@ apps/
 
 | Prefixo | App | Público |
 |---|---|---|
-| `/` | `home` | ✅ |
+| `/` | `home` |  |
 | `/admin/` | Django Admin | ❌ |
 | `/accounts/` | accounts (`me`, `u/<username>`) | parcial |
 | `/portfolio/` | portfolio | parcial |
 | `/servicos/` | services (loja de serviços, planos, visitas) | parcial |
-| `/loja/` | shop | ✅ |
+| `/loja/` | shop |  |
 | `/afiliados/` | affiliate (landing + painel) | parcial |
 | `/carrinho/` | checkout | ❌ |
 | `/pagamentos/` | payments (webhook, confirmações, status) | parcial |
-| `/social/` | allauth (login social) | ✅ |
+| `/social/` | allauth (login social) |  |
 
 > Cada app declara `urls.py` próprio (raiz `home` em `config/urls.py`) com **nomes de URL manualmente prefixados** (ex.: `checkout-*`, `services-*`, `shop-*`), sem `app_name`. Use `reverse("...")`/`reverse_lazy("...")` com esses nomes.
 
@@ -151,12 +151,12 @@ Todas lidas por `django-environ` de `.env` (gitignored) ou do ambiente. Veja `.e
 
 | Variável | Obrigatória | Descrição |
 |---|---|---|
-| `DJANGO_SECRET_KEY` | ✅ prod | Secret do Django |
+| `DJANGO_SECRET_KEY` |  prod | Secret do Django |
 | `DJANGO_DEBUG` | — | `True` em dev (default `False`) |
-| `DJANGO_ALLOWED_HOSTS` | ✅ prod | Hosts permitidos (vírgula separado) |
-| `DATABASE_URL` | ✅ | Postgres do Supabase em **session mode (porta 5432)** |
+| `DJANGO_ALLOWED_HOSTS` |  prod | Hosts permitidos (vírgula separado) |
+| `DATABASE_URL` |  | Postgres do Supabase em **session mode (porta 5432)** |
 | `DJANGO_CONN_MAX_AGE` | — | Idade máxima da conexão (default `60`) |
-| `DJANGO_SITE_DOMAIN` / `DJANGO_SITE_NAME` | ✅ | Domínio/nome para `django.contrib.sites` + allauth |
+| `DJANGO_SITE_DOMAIN` / `DJANGO_SITE_NAME` |  | Domínio/nome para `django.contrib.sites` + allauth |
 | `DJANGO_LANGUAGE_CODE` / `DJANGO_TIME_ZONE` | — | `pt-br` / `America/Sao_Paulo` |
 | `PAYMENT_PROVIDER` | — | `manual` (dev) ou `asaas` |
 | `ASAAS_API_KEY` / `ASAAS_SANDBOX` / `ASAAS_WEBHOOK_TOKEN` | se `asaas` | Credenciais Asaas |
@@ -316,6 +316,100 @@ venv/bin/coverage report --fail-under=70
 - [ ] Parcelamento (installments) e boleto no cartão.
 - [ ] `GET /checkouts/{id}` na reconciliação ativa (`sync_payments`) — hoje os checkouts são reconciliados apenas por webhook.
 - [ ] Expandir cobertura de testes além de 95% (meta mínima 70% no CI).
+
+---
+
+## Plano de layout (UI)
+
+> Estado: aprovado/planejado — pronto para execução.
+> Escopo: home, listagens, detalhes, navbar/footer, painéis, checkout/pagamento.
+> Direção visual: **moderno e confiável**. Paleta mantida: amarelo `#FFC107` / preto `#111` / branco.
+
+### Diagnóstico atual
+
+- **Navbar**: preta, sticky — funcional mas "crua" (sem contador de carrinho, sem CTA, mobile básico).
+- **Home**: hero centrado simples + 3 cards + 4 passos + 3 destaques + faixa escura. Sem prova social, sem destaques de produtos/serviços, sem "por que confiar".
+- **Listagens** (loja/serviços/portfólio): topo título+busca + chips + grid uniforme de cards. Sem card em destaque, sem contexto/suporte.
+- **Detalhes** (produto/serviço): 2 colunas básicas, sem galeria clicável, sem stock/garantia, sem relacionados.
+- **Painéis** (afiliado/prestador/me): stat-cards + tabelas direto, sem cabeçalho de página, sem consistência entre páginas.
+- **Checkout/pagamento**: estrutura 2-col boa; stepper frágil (3 badges soltos), confirmações ok.
+- **Footer**: 3 colunas sem contato/newsletter.
+
+### Direção visual (padrão Feature-Rich Showcase, mantendo paleta)
+
+- Tipografia display forte (Inter já carregada), espaçamento generoso (`--space-16/20`).
+- Hierarquia clara: **eyebrow → título → sub → CTA** em todos os cabeçalhos de seção.
+- Prova social (stats/trust badges) no hero e antes do CTA final.
+- Cards com hover lift, imagem com zoom, foco visível, `prefers-reduced-motion` preservado.
+
+### Fase 1 — Fundação: novos componentes CSS
+
+`static/css/components.css` (adicionar; tokens/styles.css ficam como base):
+
+1. `.page-header` — padrão de topo para listagens/painéis: eyebrow + título + descrição + ações à direita.
+2. `.hero` — evoluir: lado esquerdo texto/CTA + **stats strip** (`hero-stats`) e badge de credibilidade.
+3. `.step-timeline` — passos numerados com linha conectora (home + planos).
+4. `.featured-card` / `.card-media` — card destaque com imagem em zoom no hover.
+5. `.gallery-thumb` — miniaturas clicáveis no detalhe do produto.
+6. `.trust-row` — badges de confiança (pagamento seguro, garantia, atendimento) reutilizável.
+7. `.stepper` — fluxo carrinho/pagamento/confirmação com círculos numerados + linha.
+8. `.panel-header`, `.stat-card__icon` — cabeçalhos e stat-cards melhorados p/ painéis.
+9. `.newsletter`, `.footer-contact` — footer rico.
+10. `.related-row` — produtos/serviços relacionados.
+11. Responsividade 375/768/1024/1440 + `prefers-reduced-motion`.
+
+### Fase 2 — Home (`templates/home.html` + `apps/core/views.py`)
+
+- **Hero**: eyebrow ("Elétrica residencial e comercial"), título display, sub, CTAs duplos, **stats strip** (ex.: "500+ projetos · 4,9/5 satisfação · resposta em 24h" — valores estáticos de marketing no template, sem model), trust badges.
+- **"O que oferece"**: cards enriquecidos (ícone em tile colorido, título, descrição, CTA-link "Ver loja →").
+- **Nova seção "Destaques"**: grid de **produtos `featured=True`** (o campo já existe) e/ou serviços — exige passar queryset na `home_view` (hoje passa `{}`).
+- **"Como funciona"**: timeline horizontal numerada com linha.
+- **Manutenção**: manter faixa escura, refinar CTA.
+
+Pendência de decisão: usar estatísticas reais ou placeholders de marketing?
+
+### Fase 3 — Listagens (loja/serviços/portfólio)
+
+- Topo vira `.page-header` (eyebrow + título + descrição + busca).
+- Chips de categoria mantidos (podem virar "filtros em linha com contagem" se quiser).
+- **1º card em destaque** (span maior, `featured`) quando houver itens em destaque; demais em grid uniforme `col-lg-3`.
+- Card: imagem zoom no hover, chip de categoria, preço `badge-brand`, CTA "Ver detalhes →".
+- Portfolio: manter grid, adicionar imagem cover com overlay de título.
+
+### Fase 4 — Detalhes (produto/serviço)
+
+- **Produto**: breadcrumb (mantém) + galeria com **miniaturas clicáveis** (já há imagens na listagem) + coluna de compra: preço display, estoque ("Em estoque" badge verde / "Esgotado"), qty + add-to-cart, **trust-row** (pagamento seguro, garantia, entrega), **relacionados** (mesma categoria).
+- **Serviço**: similar — preço "A partir de", nº de profissionais, CTA "Pedir orçamento", **serviços relacionados**.
+- Portfólio: detalhe maior com descrição completa + CTA "Pedir serviço" quando prestador ativo.
+
+### Fase 5 — Navbar & Footer
+
+- **Navbar**: adicionar **badge de contagem no carrinho** (o `Cart` é por sessão — count via template do cart do context), CTA "Entrar" mais proeminente, item "Manutenção" já existe. Manter busca e dropdown.
+- **Footer**: 4 colunas — marca+social (mantém) + **contato** (telefone/e-mail placeholders ou do `SiteSettings` se houver) + navegação (mantém) + **newsletter** (form estático visual, sem backend) + linha de copyright com links (Privacidade/Termos).
+
+### Fase 6 — Painéis (afiliado/prestador/me)
+
+- Padrão `.page-header` em todos (título + descrição + ação primária).
+- **Affiliate**: manter stat-cards (refinar com ícone), melhorar card de link (copiar com feedback), tabelas com `.table-brand` (mantém), separar "Indicações" e "Saques" com sub-cabeçalhos.
+- **Prestador**: `my_services` grid mantém; `provider_requests`/`visits`/`my_requests` ganham header padrão + contagem de pendências.
+- **Me**: perfil header + stat-cards + lista de pedidos (mantém), refinar cards.
+
+### Fase 7 — Checkout & pagamento
+
+- **Checkout**: stepper novo (círculos numerados conectados), cards de pagamento mantêm (`form-check-input-card` com `:has()`), resumo do pedido sticky mantém, trust-row abaixo do botão.
+- **Confirmações** (pix/card/boleto): manter card `auth-panel`, refinar ícone + copy; `checkout_callback` ok.
+
+### Fase 8 — Verificação
+
+- `ruff check .`, `manage.py check`, `makemigrations --check`, testes `apps` (smoke render com test client nas rotas-chave).
+- **Atenção**: a suíte tem 1 falha + 9 erros no estado atual (ex.: `test_affiliate_withdrawal_success`). Confirmar se são pré-existentes ou causados pela mudança de marca antes de atribuir — entra como primeira sub-etapa da execução.
+
+### Decisões pendentes
+
+1. Stats/trust no hero e "prova social": valores **estáticos de marketing** no template (recomendado) ou sem números inventados.
+2. Footer/newsletter: form **visual sem backend** (recomendado: omitir para evitar UX falsa) ou incluir.
+3. Destaques na home/listagens: usar o campo `featured` existente (sem migração) — ok? Mostrar também **portfólio recente** na home?
+4. 1 falha + 9 erros de teste atuais: investigar/corrigir como parte da tarefa ou apenas isolar para não mascarar o resultado do layout.
 
 ---
 

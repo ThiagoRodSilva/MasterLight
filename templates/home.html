@@ -1,128 +1,228 @@
 {% extends "base.html" %}
 {% block content %}
-<section class="hero py-5">
+<section class="hero hero--split">
   <div class="container">
-    <h1 class="display-4 fw-bold mb-3">{{ BRAND_NAME }}</h1>
-    <p class="lead mb-4">{{ BRAND_TAGLINE }}</p>
-    <div class="d-flex flex-wrap gap-2 mb-4">
+    <div class="hero-inner">
+      <div class="reveal">
+        <span class="hero-badge"><i class="bi bi-patch-check"></i> Elétrica com garantia e pagamento seguro</span>
+        <h1 class="mb-3">{{ BRAND_NAME }}</h1>
+        <p class="lead mb-4">{{ BRAND_TAGLINE }}</p>
+        <div class="d-flex flex-wrap gap-2 mb-4">
+          {% if STORE_ENABLED %}
+          <a href="{% url 'shop-list' %}" class="btn btn-gradient btn-lg">Ver produtos</a>
+          {% endif %}
+          {% if SERVICES_ENABLED %}
+          <a href="{% url 'services-list' %}" class="btn btn-brand-ghost btn-lg">Pedir um serviço</a>
+          {% endif %}
+        </div>
+        {% if stats %}
+        <div class="hero-stats reveal reveal-delay-2">
+          {% for s in stats %}
+          <div>
+            <strong>{{ s.value }}</strong>
+            <span>{{ s.label }}</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+      <div class="d-none d-lg-block reveal reveal-delay-2">
+        <div class="card border-0 shadow-lg-custom rounded-4 bg-white">
+          <div class="card-body p-4">
+            <h5 class="mb-3">Por que a {{ BRAND_NAME }}?</h5>
+            <ul class="list-unstyled mb-0 d-grid gap-3">
+              <li class="d-flex gap-3">
+                <div class="avatar avatar-sm"><i class="bi bi-shield-check"></i></div>
+                <div>
+                  <h6 class="mb-1">Pagamento seguro</h6>
+                  <p class="text-muted-custom small mb-0">Pix, cartão e boleto com seus dados protegidos.</p>
+                </div>
+              </li>
+              <li class="d-flex gap-3">
+                <div class="avatar avatar-sm"><i class="bi bi-lightning-charge"></i></div>
+                <div>
+                  <h6 class="mb-1">Atendimento rápido</h6>
+                  <p class="text-muted-custom small mb-0">Orçamentos ágeis e suporte em cada etapa.</p>
+                </div>
+              </li>
+              <li class="d-flex gap-3">
+                <div class="avatar avatar-sm"><i class="bi bi-patch-check"></i></div>
+                <div>
+                  <h6 class="mb-1">Garantia em cada serviço</h6>
+                  <p class="text-muted-custom small mb-0">Tranquilidade em cada compra e serviço realizado.</p>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section section-light-alt">
+  <div class="container">
+    <div class="section-head section-head--center reveal">
+      <span class="section-head__eyebrow">Soluções</span>
+      <h2>O que a {{ BRAND_NAME }} oferece</h2>
+      <p>Escolha a melhor opção para o seu projeto</p>
+    </div>
+    <div class="row g-4">
       {% if STORE_ENABLED %}
-      <a href="{% url 'shop-list' %}" class="btn btn-soft-dark btn-lg">Ver produtos</a>
+      <div class="col-md-4 reveal reveal-delay-1">
+        <div class="card card-elevated card-bordered-start-brand h-100">
+          <div class="card-body text-center p-4">
+            <i class="bi bi-box-seam display-5 text-brand-dark mb-3"></i>
+            <h5 class="mb-2">Loja e produtos</h5>
+            <p class="text-muted-custom mb-3">Compre produtos com pagamento via Pix — rápido e seguro.</p>
+            <a href="{% url 'shop-list' %}" class="btn btn-gradient btn-sm">Ver loja</a>
+          </div>
+        </div>
+      </div>
       {% endif %}
       {% if SERVICES_ENABLED %}
-      <a href="{% url 'services-list' %}" class="btn btn-outline-dark btn-lg">Pedir um serviço</a>
+      <div class="col-md-4 reveal reveal-delay-2">
+        <div class="card card-elevated card-bordered-start-brand h-100">
+          <div class="card-body text-center p-4">
+            <i class="bi bi-wrench-adjustable display-5 text-brand-dark mb-3"></i>
+            <h5 class="mb-2">Prestadores</h5>
+            <p class="text-muted-custom mb-3">Publique seu portfólio e receba pedidos de orçamento.</p>
+            <a href="{% url 'portfolio-list' %}" class="btn btn-gradient btn-sm">Ver portfólios</a>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+      {% if AFFILIATES_ENABLED %}
+      <div class="col-md-4 reveal reveal-delay-3">
+        <div class="card card-elevated card-bordered-start-brand h-100">
+          <div class="card-body text-center p-4">
+            <i class="bi bi-people display-5 text-brand-dark mb-3"></i>
+            <h5 class="mb-2">Afiliados</h5>
+            <p class="text-muted-custom mb-3">Divulgue a {{ BRAND_NAME }} e ganhe comissão por cada venda indicada.</p>
+            <a href="{% url 'affiliate-landing' %}" class="btn btn-gradient btn-sm">Seja um afiliado</a>
+          </div>
+        </div>
+      </div>
       {% endif %}
     </div>
-    <div class="d-flex flex-wrap gap-4 small fw-semibold">
-      <span class="d-inline-flex align-items-center gap-1"><i class="bi bi-shield-check"></i> Pagamento seguro</span>
-      <span class="d-inline-flex align-items-center gap-1"><i class="bi bi-lightning-charge"></i> Atendimento rápido</span>
-      <span class="d-inline-flex align-items-center gap-1"><i class="bi bi-patch-check"></i> Garantia em cada serviço</span>
-    </div>
   </div>
 </section>
-<section class="container py-5">
-  <div class="row g-4">
-    {% if STORE_ENABLED %}
-    <div class="col-md-4">
-      <div class="card card-interactive card-elevated h-100 border-0">
-        <div class="card-body text-center">
-          <i class="bi bi-box-seam display-5 text-brand"></i>
-          <h5 class="mt-3">Loja e produtos</h5>
-          <p class="text-muted">Compre produtos com pagamento via Pix — rápido e seguro.</p>
-          <a href="{% url 'shop-list' %}" class="btn btn-sm btn-brand">Ver loja</a>
-        </div>
-      </div>
-    </div>
-    {% endif %}
-    {% if SERVICES_ENABLED %}
-    <div class="col-md-4">
-      <div class="card card-interactive card-elevated h-100 border-0">
-        <div class="card-body text-center">
-          <i class="bi bi-wrench-adjustable display-5 text-brand"></i>
-          <h5 class="mt-3">Prestadores</h5>
-          <p class="text-muted">Publique seu portfólio e receba pedidos de orçamento.</p>
-          <a href="{% url 'portfolio-list' %}" class="btn btn-sm btn-brand">Ver portfólios</a>
-        </div>
-      </div>
-    </div>
-    {% endif %}
-    {% if AFFILIATES_ENABLED %}
-    <div class="col-md-4">
-      <div class="card card-interactive card-elevated h-100 border-0">
-        <div class="card-body text-center">
-          <i class="bi bi-people display-5 text-brand"></i>
-          <h5 class="mt-3">Afiliados</h5>
-          <p class="text-muted">Divulgue a {{ BRAND_NAME }} e ganhe comissão por cada venda indicada.</p>
-          <a href="{% url 'affiliate-landing' %}" class="btn btn-sm btn-brand">Seja um afiliado</a>
-        </div>
-      </div>
-    </div>
-    {% endif %}
-  </div>
-</section>
-<section class="bg-brand-50 py-5">
+
+{% if products %}
+<section class="section section-light">
   <div class="container">
-    <h2 class="text-center mb-4">Como funciona</h2>
+    <div class="section-head d-flex justify-content-between align-items-end gap-3 flex-wrap reveal">
+      <div>
+        <span class="section-head__eyebrow">Destaques da loja</span>
+        <h2>Produtos em destaque</h2>
+      </div>
+      <a href="{% url 'shop-list' %}" class="btn btn-outline-brand">Ver todos</a>
+    </div>
     <div class="row g-4">
-      <div class="col-md-3">
+      {% for p in products %}
+      <div class="col-sm-6 col-lg-4 reveal">
+        <div class="featured-card h-100">
+          <a href="{% url 'shop-detail' p.slug %}" class="text-decoration-none text-strong">
+            <div class="card-media">
+              {% if p.cover %}
+              <img src="{{ p.cover.image }}" alt="{{ p.cover.alt }}">
+              {% endif %}
+            </div>
+            <div class="card-body d-flex flex-column">
+              <h5 class="card-title mb-1">{{ p.name }}</h5>
+              <span class="text-muted-custom small mb-2">{{ p.category|default:"Geral" }}</span>
+              <div class="d-flex align-items-center justify-content-between gap-2 mt-auto">
+                <span class="badge badge-brand">R$ {{ p.price|floatformat:2 }}</span>
+                <span class="btn btn-gradient btn-sm">Ver detalhes</span>
+              </div>
+            </div>
+          </a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% if portfolio %}
+<section class="section section-light-alt">
+  <div class="container">
+    <div class="section-head d-flex justify-content-between align-items-end gap-3 flex-wrap reveal">
+      <div>
+        <span class="section-head__eyebrow">Trabalhos recentes</span>
+        <h2>Portfólio de prestadores</h2>
+      </div>
+      <a href="{% url 'portfolio-list' %}" class="btn btn-outline-brand">Ver portfólio</a>
+    </div>
+    <div class="row g-4">
+      {% for item in portfolio %}
+      <div class="col-md-4 reveal">
+        <a href="{% url 'portfolio-detail' item.pk %}" class="featured-card h-100 text-decoration-none text-strong">
+          <div class="card-media">
+            {% if item.image %}
+            <img src="{{ item.image }}" alt="{{ item.title }}">
+            {% endif %}
+          </div>
+          <div class="card-body">
+            <h5 class="card-title">{{ item.title }}</h5>
+            {% if item.category %}<span class="badge badge-brand">{{ item.category }}</span>{% endif %}
+          </div>
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<section class="section section-light">
+  <div class="container">
+    <div class="section-head section-head--center reveal">
+      <span class="section-head__eyebrow">Simples e rápido</span>
+      <h2>Como funciona</h2>
+      <p>Do orçamento à manutenção, tudo em poucos passos.</p>
+    </div>
+    <div class="row g-4">
+      <div class="col-md-3 reveal reveal-delay-1">
         <div class="text-center">
-          <div class="avatar avatar-lg mx-auto bg-brand-100"><i class="bi bi-search text-brand-darker"></i></div>
+          <div class="avatar avatar-lg mx-auto"><i class="bi bi-search fs-4"></i></div>
           <h5 class="mt-3">1. Explore</h5>
-          <p class="text-muted mb-0">Navegue pela loja, conheça os prestadores e veja os planos de manutenção.</p>
+          <p class="text-muted-custom mb-0">Navegue pela loja, conheça os prestadores e veja os planos de manutenção.</p>
         </div>
       </div>
-      <div class="col-md-3">
+      <div class="col-md-3 reveal reveal-delay-2">
         <div class="text-center">
-          <div class="avatar avatar-lg mx-auto bg-brand-100"><i class="bi bi-clipboard-check text-brand-darker"></i></div>
+          <div class="avatar avatar-lg mx-auto"><i class="bi bi-clipboard-check fs-4"></i></div>
           <h5 class="mt-3">2. Solicite</h5>
-          <p class="text-muted mb-0">Peça um orçamento e escolha o prestador ideal para o seu projeto.</p>
+          <p class="text-muted-custom mb-0">Peça um orçamento e escolha o prestador ideal para o seu projeto.</p>
         </div>
       </div>
-      <div class="col-md-3">
+      <div class="col-md-3 reveal reveal-delay-3">
         <div class="text-center">
-          <div class="avatar avatar-lg mx-auto bg-brand-100"><i class="bi bi-credit-card text-brand-darker"></i></div>
+          <div class="avatar avatar-lg mx-auto"><i class="bi bi-credit-card fs-4"></i></div>
           <h5 class="mt-3">3. Pague</h5>
-          <p class="text-muted mb-0">Aprove a proposta e pague com Pix, cartão ou boleto, com total segurança.</p>
+          <p class="text-muted-custom mb-0">Aprove a proposta e pague com Pix, cartão ou boleto, com total segurança.</p>
         </div>
       </div>
-      <div class="col-md-3">
+      <div class="col-md-3 reveal reveal-delay-4">
         <div class="text-center">
-          <div class="avatar avatar-lg mx-auto bg-brand-100"><i class="bi bi-tools text-brand-darker"></i></div>
+          <div class="avatar avatar-lg mx-auto"><i class="bi bi-tools fs-4"></i></div>
           <h5 class="mt-3">4. Mantenha</h5>
-          <p class="text-muted mb-0">Acompanhe a entrega e programe a manutenção para manter tudo em ordem.</p>
+          <p class="text-muted-custom mb-0">Acompanhe a entrega e programe a manutenção para manter tudo em ordem.</p>
         </div>
       </div>
     </div>
   </div>
 </section>
-<section class="container py-5">
-  <div class="row g-3">
-    <div class="col-md-4">
-      <div class="d-flex align-items-center gap-3">
-        <div class="avatar avatar-sm bg-brand-100"><i class="bi bi-shield-check text-brand-darker"></i></div>
-        <div>
-          <h6 class="mb-1">Pagamento seguro</h6>
-          <p class="text-muted small mb-0">Pix, cartão e boleto com seus dados protegidos.</p>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-4">
-      <div class="d-flex align-items-center gap-3">
-        <div class="avatar avatar-sm bg-brand-100"><i class="bi bi-headset text-brand-darker"></i></div>
-        <div>
-          <h6 class="mb-1">Atendimento próximo</h6>
-          <p class="text-muted small mb-0">Suporte rápido em todas as etapas da compra.</p>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-4">
-      <div class="d-flex align-items-center gap-3">
-        <div class="avatar avatar-sm bg-brand-100"><i class="bi bi-patch-check text-brand-darker"></i></div>
-        <div>
-          <h6 class="mb-1">Garantia</h6>
-          <p class="text-muted small mb-0">Tranquilidade em cada compra e serviço realizado.</p>
-        </div>
-      </div>
-    </div>
+
+{% if MAINTENANCE_ENABLED %}
+<section class="section section-brand">
+  <div class="container text-center">
+    <h2 class="text-white mb-3 reveal">Precisa de manutenção recorrente?</h2>
+    <p class="text-white-50 mb-4 reveal reveal-delay-1">Conheça nossos planos de manutenção preventiva e mantenha sua instalação sempre em dia.</p>
+    <a href="{% url 'services-plan-list' %}" class="btn btn-ghost-light btn-lg reveal reveal-delay-2">Ver planos</a>
   </div>
 </section>
+{% endif %}
 {% endblock %}

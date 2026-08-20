@@ -8,6 +8,7 @@ from apps.tests.helpers import make_user
 
 
 class TestGetGateway(TestCase):
+    @override_settings(PAYMENT_PROVIDER="manual", ASAAS_API_KEY="")
     def test_default_returns_manual(self):
         assert isinstance(get_gateway(), ManualGateway)
 

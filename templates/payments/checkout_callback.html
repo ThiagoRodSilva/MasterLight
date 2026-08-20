@@ -2,12 +2,12 @@
 {% block content %}
 <div class="container py-5">
   <div class="row justify-content-center">
-    <div class="col-md-8">
-      <div class="card card-elevated border-0 auth-panel mx-auto">
+    <div class="col-md-8 reveal">
+      <div class="card card-elevated card-bordered-start-brand border-0 auth-panel mx-auto">
         <div class="card-body p-5 text-center">
           {% if outcome == "success" %}
-          <div class="bg-success bg-opacity-10 icon-circle d-inline-flex mb-4">
-            <i class="bi bi-check2-circle fs-1 text-success"></i>
+          <div class="bg-brand-dark icon-circle d-inline-flex mb-4">
+            <i class="bi bi-check2-circle fs-1 text-white"></i>
           </div>
           <h1 class="mb-2">Pagamento concluído</h1>
           <div class="alert alert-success mb-4">
@@ -24,8 +24,8 @@
             Se desejar, tente novamente.
           </div>
           {% else %}
-          <div class="bg-info bg-opacity-10 icon-circle d-inline-flex mb-4">
-            <i class="bi bi-info-circle fs-1 text-info"></i>
+          <div class="bg-brand-dark icon-circle d-inline-flex mb-4">
+            <i class="bi bi-info-circle fs-1 text-white"></i>
           </div>
           <h1 class="mb-2">Link expirado</h1>
           <div class="alert alert-warning mb-4">

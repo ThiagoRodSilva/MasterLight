@@ -3,36 +3,43 @@
 <div class="container py-5">
   <div class="row g-4">
     <div class="col-lg-8">
-      <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
-        <h1 class="h3 mb-0">Finalizar pedido</h1>
-        <div class="d-flex align-items-center gap-2 small ms-auto">
-          <span class="badge badge-soft">1 Carrinho</span>
-          <i class="bi bi-chevron-right text-muted-brand"></i>
-          <span class="badge badge-brand">2 Pagamento</span>
-          <i class="bi bi-chevron-right text-muted-brand"></i>
-          <span class="badge badge-soft">3 Confirmação</span>
-        </div>
+      <h1 class="h3 mb-4 reveal">Finalizar pedido</h1>
+      <div class="stepper reveal reveal-delay-1" aria-label="Etapas do pedido">
+        <span class="stepper__step is-done">
+          <span class="stepper__num" aria-hidden="true">1</span>
+          <span class="stepper__label">Carrinho</span>
+        </span>
+        <span class="stepper__line is-done" aria-hidden="true"></span>
+        <span class="stepper__step is-active">
+          <span class="stepper__num" aria-hidden="true">2</span>
+          <span class="stepper__label">Pagamento</span>
+        </span>
+        <span class="stepper__line" aria-hidden="true"></span>
+        <span class="stepper__step">
+          <span class="stepper__num" aria-hidden="true">3</span>
+          <span class="stepper__label">Confirmação</span>
+        </span>
       </div>
 
       <form method="post">
         {% csrf_token %}
         {% if CHECKOUT_HOSTED %}
-        <div class="card card-elevated border-0 mb-4">
+        <div class="card card-elevated border-0 mb-4 reveal reveal-delay-1">
           <div class="card-body p-4">
             <div class="d-flex align-items-center gap-3">
-              <div class="bg-brand-100 rounded-circle p-3 d-flex align-items-center justify-content-center">
-                <i class="bi bi-shield-check fs-4 text-brand-dark"></i>
+              <div class="bg-brand-dark rounded-circle p-3 d-flex align-items-center justify-content-center">
+                <i class="bi bi-shield-check fs-4 text-white"></i>
               </div>
               <div>
                 <h6 class="mb-1">Pagamento seguro com Asaas</h6>
-                <p class="mb-0 small text-muted">Você será direcionado para a página de pagamento (Pix, cartão de crédito ou boleto).</p>
+                <p class="mb-0 small text-muted-custom">Você será direcionado para a página de pagamento (Pix, cartão de crédito ou boleto).</p>
               </div>
             </div>
           </div>
         </div>
-        <button class="btn btn-brand btn-lg w-100"><i class="bi bi-arrow-right me-2"></i>Pagar com Asaas</button>
+        <button class="btn btn-gradient btn-lg w-100 reveal reveal-delay-2"><i class="bi bi-arrow-right me-2"></i>Pagar com Asaas</button>
         {% else %}
-        <div class="card card-elevated border-0 mb-4">
+        <div class="card card-elevated border-0 mb-4 reveal reveal-delay-1">
           <div class="card-body p-4">
             <h6 class="mb-3">Forma de pagamento</h6>
             <div class="row g-3" role="radiogroup" aria-label="Forma de pagamento">
@@ -84,12 +91,12 @@
             </div>
           </div>
         </div>
-        <button class="btn btn-brand btn-lg w-100" data-loading><i class="bi bi-check2-circle me-2"></i>Confirmar e pagar</button>
+        <button class="btn btn-gradient btn-lg w-100 reveal reveal-delay-2" data-loading><i class="bi bi-check2-circle me-2"></i>Confirmar e pagar</button>
         {% endif %}
       </form>
     </div>
 
-    <div class="col-lg-4">
+    <div class="col-lg-4 reveal reveal-delay-1">
       <div class="card card-elevated border-0 sticky-top sticky-offset">
         <div class="card-body p-4">
           <h6 class="mb-3">Resumo do pedido</h6>
@@ -99,7 +106,7 @@
               <li class="d-flex justify-content-between py-2 border-bottom">
                 <div>
                   <div class="fw-medium small">{{ line.name }}</div>
-                  <div class="text-muted-brand small">Qtd: {{ line.qty }} × R$ {{ line.price|floatformat:2 }}</div>
+                  <div class="text-muted-custom small">Qtd: {{ line.qty }} × R$ {{ line.price|floatformat:2 }}</div>
                 </div>
                 <span class="fw-semibold">R$ {{ line.subtotal|floatformat:2 }}</span>
               </li>
@@ -109,7 +116,7 @@
           <hr>
           <div class="d-flex justify-content-between fw-bold fs-5">
             <span>Total</span>
-            <span>R$ {{ cart.total|floatformat:2 }}</span>
+            <span class="text-brand-darker">R$ {{ cart.total|floatformat:2 }}</span>
           </div>
         </div>
       </div>

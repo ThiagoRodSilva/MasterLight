@@ -1,16 +1,17 @@
-<footer class="bg-dark text-white mt-auto py-5">
+<footer class="footer-custom">
   <div class="container">
-    <div class="row g-4">
-      <div class="col-md-5">
+    <div class="footer-columns">
+      <div>
         <strong class="fs-5">{{ BRAND_NAME }}</strong><br>
         <small class="text-white-50">{{ BRAND_TAGLINE }}</small>
-        <div class="d-flex gap-3 mt-3 fs-5">
+        <p class="small text-white-50 mt-3 mb-3">Serviços elétricos, loja de materiais e programa de indicação em um só lugar.</p>
+        <div class="d-flex gap-3 fs-5">
           <a class="text-white text-decoration-none" href="#" aria-label="Instagram"><i class="bi bi-instagram"></i></a>
           <a class="text-white text-decoration-none" href="#" aria-label="Facebook"><i class="bi bi-facebook"></i></a>
           <a class="text-white text-decoration-none" href="#" aria-label="WhatsApp"><i class="bi bi-whatsapp"></i></a>
         </div>
       </div>
-      <div class="col-md-4">
+      <div>
         <h6 class="text-uppercase small text-white-50 mb-3">Navegação</h6>
         <ul class="list-unstyled small mb-0">
           {% if STORE_ENABLED %}
@@ -28,13 +29,21 @@
           {% endif %}
         </ul>
       </div>
-      <div class="col-md-3">
+      <div>
         <h6 class="text-uppercase small text-white-50 mb-3">Pagamento</h6>
         <div class="d-flex flex-wrap gap-2">
-          <span class="badge badge-brand"><i class="bi bi-qr-code me-1"></i>Pix</span>
-          <span class="badge badge-brand"><i class="bi bi-credit-card me-1"></i>Cartão</span>
-          <span class="badge badge-brand"><i class="bi bi-bank me-1"></i>Boleto</span>
+          <span class="badge badge-dark"><i class="bi bi-qr-code me-1"></i>Pix</span>
+          <span class="badge badge-dark"><i class="bi bi-credit-card me-1"></i>Cartão</span>
+          <span class="badge badge-dark"><i class="bi bi-bank me-1"></i>Boleto</span>
         </div>
+      </div>
+      <div>
+        <h6 class="text-uppercase small text-white-50 mb-3">Contato</h6>
+        <ul class="footer-contact">
+          <li><i class="bi bi-geo-alt"></i><span>Atendimento em toda a região</span></li>
+          <li><i class="bi bi-envelope"></i><a href="mailto:contato@masterlight.com.br">contato@masterlight.com.br</a></li>
+          <li><i class="bi bi-clock"></i><span>Seg. a Sáb., 8h às 18h</span></li>
+        </ul>
       </div>
     </div>
   </div>

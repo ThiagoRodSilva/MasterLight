@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="container py-5">
-  <h1 class="mb-4">Minhas solicitações</h1>
-  <div class="card card-elevated">
+  <h1 class="mb-4 reveal">Minhas solicitações</h1>
+  <div class="card card-elevated reveal reveal-delay-1">
     <div class="table-responsive">
       <table class="table table-brand mb-0">
         <thead>
@@ -29,18 +29,18 @@
                 {{ r.get_status_display }}
               </span>
             </td>
-            <td>{% if r.prestador %}{{ r.prestador.email }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
-            <td>{% if r.final_price %}R$ {{ r.final_price|floatformat:2 }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+            <td>{% if r.prestador %}{{ r.prestador.email }}{% else %}<span class="text-muted-custom">—</span>{% endif %}</td>
+            <td>{% if r.final_price %}R$ {{ r.final_price|floatformat:2 }}{% else %}<span class="text-muted-custom">—</span>{% endif %}</td>
             <td>{{ r.created_at|date:"d/m/Y H:i" }}</td>
             <td class="text-end">
               <div class="d-flex gap-2 justify-content-end">
                 {% if r.status == "quoted" %}
-                <a href="{% url 'services-request-approve' r.pk %}" class="btn btn-brand btn-sm">Aprovar e pagar</a>
+                <a href="{% url 'services-request-approve' r.pk %}" class="btn btn-gradient btn-sm">Aprovar e pagar</a>
                 {% endif %}
                 {% if r.status == "pending" or r.status == "quoted" %}
                 <form method="post" action="{% url 'services-request-cancel' r.pk %}">
                   {% csrf_token %}
-                  <button class="btn btn-soft-dark btn-sm" type="submit">Cancelar</button>
+                  <button class="btn btn-outline-brand btn-sm" type="submit">Cancelar</button>
                 </form>
                 {% endif %}
               </div>
