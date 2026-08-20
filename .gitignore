@@ -185,3 +185,6 @@ deploy/.env.prod
 .env
 .env.local
 .env*
+
+# Folders
+.planning/

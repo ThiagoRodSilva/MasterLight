@@ -82,7 +82,10 @@ def create_referral_from_request(request, order):
 
     Comissao calculada sobre order.total (produtos + servicos + assinaturas).
     Bloqueia auto-referral (affil.user_id == request.user.pk).
+    Idempotente: se ja existe referral para este (affiliate, order), retorna o existente.
     """
+    from django.db import IntegrityError
+
     from apps.affiliate.models import AffiliateProfile, Referral
 
     ref_code = request.COOKIES.get(settings.AFFILIATE_COOKIE_NAME)
@@ -92,10 +95,15 @@ def create_referral_from_request(request, order):
     if not affil or affil.user_id == request.user.pk:
         return None
 
-    return Referral.objects.create(
-        affiliate=affil,
-        referred=request.user,
-        order=order,
-        commission_rate=affil.commission_rate,
-        commission_amount=order.total * affil.commission_rate,
-    )
+    # Tenta criar; se ja existe (unique constraint), busca o existente
+    try:
+        return Referral.objects.create(
+            affiliate=affil,
+            referred=request.user,
+            order=order,
+            commission_rate=affil.commission_rate,
+            commission_amount=order.total * affil.commission_rate,
+        )
+    except IntegrityError:
+        # Unique constraint violada - referral ja existe para este affiliate+order
+        return Referral.objects.filter(affiliate=affil, order=order, is_active=True).first()

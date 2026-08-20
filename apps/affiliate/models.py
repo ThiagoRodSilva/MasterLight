@@ -2,6 +2,7 @@
 
 from django.conf import settings
 from django.db import models
+from django.db.models import Q
 
 from apps.accounts.models import CustomUser
 from apps.core.models import BaseModel
@@ -80,6 +81,17 @@ class Referral(BaseModel):
     commission_rate = models.DecimalField(
         max_digits=5, decimal_places=4, default=settings.AFFILIATE_DEFAULT_COMMISSION_RATE
     )
+
+    class Meta:
+        verbose_name = "Indicação"
+        verbose_name_plural = "Indicações"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["affiliate", "order"],
+                condition=Q(order__isnull=False),
+                name="uniq_referral_affiliate_order",
+            )
+        ]
 
     def __str__(self) -> str:
         return f"Referral {self.affiliate.code} -> {self.status}"
