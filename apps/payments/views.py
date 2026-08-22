@@ -149,3 +149,4 @@ class CheckoutCallbackView(ClienteRequiredMixin, TemplateView):
         ctx["order"] = get_object_or_404(Order, pk=self.kwargs["order_pk"], user=self.request.user)
         ctx["outcome"] = self.kwargs.get("outcome", "success")
         return ctx
+

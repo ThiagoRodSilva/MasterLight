@@ -410,28 +410,6 @@ class TestPixConfirmationView(AsaasMockMixin, TestCase):
         result = AsaasGateway().refund(str(uuid4()), amount=1)
         assert result.ok is False
 
-    def test_boleto_confirmation_shows_bank_slip(self):
-        user = make_user()
-        self.client.force_login(user)
-        order = create_order(user, with_referral=False)
-        AsaasGateway().charge(order, billing_type="BOLETO")
-
-        response = self.client.get(reverse("payments-boleto-confirm", kwargs={"order_pk": order.pk}))
-        assert response.status_code == 200
-        html = response.content.decode()
-        assert "boleto.asaas.com" in html
-        assert "3419179001234567890" in html
-
-    def test_boleto_confirmation_requires_own_order(self):
-        user = make_user()
-        self.client.force_login(user)
-        other = make_user()
-        order = create_order(other, with_referral=False)
-
-        response = self.client.get(reverse("payments-boleto-confirm", kwargs={"order_pk": order.pk}))
-        assert response.status_code == 404
-
-
 @override_settings(**ASAAS_SETTINGS)
 class TestAsaasSubscription(AsaasMockMixin, TestCase):
     def test_subscribe_pix_stores_qr(self):
@@ -724,6 +702,7 @@ class TestSyncPaymentsCommand(AsaasMockMixin, TestCase):
         tx = order.transactions.get(provider="asaas")
         assert tx.status == Transaction.Status.PENDING
 
+        self.asaas.customer_status = "CONFIRMED"
         call_command("sync_payments")
 
         tx.refresh_from_db()

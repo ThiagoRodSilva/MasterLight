@@ -227,7 +227,7 @@ class TestAsaasCustomerData(AsaasMockMixin, TestCase):
         order = create_order(user)
         self.asaas.fail_customer_creation = True
 
-        with self.assertRaisesRegex(ValueError, "cadastre CPF, telefone e endereço"):
+        with self.assertRaisesRegex(ValueError, "Para realizar o pagamento, cadastre CPF, telefone e endereço no seu perfil."):
             AsaasGateway().charge(order, billing_type="PIX")
 
     def test_checkout_customer_data_includes_cpf_and_address(self):

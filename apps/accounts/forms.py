@@ -5,7 +5,8 @@ from django import forms
 from apps.core.models import SiteSettings
 from apps.core.validators import validate_brazilian_cpf
 
-from .models import CustomUser, ProviderApplication
+from .models import CustomUser
+from .services import complete_social_signup, create_user_profile, update_user_profile
 
 _ADDRESS_FIELDS = ["street", "number", "city", "state", "zip_code", "country"]
 
@@ -26,7 +27,81 @@ def _address_common_fields():
     ]
 
 
-class CustomSignupForm(forms.Form):
+class BaseAccountFormMixin:
+    """Mixin base com campos e validadores comuns para forms de conta."""
+
+    def _add_common_fields(self):
+        """Adiciona campos comuns: cpf, telefone, endereço."""
+        self.fields["cpf"] = forms.CharField(
+            max_length=14,
+            label="CPF",
+            validators=[validate_brazilian_cpf],
+            help_text="Usado para emitir cobranças.",
+        )
+        self.fields["telefone"] = forms.CharField(
+            max_length=20,
+            label="Telefone",
+            help_text="Usado pelo gateway de pagamento.",
+        )
+        for name, field in _address_common_fields():
+            self.fields[name] = field
+
+    def clean_cpf(self):
+        return _only_digits(self.cleaned_data.get("cpf"))
+
+    def clean_telefone(self):
+        return _only_digits(self.cleaned_data.get("telefone"))
+
+    def clean_zip_code(self):
+        return _only_digits(self.cleaned_data.get("zip_code"))
+
+
+class RoleFieldMixin:
+    """Mixin para campo role dinâmico baseado em SiteSettings."""
+
+    def _add_role_field(self, initial=CustomUser.Role.CLIENTE):
+        """Adiciona campo role com choices baseados nas configurações do site."""
+        site_settings = SiteSettings.load()
+        choices = [(CustomUser.Role.CLIENTE, "Cliente")]
+        if site_settings.affiliates_enabled:
+            choices.append((CustomUser.Role.AFILIADO, "Afiliado"))
+        if site_settings.provider_registration_enabled:
+            choices.append((CustomUser.Role.PRESTADOR, "Prestador"))
+        self.fields["role"] = CustomUser._meta.get_field("role").formfield(
+            choices=choices,
+            initial=initial,
+            label="Função",
+            required=True,
+        )
+
+    def clean_role(self):
+        role = self.cleaned_data.get("role")
+        site_settings = SiteSettings.load()
+        if (role == CustomUser.Role.PRESTADOR) and not site_settings.provider_registration_enabled:
+            raise forms.ValidationError("O cadastro de prestadores está desabilitado.")
+        if (role == CustomUser.Role.AFILIADO) and not site_settings.affiliates_enabled:
+            raise forms.ValidationError("O cadastro de afiliados está desabilitado.")
+        return role
+
+
+class AddressFormMixin:
+    """Mixin para upsert de endereço (create/update do primeiro ativo)."""
+
+    def _upsert_address(self, user):
+        """Cria ou atualiza o primeiro endereço ativo do usuário."""
+        from apps.checkout.models import Address
+
+        data = {field: self.cleaned_data[field] for field in _ADDRESS_FIELDS}
+        address = user.addresses.filter(is_active=True).first()
+        if address is None:
+            Address.objects.create(user=user, **data)
+        else:
+            for field, value in data.items():
+                setattr(address, field, value)
+            address.save(update_fields=_ADDRESS_FIELDS)
+
+
+class CustomSignupForm(BaseAccountFormMixin, RoleFieldMixin, forms.Form):
     """Form de signup do allauth com role, CPF/telefone e endereço.
 
     allauth carrega dinamicamente esta classe via ACCOUNT_SIGNUP_FORM_CLASS e
@@ -41,157 +116,46 @@ class CustomSignupForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        settings = SiteSettings.load()
-        choices = [(CustomUser.Role.CLIENTE, "Cliente")]
-        if settings.affiliates_enabled:
-            choices.append((CustomUser.Role.AFILIADO, "Afiliado"))
-        if settings.provider_registration_enabled:
-            choices.append((CustomUser.Role.PRESTADOR, "Prestador"))
-        self.fields["role"] = CustomUser._meta.get_field("role").formfield(
-            choices=choices,
-            initial=CustomUser.Role.CLIENTE,
-            required=True,
-        )
-        self.fields["cpf"] = forms.CharField(
-            max_length=14,
-            label="CPF",
-            validators=[validate_brazilian_cpf],
-            help_text="Usado para emitir cobranças.",
-        )
-        self.fields["telefone"] = forms.CharField(
-            max_length=20,
-            label="Telefone",
-            help_text="Usado pelo gateway de pagamento.",
-        )
-        self.fields["bio"] = forms.CharField(
-            widget=forms.Textarea,
-            required=False,
-            label="Bio / especialidades",
-            help_text="Aparece no seu perfil público após a aprovação.",
-        )
-        for name, field in _address_common_fields():
-            self.fields[name] = field
-
-    def clean_role(self):
-        role = self.cleaned_data.get("role")
-        if (role == CustomUser.Role.PRESTADOR) and not SiteSettings.load().provider_registration_enabled:
-            raise forms.ValidationError("O cadastro de prestadores está desabilitado.")
-        return role
-
-    def clean_cpf(self):
-        return _only_digits(self.cleaned_data.get("cpf"))
-
-    def clean_telefone(self):
-        return _only_digits(self.cleaned_data.get("telefone"))
-
-    def clean_zip_code(self):
-        return _only_digits(self.cleaned_data.get("zip_code"))
+        self._add_role_field()
+        self._add_common_fields()
 
     def signup(self, request, user):
-        from apps.checkout.models import Address
-
         role = self.cleaned_data.get("role")
-        user.cpf = self.cleaned_data["cpf"]
-        user.telefone = self.cleaned_data["telefone"]
-        if role == CustomUser.Role.PRESTADOR:
-            # Candidato: mantém role=cliente até a aprovação manual do admin.
-            user.role = CustomUser.Role.CLIENTE
-            user.save(update_fields=["role", "cpf", "telefone"])
-            ProviderApplication.objects.create(user=user, bio=self.cleaned_data.get("bio") or "")
-        else:
-            user.role = role if role == CustomUser.Role.AFILIADO else CustomUser.Role.CLIENTE
-            user.save(update_fields=["role", "cpf", "telefone"])
-        Address.objects.create(
+        is_provider = role == CustomUser.Role.PRESTADOR
+        address_data = {
+            "street": self.cleaned_data["street"],
+            "number": self.cleaned_data["number"],
+            "city": self.cleaned_data["city"],
+            "state": self.cleaned_data["state"],
+            "zip_code": self.cleaned_data["zip_code"],
+            "country": self.cleaned_data["country"],
+        }
+        create_user_profile(
             user=user,
-            street=self.cleaned_data["street"],
-            number=self.cleaned_data["number"],
-            city=self.cleaned_data["city"],
-            state=self.cleaned_data["state"],
-            zip_code=self.cleaned_data["zip_code"],
-            country=self.cleaned_data["country"],
+            role=role,
+            cpf=self.cleaned_data["cpf"],
+            telefone=self.cleaned_data["telefone"],
+            address_data=address_data,
+            is_provider_candidate=is_provider,
         )
 
 
-class SocialSignupCompleteForm(forms.Form):
+class SocialSignupCompleteForm(BaseAccountFormMixin, RoleFieldMixin, forms.Form):
     """Completamento obrigatório após login social (Google)."""
 
     def __init__(self, *args, **kwargs):
         self.request = kwargs.pop("request", None)
         super().__init__(*args, **kwargs)
-        settings = SiteSettings.load()
-        choices = [(CustomUser.Role.CLIENTE, "Cliente")]
-        if settings.affiliates_enabled:
-            choices.append((CustomUser.Role.AFILIADO, "Afiliado"))
-        if settings.provider_registration_enabled:
-            choices.append((CustomUser.Role.PRESTADOR, "Prestador"))
-        self.fields["role"] = CustomUser._meta.get_field("role").formfield(
-            choices=choices,
-            initial=CustomUser.Role.CLIENTE,
-            required=True,
-        )
-        self.fields["cpf"] = forms.CharField(
-            max_length=14,
-            label="CPF",
-            validators=[validate_brazilian_cpf],
-            help_text="Obrigatório para pagamentos (Asaas).",
-        )
-        self.fields["telefone"] = forms.CharField(
-            max_length=20,
-            label="Telefone",
-            help_text="Obrigatório para pagamentos.",
-        )
-        for name, field in _address_common_fields():
-            self.fields[name] = field
-
-    def clean_role(self):
-        role = self.cleaned_data.get("role")
-        settings = SiteSettings.load()
-        if (role == CustomUser.Role.PRESTADOR) and not settings.provider_registration_enabled:
-            raise forms.ValidationError("O cadastro de prestadores está desabilitado.")
-        if (role == CustomUser.Role.AFILIADO) and not settings.affiliates_enabled:
-            raise forms.ValidationError("O cadastro de afiliados está desabilitado.")
-        return role
-
-    def clean_cpf(self):
-        return _only_digits(self.cleaned_data.get("cpf"))
-
-    def clean_telefone(self):
-        return _only_digits(self.cleaned_data.get("telefone"))
-
-    def clean_zip_code(self):
-        return _only_digits(self.cleaned_data.get("zip_code"))
+        self._add_role_field()
+        self._add_common_fields()
 
     def save(self, user, sociallogin):
         """Atualiza usuário + cria Address + conecta SocialAccount."""
-        from apps.checkout.models import Address
-
-        user.cpf = self.cleaned_data["cpf"]
-        user.telefone = self.cleaned_data["telefone"]
-        role = self.cleaned_data.get("role")
-        settings = SiteSettings.load()
-        if role == CustomUser.Role.PRESTADOR and not settings.provider_registration_enabled:
-            role = CustomUser.Role.CLIENTE
-        if role == CustomUser.Role.AFILIADO and not settings.affiliates_enabled:
-            role = CustomUser.Role.CLIENTE
-        user.role = role
-        user.save(update_fields=["cpf", "telefone", "role"])
-
-        Address.objects.create(
-            user=user,
-            street=self.cleaned_data["street"],
-            number=self.cleaned_data["number"],
-            city=self.cleaned_data["city"],
-            state=self.cleaned_data["state"],
-            zip_code=self.cleaned_data["zip_code"],
-            country=self.cleaned_data["country"],
-        )
-
-        # Conecta SocialAccount definitivamente
-        sociallogin.connect(self.request, user)
+        complete_social_signup(user=user, form=self, request=self.request)
         return user
 
 
-class ProfileEditForm(forms.Form):
+class ProfileEditForm(BaseAccountFormMixin, AddressFormMixin, forms.Form):
     """Edição de dados pessoais e de pagamento do usuário.
 
     Atualiza nome, CPF, telefone e o primeiro endereço ativo (upsert). CPF é
@@ -208,8 +172,7 @@ class ProfileEditForm(forms.Form):
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop("user")
         super().__init__(*args, **kwargs)
-        for name, field in _address_common_fields():
-            self.fields[name] = field
+        self._add_common_fields()
         address = self.user.addresses.filter(is_active=True).first()
         self.fields["first_name"].initial = self.user.first_name
         self.fields["last_name"].initial = self.user.last_name
@@ -220,28 +183,17 @@ class ProfileEditForm(forms.Form):
             for field in _ADDRESS_FIELDS:
                 self.fields[field].initial = getattr(address, field)
 
-    def clean_cpf(self):
-        return _only_digits(self.cleaned_data.get("cpf"))
-
-    def clean_telefone(self):
-        return _only_digits(self.cleaned_data.get("telefone"))
-
-    def clean_zip_code(self):
-        return _only_digits(self.cleaned_data.get("zip_code"))
-
     def save(self):
-        from apps.checkout.models import Address
-
-        self.user.first_name = self.cleaned_data.get("first_name") or ""
-        self.user.last_name = self.cleaned_data.get("last_name") or ""
-        self.user.cpf = self.cleaned_data["cpf"]
-        self.user.telefone = self.cleaned_data["telefone"]
-        self.user.save(update_fields=["first_name", "last_name", "cpf", "telefone"])
-        data = {field: self.cleaned_data[field] for field in _ADDRESS_FIELDS}
-        address = self.user.addresses.filter(is_active=True).first()
-        if address is None:
-            Address.objects.create(user=self.user, **data)
-        else:
-            for field, value in data.items():
-                setattr(address, field, value)
-            address.save(update_fields=_ADDRESS_FIELDS)
+        data = {
+            "first_name": self.cleaned_data.get("first_name") or "",
+            "last_name": self.cleaned_data.get("last_name") or "",
+            "cpf": self.cleaned_data["cpf"],
+            "telefone": self.cleaned_data["telefone"],
+            "street": self.cleaned_data["street"],
+            "number": self.cleaned_data["number"],
+            "city": self.cleaned_data["city"],
+            "state": self.cleaned_data["state"],
+            "zip_code": self.cleaned_data["zip_code"],
+            "country": self.cleaned_data["country"],
+        }
+        update_user_profile(self.user, data)

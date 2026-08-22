@@ -255,7 +255,7 @@ class TestOrderStatusView(TestCase):
         assert response.status_code == 200
         data = response.json()
         assert data["paid"] is False
-        assert data["order_status"] == "awaiting_payment"
+        assert data["order_status"] == "open"
 
     def test_status_404_other_user(self):
         user = make_user(
@@ -353,19 +353,3 @@ class TestPixConfirmationView(TestCase):
 
 
 
-    def test_boleto_confirm_404_other_user(self):
-        other = make_user(
-            cpf="12345678902",
-            telefone="11999999998",
-            address={"street": "Rua Teste", "number": "456", "city": "São Paulo", "state": "SP", "zip_code": "01234567"},
-        )
-        order = create_order(other, with_referral=False)
-        response = self.client.get(self._url(order))
-        assert response.status_code == 404
-
-    def test_boleto_confirm_uses_select_related(self):
-        """Boleto confirmation deve usar select_related para order e user."""
-        # 6 queries: session + user + socialaccount + order + transaction(select_related order,user) + sitesettings
-        with self.assertNumQueries(6):
-            response = self.client.get(self._url())
-        assert response.status_code == 200

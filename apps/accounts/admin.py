@@ -15,8 +15,9 @@ class CustomUserAdmin(UserAdmin):
     list_filter = ("role", "is_active", "is_staff")
     search_fields = ("email", "username", "telefone", "cpf")
     date_hierarchy = "date_joined"
+    readonly_fields = ("asaas_customer_id", "uuid", "created_at", "updated_at")
     fieldsets = UserAdmin.fieldsets + (
-        ("Extra", {"fields": ("role", "telefone", "cpf", "avatar")}),
+        ("Extra", {"fields": ("role", "telefone", "cpf", "avatar", "asaas_customer_id")}),
     )
     add_fieldsets = UserAdmin.add_fieldsets + (
         ("Extra", {"fields": ("role", "telefone", "cpf", "avatar")}),
@@ -32,11 +33,12 @@ class PublicProfileAdmin(admin.ModelAdmin):
 
 @admin.register(ProviderApplication)
 class ProviderApplicationAdmin(admin.ModelAdmin):
-    list_display = ("user", "status", "bio", "created_at", "reviewed_at")
+    list_display = ("user", "status", "created_at", "reviewed_at")
     list_filter = ("status",)
     search_fields = ("user__email", "user__username")
     date_hierarchy = "created_at"
     readonly_fields = ("created_at", "updated_at", "reviewed_at")
+    autocomplete_fields = ("reviewed_by",)
     actions = ("approve_selected", "reject_selected")
     actions_description = APPROVAL_ACTIONS_DESCRIPTION
 

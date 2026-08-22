@@ -253,7 +253,7 @@ class ServiceRequest(BaseModel):
         related_name="service_request",
         verbose_name="pedido de pagamento",
     )
-    address = models.TextField(_("endereço"), blank=True, default="")
+    address = models.CharField(_("endereço"), max_length=500, blank=True, default="")
     scheduled_at = models.DateTimeField(_("agendado para"), null=True, blank=True)
     status = models.CharField(
         max_length=20,

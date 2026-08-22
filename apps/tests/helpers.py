@@ -26,7 +26,9 @@ def make_user(
     **kwargs,
 ):
     """Cria um usuário de teste com CPF/telefone/endereço válidos para Asaas."""
-    email = email or f"{role}-{cpf[:6]}@test.com"
+    if email is None:
+        from apps.core.models import random_slug
+        email = f"{role}-{cpf[:6]}-{random_slug(6)}@test.com"
     user = User.objects.create_user(
         username=email,
         email=email,
@@ -44,34 +46,45 @@ def make_user(
     return user
 
 
-def make_category(name: str = "Teste", slug: str = "teste") -> Category:
+def make_category(name: str = "Teste", slug: str | None = None) -> Category:
+    from apps.core.models import random_slug
 
+    if slug is None:
+        slug = f"teste-{random_slug(6)}"
     return Category.objects.create(name=name, slug=slug)
 
 
 def make_product(
     *,
     name: str = "Produto Teste",
-    slug: str = "produto-teste",
-    sku: str = "SKU-TESTE",
+    slug: str | None = None,
+    sku: str | None = None,
     price: Decimal = Decimal("49.90"),
     stock: int = 10,
     category=None,
     is_active: bool = True,
+    featured: bool = False,
 ):
+    from apps.core.models import random_slug
     from apps.shop.models import Product
 
     if category is None:
         category = make_category()
-    return Product.objects.create(
-        name=name,
-        slug=slug,
-        sku=sku,
-        price=price,
-        stock=stock,
-        category=category,
-        is_active=is_active,
-    )
+    params = {
+        "name": name,
+        "price": price,
+        "stock": stock,
+        "category": category,
+        "is_active": is_active,
+        "featured": featured,
+    }
+    if slug is not None:
+        params["slug"] = slug
+    if sku is not None:
+        params["sku"] = sku
+    else:
+        params["sku"] = f"SKU-{random_slug(6).upper()}"
+    return Product.objects.create(**params)
 
 
 def make_affiliate(user=None, commission_rate: Decimal = Decimal("0.10")) -> AffiliateProfile:
@@ -84,19 +97,30 @@ def make_affiliate(user=None, commission_rate: Decimal = Decimal("0.10")) -> Aff
     return affil
 
 
-def create_order(user=None, with_referral: bool = False) -> Order:
+def create_order(user=None, with_referral: bool = False, product=None, qty=1) -> Order:
     """Cria Order mínima com 1 item (produto) — útil para testes de pagamento."""
     if user is None:
         user = make_user()
     order = Order.objects.create(user=user, status=Order.Status.OPEN)
-    product = make_product()
-    OrderItem.objects.create(order=order, product=product, name=product.name, qty=1, unit_price=product.price)
+    if product is None:
+        product = make_product()
+    OrderItem.objects.create(order=order, product=product, name=product.name, qty=qty, unit_price=product.price)
     order.recompute_total()
     if with_referral:
         from apps.affiliate.models import Referral
 
         affil = make_affiliate()
         Referral.objects.create(affiliate=affil, referred=user, order=order)
+    # Cria transação manual para testes que manipulam status diretamente
+    from apps.payments.models import Transaction
+
+    Transaction.objects.create(
+        order=order,
+        user=user,
+        provider="manual",
+        amount=order.total,
+        status=Transaction.Status.PENDING,
+    )
     return order
 
 
@@ -104,6 +128,7 @@ class FakeResponse:
     @property
     def ok(self):
         return self.status_code < 400
+
     def __init__(self, data, status_code=200):
         self._data = data
         self.status_code = status_code
@@ -125,16 +150,44 @@ class FakeAsaasApi:
     payment_link_id = "link_0001"
     payment_link_url = "https://asaas.com/payment/link_0001"
     checkout_id = "chk_0001"
+    checkout_subscription_id = "sub_0001"
     card_token = "tok_0001"
     customer_status = "PENDING"
     empty_subscription_payments = False
     pix_missing = False
-    calls: list[dict] = []
+    renewal_payment_id = "pay_renewal_0001"
+    fail_customer_creation = False
+    fail_next = None
+
+    def __init__(self):
+        self.calls: list[dict] = []
+
+    @property
+    def checkout_url(self) -> str:
+        return f"https://asaas.com/checkout/{self.checkout_id}"
 
     def __call__(self, method, url, headers=None, json=None, params=None, timeout=None):
         self.calls.append({"method": method, "url": url, "headers": headers, "json": json, "params": params, "body": json})
+        # Handle fail_next for testing retry logic
+        if self.fail_next is not None:
+            status_code, response_data = self.fail_next
+            self.fail_next = None
+            return FakeResponse(response_data, status_code=status_code)
         # POST /customers
         if method == "POST" and url.endswith("/customers"):
+            if self.fail_customer_creation:
+                return FakeResponse(
+                    {
+                        "errors": [
+                            {"code": "invalid_object", "description": "cpfCnpj is required"},
+                            {"code": "invalid_object", "description": "postalCode is required"},
+                            {"code": "invalid_object", "description": "addressNumber is required"},
+                            {"code": "invalid_object", "description": "province is required"},
+                            {"code": "invalid_object", "description": "phoneNumber is required"},
+                        ]
+                    },
+                    status_code=400,
+                )
             if json and json.get("externalReference"):
                 return FakeResponse({"id": self.customer_id, "externalReference": json["externalReference"]})
             return FakeResponse({"id": self.customer_id})

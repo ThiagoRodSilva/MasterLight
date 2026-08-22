@@ -1,5 +1,6 @@
 """CustomUser e perfis de role."""
 
+import uuid
 from typing import TYPE_CHECKING
 
 from django.contrib.auth.models import AbstractUser
@@ -30,6 +31,11 @@ class CustomUser(AbstractUser):
         PRESTADOR = "prestador", "Prestador"
         AFILIADO = "afiliado", "Afiliado"
         ADMIN = "admin", "Admin"
+
+    uuid = models.UUIDField(default=uuid.uuid4, unique=True, db_index=True, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True)
 
     email = models.EmailField(unique=True)
     role = models.CharField(
@@ -85,6 +91,24 @@ class CustomUser(AbstractUser):
         self.is_staff = self.is_superuser or self.role == self.Role.ADMIN
         return super().save(*args, **kwargs)
 
+    def has_complete_payment_profile(self) -> bool:
+        """Verifica se usuário tem CPF, telefone e endereço ativo para pagamentos."""
+        return bool(
+            self.cpf
+            and self.telefone
+            and self.addresses.filter(is_active=True).exists()
+        )
+
+    def get_display_name(self) -> str:
+        """Retorna nome de exibição seguro (sem vazar email completo).
+
+        Usa username se não for email, senão mascara o email.
+        """
+        if "@" not in self.username:
+            return self.username
+        local_part = self.username.split("@")[0]
+        return f"{local_part[:3]}***"
+
 
 class PublicProfile(BaseModel):
     """Perfil publico opcional para prestadores/afiliados."""
@@ -94,7 +118,6 @@ class PublicProfile(BaseModel):
         on_delete=models.CASCADE,
         related_name="public_profile",
     )
-    bio = models.TextField(blank=True, default="")
     website = models.URLField(blank=True, default="")
     instagram = models.URLField(blank=True, default="")
 
@@ -124,7 +147,6 @@ class ProviderApplication(BaseModel):
         choices=Status.choices,
         default=Status.PENDING,
     )
-    bio = models.TextField(blank=True, default="", verbose_name="bio / especialidades")
     reviewed_by = models.ForeignKey(
         CustomUser,
         on_delete=models.SET_NULL,

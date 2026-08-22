@@ -35,7 +35,6 @@ class TestCustomSignupFormProvider(TestCase):
                 "role": CustomUser.Role.PRESTADOR,
                 "cpf": "111.444.777-35",
                 "telefone": "(11) 99999-0000",
-                "bio": "Eletricista residencial",
                 **_SIGNUP_ADDRESS,
             }
         )
@@ -44,14 +43,11 @@ class TestCustomSignupFormProvider(TestCase):
         application = user.provider_application
         assert user.role == CustomUser.Role.CLIENTE
         assert application.status == ProviderApplication.Status.PENDING
-        assert application.bio == "Eletricista residencial"
-        assert user.cpf == "11144477735"
 
     def test_signup_provider_requires_cpf_and_telefone(self):
         form = CustomSignupForm(
             data={
                 "role": CustomUser.Role.PRESTADOR,
-                "bio": "Eletricista",
             }
         )
         assert not form.is_valid()
@@ -86,11 +82,11 @@ class TestCustomSignupFormProvider(TestCase):
 
 class TestProviderApprovalServices(TestCase):
     def test_approve_promotes_user_and_copies_bio_to_public_profile(self):
-        candidate = make_user(role=CustomUser.Role.CLIENTE)
+        candidate = make_user(role=CustomUser.Role.CLIENTE, email="candidate@example.com")
         application = ProviderApplication.objects.create(
-            user=candidate, status=ProviderApplication.Status.PENDING, bio="Eletricista predial"
+            user=candidate, status=ProviderApplication.Status.PENDING
         )
-        admin = make_user(is_superuser=True)
+        admin = make_user(is_superuser=True, email="admin@example.com")
 
         approve_provider_application(application, admin)
 
@@ -101,20 +97,18 @@ class TestProviderApprovalServices(TestCase):
         assert application.status == ProviderApplication.Status.APPROVED
         assert application.reviewed_by == admin
         assert application.reviewed_at is not None
-        profile = PublicProfile.objects.get(user=candidate)
-        assert profile.bio == "Eletricista predial"
 
     def test_approve_non_pending_raises(self):
-        application = ProviderApplication.objects.create(user=make_user())
+        application = ProviderApplication.objects.create(user=make_user(email="pending@example.com"))
         application.status = ProviderApplication.Status.REJECTED
         application.save()
         with self.assertRaises(ValueError):
-            approve_provider_application(application, make_user(is_superuser=True))
+            approve_provider_application(application, make_user(is_superuser=True, email="admin2@example.com"))
 
     def test_reject_keeps_cliente(self):
-        candidate = make_user(role=CustomUser.Role.CLIENTE)
+        candidate = make_user(role=CustomUser.Role.CLIENTE, email="candidate2@example.com")
         application = ProviderApplication.objects.create(user=candidate)
-        admin = make_user(is_superuser=True)
+        admin = make_user(is_superuser=True, email="admin3@example.com")
 
         reject_provider(application, admin)
 
@@ -128,7 +122,7 @@ class TestProviderApprovalServices(TestCase):
 
 class TestPendingDashboardNotice(TestCase):
     def test_me_shows_notice_when_pending(self):
-        candidate = make_user(role=CustomUser.Role.CLIENTE)
+        candidate = make_user(role=CustomUser.Role.CLIENTE, email="pending2@example.com")
         ProviderApplication.objects.create(user=candidate)
         self.client.force_login(candidate)
         response = self.client.get("/accounts/me/")

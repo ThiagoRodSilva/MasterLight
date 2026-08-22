@@ -45,8 +45,9 @@ class TestProfileDetailViewPII(TestCase):
         content = response.content.decode()
         # Não deve vazar o email completo
         self.assertNotIn("prestador@exemplo.com", content)
-        # Deve mostrar username como fallback
-        self.assertIn(self.prestador_user.username, content)
+        # Deve mostrar versão mascarada do email (primeiras 3 letras + ***)
+        masked = self.prestador_user.username.split("@")[0][:3] + "***"
+        self.assertIn(masked, content)
 
     def test_prestador_without_public_profile_returns_404(self):
         """Prestador sem public_profile ativo retorna 404."""

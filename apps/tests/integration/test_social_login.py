@@ -220,7 +220,6 @@ class TestSocialSignupFlow(TestCase):
                 "role": "cliente",
                 "cpf": "123.456.789-09",
                 "telefone": "11999999999",
-                "bio": "",
                 "street": "Rua Teste",
                 "number": "123",
                 "city": "São Paulo",
