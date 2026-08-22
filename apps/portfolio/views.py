@@ -5,6 +5,7 @@ from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
 from apps.core.mixins import OwnerRequiredMixin, ProviderRequiredMixin
 
+from .forms import PortfolioItemForm
 from .models import PortfolioItem
 
 
@@ -31,7 +32,7 @@ class PortfolioDetailView(DetailView):
 
 class PortfolioCreateView(ProviderRequiredMixin, CreateView):
     model = PortfolioItem
-    fields = ["title", "description", "category", "image", "video", "published"]
+    form_class = PortfolioItemForm
     template_name = "portfolio/form.html"
     success_url = reverse_lazy("portfolio-list")
 
@@ -42,6 +43,6 @@ class PortfolioCreateView(ProviderRequiredMixin, CreateView):
 
 class PortfolioUpdateView(ProviderRequiredMixin, OwnerRequiredMixin, UpdateView):
     model = PortfolioItem
-    fields = ["title", "description", "category", "image", "video", "published"]
+    form_class = PortfolioItemForm
     template_name = "portfolio/form.html"
     success_url = reverse_lazy("portfolio-list")

@@ -12,6 +12,7 @@ from apps.core.mixins import ClienteRequiredMixin
 from apps.core.models import SiteSettings
 from apps.payments.services import checkout_or_charge
 
+from .forms import AddressForm
 from .models import Address, Cart, Order, OrderItem
 
 
@@ -143,7 +144,7 @@ class CheckoutView(ClienteRequiredMixin, View):
 
 class AddressCreateView(ClienteRequiredMixin, CreateView):
     model = Address
-    fields = ["street", "number", "city", "state", "zip_code", "country"]
+    form_class = AddressForm
     template_name = "checkout/address_form.html"
     success_url = reverse_lazy("checkout")
 
