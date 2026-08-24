@@ -1,0 +1,6 @@
+{% load static %}
+<div class="max-w-2xl mx-auto mb-10 {% if align_class == 'section-head--center' %}text-center{% endif %} reveal {% if delay_class %}{{ delay_class }}{% endif %}">
+  <span class="inline-block text-sm font-semibold uppercase tracking-wider text-brand-700 mb-2">{{ eyebrow }}</span>
+  <h2 class="text-3xl font-bold text-[var(--text-strong)] mb-2">{{ title }}</h2>
+  {% if description %}<p class="text-[var(--color-muted)]">{{ description }}</p>{% endif %}
+</div>

@@ -20,6 +20,15 @@ dependencies = [
     "whitenoise==6.7.0",
 ]
 
+[project.optional-dependencies]
+test = [
+    "pytest==8.2.2",
+    "pytest-django==4.10.0",
+    "pytest-cov==5.0.0",
+    "pytest-playwright==0.5.2",
+    "playwright==1.46.0",
+]
+
 [tool.ruff]
 line-length = 100
 extend-exclude = ["migrations", "staticfiles", "static", "media", "venv"]

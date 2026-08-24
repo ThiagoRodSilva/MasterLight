@@ -1,0 +1,16 @@
+{% load static %}
+{% if images %}
+<div class="flex gap-2 mt-3" role="tablist" aria-label="Galeria de imagens">
+  {% for img in images %}
+  <button type="button"
+          class="w-16 h-16 p-1 border-2 rounded {% if forloop.first %}border-brand-500{% else %}border-[var(--border-soft)]{% endif %} hover:border-brand-500 transition-colors"
+          data-gallery-img="{{ img.image }}"
+          data-gallery-alt="{{ img.alt }}"
+          aria-label="Imagem {{ forloop.counter }}"
+          {% if forloop.first %}aria-selected="true"{% else %}aria-selected="false"{% endif %}
+          role="tab">
+    <img src="{{ img.image }}" alt="{{ img.alt }}" class="w-full h-full object-cover rounded">
+  </button>
+  {% endfor %}
+</div>
+{% endif %}

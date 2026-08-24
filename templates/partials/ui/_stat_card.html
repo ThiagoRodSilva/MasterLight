@@ -1,0 +1,7 @@
+{% load static %}
+<div class="{{ col_class|default:'col-12 sm:col-md-4' }} {% if delay_class %}{{ delay_class }}{% endif %}">
+  <div class="{% if variant_class == 'stat-card--brand' %}bg-brand-500 text-brand-900{% else %}bg-[var(--surface-card)] text-[var(--text-strong)]{% endif %} shadow-md rounded-xl p-6 h-full {% if variant_class != 'stat-card--brand' %}border border-[var(--border-soft)]{% endif %}">
+    <p class="text-sm uppercase tracking-wider opacity-80 mb-1">{{ label }}</p>
+    <h3 class="text-2xl font-bold m-0">{{ value }}</h3>
+  </div>
+</div>

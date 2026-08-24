@@ -1,3 +1,8 @@
+/* ============================================================
+   Estilos Globais — MasterLight
+   Reset, tipografia base, links, seleção, componentes únicos
+   ============================================================ */
+
 html {
   scroll-behavior: smooth;
 }
@@ -28,6 +33,7 @@ a:focus-visible { outline: 2px solid var(--brand-dark); outline-offset: 2px; bor
 /* Selection */
 ::selection { background-color: var(--brand-primary); color: var(--brand-dark); }
 
+/* Navbar brand logo */
 .navbar-brand .brand-logo {
   height: 1.5rem;
   width: 1.5rem;
@@ -35,31 +41,7 @@ a:focus-visible { outline: 2px solid var(--brand-dark); outline-offset: 2px; bor
   vertical-align: -0.35em;
 }
 
-.btn-outline-brand {
-  --bs-btn-color: var(--brand-dark);
-  --bs-btn-border-color: var(--brand-dark);
-  --bs-btn-hover-bg: var(--brand-dark);
-  --bs-btn-hover-border-color: var(--brand-dark);
-  --bs-btn-hover-color: var(--brand-light);
-  --bs-btn-active-bg: var(--brand-dark);
-  --bs-btn-active-border-color: var(--brand-dark);
-  --bs-btn-active-color: var(--brand-light);
-  --bs-btn-focus-shadow-rgb: 17, 17, 17;
-}
-
-.text-brand {
-  color: var(--brand-primary) !important;
-}
-
-.bg-brand {
-  background-color: var(--brand-primary) !important;
-  color: var(--brand-dark);
-}
-
-.text-brand-contrast {
-  color: var(--brand-dark) !important;
-}
-
+/* Componentes específicos do projeto (não genéricos) */
 .auth-panel {
   max-width: 480px;
   margin-inline: auto;
@@ -97,143 +79,14 @@ a:focus-visible { outline: 2px solid var(--brand-dark); outline-offset: 2px; bor
   z-index: 1080;
 }
 
-.card-hover {
-  transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-}
-
-.card-hover:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-md);
-}
-
-/* ==== Utilitários (design tokens) ==== */
-
-.shadow-brand {
-  box-shadow: var(--shadow-brand) !important;
-}
-
-.shadow-sm-custom {
-  box-shadow: var(--shadow-sm) !important;
-}
-
-.shadow-md-custom {
-  box-shadow: var(--shadow-md) !important;
-}
-
-.shadow-lg-custom {
-  box-shadow: var(--shadow-lg) !important;
-}
-
-.radius-sm {
-  border-radius: var(--radius-sm) !important;
-}
-
-.radius-md {
-  border-radius: var(--radius-md) !important;
-}
-
-.radius-lg {
-  border-radius: var(--radius-lg) !important;
-}
-
-.radius-xl {
-  border-radius: var(--radius-xl) !important;
-}
-
-.radius-full {
-  border-radius: var(--radius-full) !important;
-}
-
-.bg-brand-50 {
-  background-color: var(--brand-50) !important;
-}
-
-.bg-brand-100 {
-  background-color: var(--brand-100) !important;
-}
-
-.bg-brand-200 {
-  background-color: var(--brand-200) !important;
-}
-
-.text-brand-dark {
-  color: var(--brand-700) !important;
-}
-
-.text-brand-darker {
-  color: var(--brand-800) !important;
-}
-
-.text-muted-brand {
-  color: var(--color-muted) !important;
-}
-
-.text-strong {
-  color: var(--text-strong) !important;
-}
-
-/* ==== Utilitários de layout ==== */
-
-.border-brand {
-  border-color: var(--brand-primary) !important;
-}
-
-.mw-md {
-  max-width: 480px !important;
-}
-
-.mw-lg {
-  max-width: 640px !important;
-}
-
-.sticky-offset {
-  top: 84px;
-}
-
-.media-16x9 {
-  aspect-ratio: 16 / 9;
-  object-fit: cover;
-}
-
-/* Botões sociais (Google) */
-.btn-social {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.625rem 1.25rem;
-  font-size: 0.9375rem;
-  font-weight: 500;
-  color: var(--text-strong);
-  background-color: var(--brand-light);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius);
-  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.btn-social:hover {
-  background-color: var(--bg-hover);
-  border-color: var(--border-hover);
-  color: var(--text-strong);
-  text-decoration: none;
-}
-
-.btn-social:focus-visible {
-  outline: 2px solid var(--brand-dark);
-  outline-offset: 2px;
-}
-
-.btn-social img {
-  flex-shrink: 0;
-}
-
-/* Loading state nos botões */
+/* Loading state nos botões (Tailwind-based, usa classes utilitárias) */
 [data-loading] .btn:disabled,
 .btn[disabled][data-loading] {
   position: relative;
   color: transparent !important;
   pointer-events: none;
 }
+
 [data-loading] .btn:disabled::after,
 .btn[disabled][data-loading]::after {
   content: "";
@@ -248,8 +101,7 @@ a:focus-visible { outline: 2px solid var(--brand-dark); outline-offset: 2px; bor
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
 }
+
 @keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+  to { transform: rotate(360deg); }
 }

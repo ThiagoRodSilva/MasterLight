@@ -1,77 +1,65 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container py-5">
-  <h1 class="mb-4 reveal">Painel do Afiliado</h1>
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
+  <h1 class="text-2xl lg:text-3xl font-bold text-[var(--text-strong)] mb-8 reveal">Painel do Afiliado</div>
 
   {% if not profile.pix_key %}
-  <div class="alert alert-warning mb-4 reveal reveal-delay-1">
+  <div class="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl text-yellow-800 reveal reveal-delay-1">
     Cadastre sua <strong>chave Pix</strong> para receber os saques. Isso será obrigatório ao solicitar o pagamento.
   </div>
   {% else %}
-  <div class="alert alert-success mb-4 reveal reveal-delay-1">
+  <div class="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl text-green-800 reveal reveal-delay-1">
     Chave Pix cadastrada. Você pode alterá-la abaixo.
   </div>
   {% endif %}
 
-  {% include "affiliate/partials/_stats.html" %}
-
-  <div class="card card-elevated mb-4 form-panel--medium reveal reveal-delay-2">
-    <div class="card-body">
-      <h2 class="h5 mb-3"><i class="bi bi-key me-2"></i> Chave Pix para saque</h2>
-      <form method="post" action="{% url 'affiliate-pix-key' %}" data-loading>
-        {% csrf_token %}
-        <div class="input-group">
-          <span class="input-group-text"><i class="bi bi-pix"></i></span>
-          <input class="form-control form-control-brand" type="text" name="pix_key" value="{{ profile.pix_key|default:'' }}"
-                 placeholder="CPF/CNPJ, e-mail, telefone com DDD ou chave aleatória" maxlength="120">
-          <button class="btn btn-gradient" type="submit"><i class="bi bi-save me-1"></i> Salvar chave</button>
-        </div>
-      </form>
-      <p class="text-muted-custom small mt-2 mb-0">O saque fica bloqueado enquanto nenhuma chave Pix estiver cadastrada.</p>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="bg-brand-500 text-brand-900 shadow-lg rounded-2xl border-l-4 border-brand-500 p-6 reveal reveal-delay-1">
+      <p class="text-sm uppercase tracking-wider opacity-80 mb-1">Saldo disponível</p>
+      <h3 class="text-2xl font-bold m-0">R$ {{ profile.balance|floatformat:2 }}</h3>
+    </div>
+    <div class="bg-brand-500 text-brand-900 shadow-lg rounded-2xl border-l-4 border-brand-500 p-6 reveal reveal-delay-2">
+      <p class="text-sm uppercase tracking-wider opacity-80 mb-1">Taxa de comissão</p>
+      <h3 class="text-2xl font-bold m-0">{% widthratio profile.commission_rate 100 1 %}%</h3>
+    </div>
+    <div class="bg-white text-[var(--text-strong)] shadow-lg rounded-2xl border border-gray-200 p-6 reveal reveal-delay-3">
+      <p class="text-sm uppercase tracking-wider opacity-80 mb-1">Indicações totais</p>
+      <h3 class="text-2xl font-bold m-0">{{ referral_count }}</h3>
     </div>
   </div>
 
-  <div class="card card-elevated mb-4 reveal reveal-delay-3">
-    <div class="card-body">
-      <div class="d-flex flex-wrap gap-3 align-items-center mb-3">
-        <div class="flex-grow-1">
-          <h5 class="mb-1"><i class="bi bi-link-45deg me-2"></i> Seu link de indicação</h5>
-          <p class="text-muted-custom small mb-0">Compartilhe este link para ganhar comissões</p>
-        </div>
-        <div class="input-group mw-md">
-          <input readonly class="form-control form-control-brand" id="ref-link" value="{{ ref_url }}">
-          <button class="btn btn-outline-brand" type="button" id="copy-btn"><i class="bi bi-clipboard"></i></button>
-        </div>
+  <div class="bg-[var(--surface-card)] shadow-lg rounded-2xl border-l-4 border-brand-500 p-6 mb-6 reveal reveal-delay-2">
+    <h2 class="text-lg font-semibold text-[var(--text-strong)] mb-4 flex items-center gap-2"><i class="bi bi-key"></i> Chave Pix para saque</h2>
+    <form method="post" action="{% url 'affiliate-pix-key' %}" data-loading class="max-w-md">
+      {% csrf_token %}
+      <div class="flex gap-2">
+        <span class="inline-flex items-center justify-center px-4 py-3 bg-gray-100 border border-gray-200 rounded-xl text-gray-600"><i class="bi bi-pix"></i></span>
+        <input class="flex-1 px-4 py-3 border border-gray-300 rounded-xl text-[var(--text-strong)] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" type="text" name="pix_key" value="{{ profile.pix_key|default:'' }}" placeholder="CPF/CNPJ, e-mail, telefone com DDD ou chave aleatória" maxlength="120">
+        <button type="submit" class="px-6 py-3 bg-gradient-to-r from-dark-500 to-dark-600 text-white rounded-xl font-semibold hover:from-dark-600 hover:to-dark-700 transition-all flex-shrink-0"><i class="bi bi-save me-1"></i> Salvar chave</button>
+      </div>
+    </form>
+    <p class="text-[var(--color-muted)] text-sm mt-2 mb-0">O saque fica bloqueado enquanto nenhuma chave Pix estiver cadastrada.</p>
+  </div>
+
+  <div class="bg-[var(--surface-card)] shadow-lg rounded-2xl border-l-4 border-brand-500 p-6 mb-6 reveal reveal-delay-3">
+    <div class="flex flex-wrap items-center gap-4 mb-4">
+      <div class="flex-1">
+        <h5 class="font-semibold text-[var(--text-strong)] mb-1"><i class="bi bi-link-45deg mr-2"></i> Seu link de indicação</h5>
+        <p class="text-[var(--color-muted)] text-sm mb-0">Compartilhe este link para ganhar comissões</p>
+      </div>
+      <div class="flex gap-2">
+        <input readonly class="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-[var(--text-strong)] focus:outline-none" id="ref-link" value="{{ ref_url }}">
+        <button type="button" id="copy-btn" class="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 hover:border-gray-400 transition-all flex-shrink-0"><i class="bi bi-clipboard"></i></button>
       </div>
     </div>
   </div>
 
-  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3 reveal reveal-delay-4">
-    <h2 class="mb-0"><i class="bi bi-people me-2"></i> Indicações</h2>
+  <div class="flex flex-wrap items-center justify-between gap-4 mb-4 reveal reveal-delay-4">
+    <h2 class="text-xl font-bold text-[var(--text-strong)] flex items-center gap-2"><i class="bi bi-people"></i> Indicações</h2>
   </div>
 
   {% include "affiliate/partials/_referral_table.html" %}
 
   {% include "affiliate/partials/_payout_table.html" %}
 </div>
-{% endblock %}
-
-{% block extra_scripts %}
-<script>
-  document.getElementById('copy-btn')?.addEventListener('click', function () {
-    const el = document.getElementById('ref-link');
-    if (!el) return;
-    el.select();
-    navigator.clipboard?.writeText(el.value);
-    const original = this.innerHTML;
-    this.innerHTML = '<i class="bi bi-check-lg"></i>';
-    this.classList.add('btn-success');
-    this.classList.remove('btn-outline-brand');
-    setTimeout(() => {
-      this.innerHTML = original;
-      this.classList.remove('btn-success');
-      this.classList.add('btn-outline-brand');
-    }, 2000);
-  });
-</script>
 {% endblock %}

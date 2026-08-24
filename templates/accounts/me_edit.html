@@ -1,15 +1,15 @@
 {% extends "base.html" %}
 {% load crispy_forms_tags %}
 {% block content %}
-<div class="container py-5 form-panel--medium">
-  <h1 class="mb-2 reveal">Editar dados</h1>
-  <p class="text-muted-custom mb-4 reveal reveal-delay-1">Seus dados de contato e endereço são usados para emitir cobranças (Pix, cartão).</p>
+<div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
+  <h1 class="text-2xl font-bold text-[var(--text-strong)] mb-2 reveal">Editar dados</h1>
+  <p class="text-[var(--color-muted)] mb-6 reveal reveal-delay-1">Seus dados de contato e endereço são usados para emitir cobranças (Pix, cartão).</p>
   <form method="post" data-loading>{% csrf_token %}
-    <div class="card card-elevated p-4 reveal reveal-delay-2">
+    <div class="bg-[var(--surface-card)] shadow-xl rounded-2xl border-l-4 border-brand-500 p-6 reveal reveal-delay-2">
       {{ form|crispy }}
-      <div class="d-flex gap-2 mt-4">
-        <button class="btn btn-gradient flex-grow-1" type="submit"><i class="bi bi-check-lg me-1"></i> Salvar</button>
-        <a href="{% url 'accounts-me' %}" class="btn btn-outline-brand flex-grow-1 text-center"><i class="bi bi-arrow-left me-1"></i> Voltar</a>
+      <div class="flex flex-col sm:flex-row gap-3 mt-6">
+        <button type="submit" class="flex-1 px-6 py-3 bg-gradient-to-r from-dark-500 to-dark-600 text-white rounded-xl font-semibold hover:from-dark-600 hover:to-dark-700 transition-all"><i class="bi bi-check-lg"></i> Salvar</button>
+        <a href="{% url 'accounts-me' %}" class="flex-1 px-6 py-3 border-2 border-brand-500 text-brand-700 rounded-xl font-semibold text-center hover:bg-brand-100 hover:text-brand-900 transition-all"><i class="bi bi-arrow-left"></i> Voltar</a>
       </div>
     </div>
   </form>

@@ -1,42 +1,51 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container py-5">
-  <div class="d-flex align-items-center gap-3 mb-4 flex-wrap reveal">
-    <h1 class="h3 mb-0">Carrinho</h1>
-    <div class="d-flex align-items-center gap-2 small">
-      <span class="badge badge-brand">1 Carrinho</span>
-      <i class="bi bi-chevron-right text-muted-custom"></i>
-      <span class="badge badge-brand opacity-50">2 Pagamento</span>
-      <i class="bi bi-chevron-right text-muted-custom"></i>
-      <span class="badge badge-brand opacity-50">3 Confirmação</span>
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
+  <div class="flex flex-col md:flex-row gap-4 items-center justify-between mb-8 reveal">
+    <h1 class="text-2xl font-bold text-[var(--text-strong)] mb-0">Carrinho</h1>
+    <div class="flex items-center gap-2 text-sm">
+      <span class="inline-flex items-center px-3 py-1 bg-brand-500 text-brand-900 text-sm font-medium rounded-full">1 Carrinho</span>
+      <i class="bi bi-chevron-right text-[var(--color-muted)]"></i>
+      <span class="inline-flex items-center px-3 py-1 bg-gray-100 text-[var(--color-muted)] text-sm font-medium rounded-full">2 Pagamento</span>
+      <i class="bi bi-chevron-right text-[var(--color-muted)]"></i>
+      <span class="inline-flex items-center px-3 py-1 bg-gray-100 text-[var(--color-muted)] text-sm font-medium rounded-full">3 Confirmação</span>
     </div>
   </div>
   {% if cart.is_empty %}
-    <div class="empty-state reveal">
-      <i class="bi bi-cart3 fs-1 d-block mb-3 text-muted-custom"></i>
-      <p class="empty-title mb-0">Seu carrinho está vazio. <a href="{% url 'shop-list' %}">Ver produtos</a></p>
-    </div>
+  <div class="text-center py-16 reveal">
+    <i class="bi bi-cart3 text-6xl text-[var(--color-muted)] mb-4"></i>
+    <p class="text-xl font-semibold text-[var(--text-strong)] mb-2">Seu carrinho está vazio.</p>
+    <a href="{% url 'shop-list' %}" class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-dark-500 to-dark-600 text-white rounded-xl font-semibold hover:from-dark-600 hover:to-dark-700 transition-all"><i class="bi bi-box-seam"></i> Ver produtos</a>
+  </div>
   {% else %}
-  <div class="card card-elevated border-0 radius-lg p-4 auth-panel mx-auto reveal reveal-delay-1">
-    <div class="table-responsive">
-      <table class="table table-brand align-middle mb-4">
-        <thead><tr><th>Produto</th><th>Qtd</th><th>Preço</th><th>Total</th><th></th></tr></thead>
-        <tbody>
+  <div class="bg-[var(--surface-card)] shadow-xl rounded-2xl border-l-4 border-brand-500 overflow-hidden reveal reveal-delay-1">
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead>
+          <tr class="border-b border-[var(--border-soft)]">
+            <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)]">Produto</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)]">Qtd</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)]">Preço</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)]">Total</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)]"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-[var(--border-soft)]">
           {% for line in cart %}
-          <tr>
-            <td>{{ line.name }}</td>
-            <td><span class="badge badge-brand">{{ line.qty }}</span></td>
-            <td>R$ {{ line.price|floatformat:2 }}</td>
-            <td class="fw-semibold">R$ {{ line.subtotal|floatformat:2 }}</td>
-            <td class="text-end"><a href="{% url 'checkout-cart-remove' line.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash me-1"></i>Remover</a></td>
+          <tr class="hover:bg-[var(--surface-page-alt)]">
+            <td class="px-4 py-4 text-sm text-[var(--text-strong)]">{{ line.name }}</td>
+            <td class="px-4 py-4"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-brand-500 text-brand-900">{{ line.qty }}</span></td>
+            <td class="px-4 py-4 text-sm text-[var(--text-strong)]">R$ {{ line.price|floatformat:2 }}</td>
+            <td class="px-4 py-4 text-sm font-semibold text-[var(--text-strong)]">R$ {{ line.subtotal|floatformat:2 }}</td>
+            <td class="px-4 py-4 text-right"><a href="{% url 'checkout-cart-remove' line.pk %}" class="inline-flex items-center gap-1 px-3 py-1.5 border-2 border-red-300 text-red-600 rounded-xl text-sm font-semibold hover:bg-red-50 hover:border-red-400 transition-all"><i class="bi bi-trash"></i> Remover</a></td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
-    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
-      <div class="fs-5"><span class="text-muted-custom me-2">Total</span><strong>R$ {{ cart.total|floatformat:2 }}</strong></div>
-      <a href="{% url 'checkout' %}" class="btn btn-gradient btn-lg"><i class="bi bi-arrow-right me-1"></i>Finalizar compra</a>
+    <div class="p-6 border-t border-[var(--border-soft)] flex flex-col md:flex-row justify-between items-center gap-4 flex-wrap">
+      <div class="text-xl font-bold text-[var(--text-strong)]"><span class="text-[var(--color-muted)] mr-2">Total</span><strong class="text-2xl text-brand-600">R$ {{ cart.total|floatformat:2 }}</strong></div>
+      <a href="{% url 'checkout' %}" class="px-8 py-4 bg-gradient-to-r from-dark-500 to-dark-600 text-white rounded-xl text-lg font-semibold hover:from-dark-600 hover:to-dark-700 transition-all inline-flex items-center gap-2"><i class="bi bi-arrow-right"></i> Finalizar compra</a>
     </div>
   </div>
   {% endif %}

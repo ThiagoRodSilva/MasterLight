@@ -1,15 +1,13 @@
 {% extends "base.html" %}
 {% load crispy_forms_tags %}
 {% block content %}
-<div class="container py-5">
-  <div class="auth-panel card card-elevated border-0 shadow-brand">
-    <div class="card-body p-4 p-md-5">
-      <h1 class="h3 mb-2">Completar cadastro</h1>
-      <p class="text-muted mb-4">Faltam alguns dados para usar a MasterLight (CPF, telefone e endereço são obrigatórios para pagamentos).</p>
-      <form method="post" data-loading>{% csrf_token %}{{ form|crispy }}
-        <button class="btn btn-brand w-100" type="submit">Finalizar</button>
-      </form>
-    </div>
+<div class="max-w-md mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
+  <div class="bg-[var(--surface-card)] shadow-xl rounded-2xl border-l-4 border-brand-500 p-6 p-md-8 reveal">
+    <h1 class="text-2xl font-bold text-[var(--text-strong)] mb-2 reveal">Completar cadastro</h1>
+    <p class="text-[var(--color-muted)] mb-6 reveal reveal-delay-1">Faltam alguns dados para usar a MasterLight (CPF, telefone e endereço são obrigatórios para pagamentos).</p>
+    <form method="post" data-loading>{% csrf_token %}{{ form|crispy }}
+      <button type="submit" class="w-full px-8 py-4 bg-brand-500 text-brand-900 rounded-xl text-lg font-semibold hover:bg-brand-400 transition-all reveal reveal-delay-2">Finalizar</button>
+    </form>
   </div>
 </div>
 {% endblock %}

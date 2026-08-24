@@ -1,0 +1,140 @@
+{% load static %}
+<nav class="navbar-custom sticky top-0 z-40" role="navigation" aria-label="Navegação principal">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between h-16">
+      <a class="flex items-center gap-2 text-xl font-bold text-white" href="{% url 'home' %}">
+        <img class="brand-logo h-6 w-6" src="{% static 'img/logo.svg' %}" alt="{{ BRAND_NAME }}">{{ BRAND_NAME }}
+      </a>
+
+      <!-- Mobile menu button (details/summary) -->
+      <details class="lg:hidden dropdown" id="mobile-nav" aria-label="Menu mobile">
+        <summary class="p-2 rounded-lg text-white hover:bg-white/10 cursor-pointer" aria-label="Alternar navegação">
+          <i class="bi bi-list text-2xl"></i>
+        </summary>
+        <div class="absolute right-0 top-full mt-2 w-64 bg-dark-500 rounded-lg shadow-lg border border-white/10 py-2 z-50" role="menu">
+          {% if SERVICES_ENABLED %}
+          <a class="block px-4 py-3 text-white/80 hover:text-white hover:bg-white/10 {% if request.resolver_match.url_name == 'services-list' %}text-white bg-white/10{% endif %}" href="{% url 'services-list' %}" role="menuitem">Serviços</a>
+          {% endif %}
+          {% if STORE_ENABLED %}
+          <a class="block px-4 py-3 text-white/80 hover:text-white hover:bg-white/10 {% if request.resolver_match.url_name == 'shop-list' %}text-white bg-white/10{% endif %}" href="{% url 'shop-list' %}" role="menuitem">Loja</a>
+          {% endif %}
+          <a class="block px-4 py-3 text-white/80 hover:text-white hover:bg-white/10 {% if request.resolver_match.url_name == 'portfolio-list' %}text-white bg-white/10{% endif %}" href="{% url 'portfolio-list' %}" role="menuitem">Portfólio</a>
+          {% if AFFILIATES_ENABLED %}
+          <a class="block px-4 py-3 text-white/80 hover:text-white hover:bg-white/10 {% if request.resolver_match.url_name == 'affiliate-landing' %}text-white bg-white/10{% endif %}" href="{% url 'affiliate-landing' %}" role="menuitem">Afiliação</a>
+          {% endif %}
+          {% if MAINTENANCE_ENABLED %}
+          <a class="block px-4 py-3 text-white/80 hover:text-white hover:bg-white/10 {% if request.resolver_match.url_name == 'services-plan-list' %}text-white bg-white/10{% endif %}" href="{% url 'services-plan-list' %}" role="menuitem">Manutenção</a>
+          {% endif %}
+
+          {% if STORE_ENABLED %}
+          <form class="p-4" method="get" action="{% url 'shop-list' %}" role="search">
+            <label for="nav-search-mobile" class="sr-only">Buscar produtos</label>
+            <div class="relative">
+              <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-white/50"></i>
+              <input type="search" id="nav-search-mobile" name="q" placeholder="Buscar produtos" value="{{ request.GET.q|default:'' }}" class="w-full pl-10 pr-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent">
+            </div>
+          </form>
+          {% endif %}
+
+          {% if user.is_authenticated %}
+          <hr class="border-white/10 mx-2 my-2">
+          {% if user.is_cliente and STORE_ENABLED %}
+          <a class="block px-4 py-3 text-white/80 hover:text-white hover:bg-white/10 flex items-center gap-2" href="{% url 'checkout-cart' %}" role="menuitem"><i class="bi bi-cart3"></i> Carrinho{% if CART_COUNT %}<span class="bg-brand-500 text-brand-900 text-xs font-medium px-2 py-0.5 rounded-full">{{ CART_COUNT }}</span>{% endif %}</a>
+          {% endif %}
+          <div class="px-4 py-2 text-white/80 text-sm">Olá, {{ user.first_name }}</div>
+          <div class="px-2 space-y-1">
+            <a class="block px-4 py-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10" href="{% url 'accounts-me' %}" role="menuitem">Meus dados</a>
+            <a class="block px-4 py-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10" href="{% url 'accounts-me-edit' %}" role="menuitem">Editar dados</a>
+            {% if user.is_prestador and SERVICES_ENABLED %}
+              <a class="block px-4 py-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10" href="{% url 'services-my' %}" role="menuitem">Meus serviços</a>
+              <a class="block px-4 py-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10" href="{% url 'services-provider-requests' %}" role="menuitem">Solicitações recebidas</a>
+            {% endif %}
+            {% if user.is_afiliado and AFFILIATES_ENABLED %}
+              <a class="block px-4 py-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10" href="{% url 'affiliate-dashboard' %}" role="menuitem">Painel de afiliado</a>
+            {% endif %}
+            {% if user.is_cliente and SERVICES_ENABLED %}
+              <a class="block px-4 py-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10" href="{% url 'services-my-requests' %}" role="menuitem">Minhas solicitações</a>
+            {% endif %}
+            <hr class="border-white/10 mx-2 my-2">
+            <form method="post" action="{% url 'account_logout' %}" data-loading>{% csrf_token %}
+              <button class="w-full text-left px-4 py-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10" type="submit" role="menuitem">Sair</button>
+            </form>
+          </div>
+          {% else %}
+          <div class="p-4">
+            <a class="block w-full text-center px-4 py-3 bg-gradient-to-r from-dark-500 to-dark-600 text-white rounded-lg text-sm font-semibold hover:from-dark-600 hover:to-dark-700" href="{% url 'account_login' %}" role="menuitem">Entrar</a>
+          </div>
+          {% endif %}
+        </div>
+      </details>
+
+      <div class="hidden lg:flex lg:items-center lg:gap-8">
+        <ul class="flex items-center gap-1">
+          {% if SERVICES_ENABLED %}
+          <li><a class="nav-link px-3 py-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10 {% if request.resolver_match.url_name == 'services-list' %}text-white bg-white/10{% endif %}" href="{% url 'services-list' %}">Serviços</a></li>
+          {% endif %}
+          {% if STORE_ENABLED %}
+          <li><a class="nav-link px-3 py-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10 {% if request.resolver_match.url_name == 'shop-list' %}text-white bg-white/10{% endif %}" href="{% url 'shop-list' %}">Loja</a></li>
+          {% endif %}
+          <li><a class="nav-link px-3 py-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10 {% if request.resolver_match.url_name == 'portfolio-list' %}text-white bg-white/10{% endif %}" href="{% url 'portfolio-list' %}">Portfólio</a></li>
+          {% if AFFILIATES_ENABLED %}
+          <li><a class="nav-link px-3 py-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10 {% if request.resolver_match.url_name == 'affiliate-landing' %}text-white bg-white/10{% endif %}" href="{% url 'affiliate-landing' %}">Afiliação</a></li>
+          {% endif %}
+          {% if MAINTENANCE_ENABLED %}
+          <li><a class="nav-link px-3 py-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10 {% if request.resolver_match.url_name == 'services-plan-list' %}text-white bg-white/10{% endif %}" href="{% url 'services-plan-list' %}">Manutenção</a></li>
+          {% endif %}
+        </ul>
+
+        {% if STORE_ENABLED %}
+        <form class="flex items-center gap-2" method="get" action="{% url 'shop-list' %}" role="search">
+          <label for="nav-search" class="sr-only">Buscar produtos</label>
+          <div class="relative">
+            <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-white/50"></i>
+            <input type="search" id="nav-search" name="q" placeholder="Buscar produtos" value="{{ request.GET.q|default:'' }}" class="w-64 pl-10 pr-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent">
+          </div>
+        </form>
+        {% endif %}
+
+        <ul class="flex items-center gap-3 ml-4">
+          {% if user.is_authenticated %}
+            {% if user.is_cliente and STORE_ENABLED %}
+            <li><a class="nav-link px-3 py-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10 flex items-center gap-1" href="{% url 'checkout-cart' %}"><i class="bi bi-cart3"></i> Carrinho{% if CART_COUNT %}<span class="bg-brand-500 text-brand-900 text-xs font-medium px-2 py-0.5 rounded-full">{{ CART_COUNT }}</span>{% endif %}</a></li>
+            {% endif %}
+            <!-- User dropdown (details/summary) -->
+            <li class="relative">
+              <details class="dropdown" aria-label="Menu do usuário">
+                <summary class="nav-link px-3 py-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10 flex items-center gap-1 cursor-pointer" aria-label="Menu do usuário">
+                  Olá, {{ user.first_name }} <i class="bi bi-chevron-down text-xs"></i>
+                </summary>
+                <ul class="absolute right-0 top-full mt-2 w-56 bg-[var(--surface-card)] rounded-lg shadow-lg border border-[var(--border-soft)] py-1" role="menu">
+                  <li><a class="block px-4 py-2 text-[var(--text-strong)] hover:bg-[var(--surface-page-alt)]" href="{% url 'accounts-me' %}" role="menuitem">Meus dados</a></li>
+                  <li><a class="block px-4 py-2 text-[var(--text-strong)] hover:bg-[var(--surface-page-alt)]" href="{% url 'accounts-me-edit' %}" role="menuitem">Editar dados</a></li>
+                  {% if user.is_prestador %}
+                    {% if SERVICES_ENABLED %}
+                    <li><a class="block px-4 py-2 text-[var(--text-strong)] hover:bg-[var(--surface-page-alt)]" href="{% url 'services-my' %}" role="menuitem">Meus serviços</a></li>
+                    <li><a class="block px-4 py-2 text-[var(--text-strong)] hover:bg-[var(--surface-page-alt)]" href="{% url 'services-provider-requests' %}" role="menuitem">Solicitações recebidas</a></li>
+                    {% endif %}
+                  {% endif %}
+                  {% if user.is_afiliado and AFFILIATES_ENABLED %}
+                    <li><a class="block px-4 py-2 text-[var(--text-strong)] hover:bg-[var(--surface-page-alt)]" href="{% url 'affiliate-dashboard' %}" role="menuitem">Painel de afiliado</a></li>
+                  {% endif %}
+                  {% if user.is_cliente and SERVICES_ENABLED %}
+                    <li><a class="block px-4 py-2 text-[var(--text-strong)] hover:bg-[var(--surface-page-alt)]" href="{% url 'services-my-requests' %}" role="menuitem">Minhas solicitações</a></li>
+                  {% endif %}
+                  <li><hr class="my-1"></li>
+                  <li>
+                    <form method="post" action="{% url 'account_logout' %}" data-loading>{% csrf_token %}
+                      <button class="w-full text-left px-4 py-2 text-[var(--text-strong)] hover:bg-[var(--surface-page-alt)]" type="submit" role="menuitem">Sair</button>
+                    </form>
+                  </li>
+                </ul>
+              </details>
+            </li>
+          {% else %}
+            <li><a class="px-4 py-2 bg-gradient-to-r from-dark-500 to-dark-600 text-white rounded-lg text-sm font-semibold hover:from-dark-600 hover:to-dark-700" href="{% url 'account_login' %}">Entrar</a></li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</nav>

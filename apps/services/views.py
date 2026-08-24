@@ -262,6 +262,8 @@ class ServiceRequestApproveView(ClienteRequiredMixin, View):
             result = checkout_or_charge(order, request, fail_message="Falha ao gerar cobrança.")
 
         if result is None:
+            order.status = Order.Status.CANCELED
+            order.save(update_fields=["status", "updated_at"])
             service_request.order = None
             service_request.save(update_fields=["order", "updated_at"])
             return redirect("services-my-requests")
@@ -402,11 +404,7 @@ class MaintenancePlanCreateView(SectionEnabledMixin, ClienteRequiredMixin, FormV
 
     def form_valid(self, form):
         from apps.checkout.models import Order, OrderItem
-        from apps.payments.services import (
-            create_checkout_for_order,
-            resolve_billing,
-            subscribe_plan,
-        )
+        from apps.payments.services import checkout_or_charge
 
         value = form.cleaned_data["value"]
         plan_type = form.cleaned_data["plan_type"]
@@ -447,7 +445,7 @@ class MaintenancePlanCreateView(SectionEnabledMixin, ClienteRequiredMixin, FormV
                 ref_code = self.request.COOKIES.get(settings.AFFILIATE_COOKIE_NAME)
                 if ref_code:
                     create_referral(ref_code, self.request.user, order)
-                plan = MaintenancePlan.objects.create(
+                MaintenancePlan.objects.create(
                     plan_type=plan_type,
                     value=value,
                     next_due_date=next_due,
@@ -455,38 +453,23 @@ class MaintenancePlanCreateView(SectionEnabledMixin, ClienteRequiredMixin, FormV
                     prestador=prestador,
                     order=order,
                 )
-                if settings.PAYMENT_PROVIDER == "asaas":
-                    result = create_checkout_for_order(
-                        order,
-                        self.request,
-                        charge_type="RECURRENT",
-                        cycle=plan_type,
-                        next_due_date=next_due,
-                    )
-                    redirect_url = result.url
-                    error_msg = result.message or "Falha ao criar a assinatura."
-                else:
-                    params = resolve_billing(self.request, self.request.user)
-                    result = subscribe_plan(
-                        plan,
-                        billing_type=params.billing_type,
-                        credit_card_token=params.credit_card_token,
-                        remote_ip=params.remote_ip,
-                    )
-                    redirect_url = result.redirect_url
-                    error_msg = result.message or "Falha ao criar a assinatura."
+                result = checkout_or_charge(
+                    order,
+                    self.request,
+                    charge_type="RECURRENT",
+                    cycle=plan_type,
+                    next_due_date=next_due,
+                    fail_message="Falha ao criar a assinatura.",
+                )
         except ValueError as exc:
             messages.error(self.request, str(exc) or "Falha ao criar a assinatura.")
             return redirect("services-plan-list")
-        if result.ok:
-            messages.success(self.request, "Assinatura criada. Aguardando o primeiro pagamento.")
-            return redirect(redirect_url)
-        order.status = Order.Status.CANCELED
-        order.save(update_fields=["status", "updated_at"])
-        plan.is_active = False
-        plan.save(update_fields=["is_active", "updated_at"])
-        messages.error(self.request, error_msg)
-        return redirect("services-plan-list")
+        if result is None:
+            order.status = Order.Status.CANCELED
+            order.save(update_fields=["status", "updated_at"])
+            return redirect("services-plan-list")
+        messages.success(self.request, "Assinatura criada. Aguardando o primeiro pagamento.")
+        return redirect(result["url"])
 
 
 # --------------------------------------------------------------------------

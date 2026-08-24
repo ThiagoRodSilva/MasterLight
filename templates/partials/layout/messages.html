@@ -1,0 +1,15 @@
+<div class="toast-container fixed top-4 right-4 z-50 flex flex-col gap-2" role="region" aria-label="Notificações" aria-live="polite">
+  {% if messages %}
+    {% for m in messages %}
+      <div class="flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg min-w-[300px] max-w-md animate-slide-in"
+           role="alert"
+           {% if m.level == 40 %}class="bg-red-500 text-white"{% elif m.level == 30 or m.level == 25 %}class="bg-yellow-500 text-white"{% elif m.level == 20 %}class="bg-green-500 text-white"{% elif m.level == 10 %}class="bg-blue-500 text-white"{% else %}class="bg-gray-500 text-white"{% endif %}>
+        <i class="bi {% if m.level == 40 %}bi-x-circle{% elif m.level == 30 or m.level == 25 %}bi-exclamation-triangle{% elif m.level == 20 %}bi-check2-circle{% elif m.level == 10 %}bi-info-circle{% else %}bi-info-circle{% endif %} text-xl flex-shrink-0"></i>
+        <div class="flex-1 text-sm">{{ m.message }}</div>
+        <button type="button" class="text-white/70 hover:text-white toast-close" aria-label="Fechar">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+</div>

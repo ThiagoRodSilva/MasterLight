@@ -1,14 +1,13 @@
 {% extends "base.html" %}
 {% load crispy_forms_tags %}
 {% block content %}
-<div class="container py-5">
-  <div class="form-panel--medium">
-    <h1>{% if form.instance.pk %}Editar{% else %}Novo{% endif %} item de portfólio</h1>
-    <form method="post" data-loading>
-      {% csrf_token %}
+<div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
+  <h1 class="text-2xl font-bold text-[var(--text-strong)] mb-6 reveal">{% if form.instance.pk %}Editar{% else %}Novo{% endif %} item de portfólio</h1>
+  <form method="post" data-loading enctype="multipart/form-data">{% csrf_token %}
+    <div class="bg-[var(--surface-card)] shadow-xl rounded-2xl border-l-4 border-brand-500 p-6 reveal">
       {{ form|crispy }}
-      <button class="btn btn-brand" type="submit">Salvar</button>
-    </form>
-  </div>
+      <button type="submit" class="w-full px-8 py-4 bg-brand-500 text-brand-900 rounded-xl text-lg font-semibold hover:bg-brand-400 transition-all mt-4">Salvar</button>
+    </div>
+  </form>
 </div>
 {% endblock %}

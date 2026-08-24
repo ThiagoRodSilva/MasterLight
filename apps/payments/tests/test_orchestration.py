@@ -1,4 +1,4 @@
-"""Testes dos serviços de orquestração de cobrança (Fase A)."""
+"""Testes dos serviços de orquestração de checkout hospedado (Asaas)."""
 
 from unittest.mock import Mock, patch
 
@@ -7,12 +7,8 @@ from django.contrib.sessions.middleware import SessionMiddleware
 from django.test import RequestFactory, TestCase
 
 from apps.accounts.models import CustomUser
-from apps.checkout.models import Address, Order
-from apps.payments.services import (
-    ChargeResult,
-    charge_with_rollback,
-    resolve_billing,
-)
+from apps.checkout.models import Order
+from apps.payments.services import checkout_or_charge
 from apps.tests.helpers import make_user, mock_asaas
 
 
@@ -23,94 +19,64 @@ def _with_middleware(request):
     return request
 
 
-class TestResolveBilling(TestCase):
+class TestCheckoutOrCharge(TestCase):
     def setUp(self):
         super().setUp()
         self.factory = RequestFactory()
         self.user = make_user(role=CustomUser.Role.CLIENTE)
-
-    def test_default_to_pix_without_token(self):
-        request = self.factory.post("/", {})
-        params = resolve_billing(request, self.user)
-        assert params.billing_type == "PIX"
-        assert params.credit_card_token == ""
-        assert params.remote_ip
-
-    def test_credit_card_tokenizes_with_asaas(self):
-        user = make_user(role=CustomUser.Role.CLIENTE, cpf="12345678900")
-        Address.objects.create(
-            user=user,
-            street="Rua A",
-            number="100",
-            city="Cidade",
-            state="SP",
-            zip_code="01001000",
-        )
-        request = self.factory.post(
-            "/",
-            {
-                "payment_method": "CREDIT_CARD",
-                "card_holder": "Cliente Teste",
-                "card_number": "4111111111111111",
-                "card_expiry_month": "12",
-                "card_expiry_year": "2030",
-                "card_ccv": "123",
-                "card_cpf": "12345678900",
-            },
-        )
-        with self.settings(PAYMENT_PROVIDER="asaas", ASAAS_API_KEY="teste", ASAAS_SANDBOX=True):
-            with mock_asaas() as fake:
-                params = resolve_billing(request, user)
-        assert params.billing_type == "CREDIT_CARD"
-        assert params.credit_card_token == fake.card_token
-
-    def test_credit_card_requires_address(self):
-        user = make_user(role=CustomUser.Role.CLIENTE, cpf="12345678900")
-        request = self.factory.post(
-            "/",
-            {
-                "payment_method": "CREDIT_CARD",
-                "card_cpf": "12345678900",
-            },
-        )
-        with self.settings(PAYMENT_PROVIDER="asaas", ASAAS_API_KEY="teste", ASAAS_SANDBOX=True):
-            with self.assertRaises(ValueError):
-                resolve_billing(request, user)
-
-
-class TestChargeWithRollback(TestCase):
-    def setUp(self):
-        super().setUp()
-        self.factory = RequestFactory()
-        self.user = make_user(role=CustomUser.Role.CLIENTE)
+        from apps.shop.models import Category, Product
+        category = Category.objects.create(name="Teste", slug="teste")
+        product = Product.objects.create(name="Produto Teste", slug="produto-teste", price=100, category=category, stock=10)
         self.order = Order.objects.create(
             user=self.user, status=Order.Status.AWAITING_PAYMENT
         )
+        from apps.checkout.models import OrderItem
+        OrderItem.objects.create(
+            order=self.order,
+            product=product,
+            name=product.name,
+            qty=1,
+            unit_price=product.price,
+        )
+        self.order.recompute_total()
 
-    def test_success_keeps_order_and_returns_result(self):
+    def test_asaas_hosted_checkout_success(self):
         request = _with_middleware(self.factory.post("/", {}))
-        result = charge_with_rollback(self.order, request)
+        with self.settings(PAYMENT_PROVIDER="asaas", ASAAS_API_KEY="teste", ASAAS_SANDBOX=True):
+            with mock_asaas() as fake:
+                result = checkout_or_charge(self.order, request)
         assert result is not None
-        assert result.ok is True
+        assert "url" in result
+        assert result["url"] == fake.checkout_url
         self.order.refresh_from_db()
         assert self.order.status == Order.Status.AWAITING_PAYMENT
 
-    def test_gateway_error_cancels_order_and_returns_none(self):
+    def test_asaas_checkout_error_cancels_order(self):
         request = _with_middleware(self.factory.post("/", {}))
-        with patch(
-            "apps.payments.services.charge.charge_order",
-            side_effect=ValueError("gateway fora"),
-        ):
-            result = charge_with_rollback(self.order, request)
+        with self.settings(PAYMENT_PROVIDER="asaas", ASAAS_API_KEY="teste", ASAAS_SANDBOX=True):
+            # Mock create_checkout_for_order para levantar erro
+            with patch("apps.payments.orchestration.create_checkout_for_order", side_effect=ValueError("Falha no Asaas")):
+                with patch("django.contrib.messages.error"):
+                    request = _with_middleware(self.factory.post("/", {}))
+                    result = checkout_or_charge(self.order, request)
         assert result is None
         self.order.refresh_from_db()
         assert self.order.status == Order.Status.CANCELED
 
-    def test_not_ok_cancels_order_and_returns_none(self):
+    def test_non_asaas_provider_raises_error(self):
         request = _with_middleware(self.factory.post("/", {}))
-        fake = ChargeResult(ok=False, redirect_url="", message="falha ao gerar")
-        with patch("apps.payments.services.charge.charge_order", return_value=fake):
-            result = charge_with_rollback(self.order, request)
+        with self.settings(PAYMENT_PROVIDER="manual"):
+            with self.assertRaises(ValueError):
+                checkout_or_charge(self.order, request)
+
+    def test_empty_cart_returns_none(self):
+        """Pedido sem itens deve falhar ao criar checkout."""
+        request = _with_middleware(self.factory.post("/", {}))
+        empty_order = Order.objects.create(
+            user=self.user, status=Order.Status.AWAITING_PAYMENT
+        )
+        with self.settings(PAYMENT_PROVIDER="asaas", ASAAS_API_KEY="teste", ASAAS_SANDBOX=True):
+            result = checkout_or_charge(empty_order, request)
         assert result is None
-        self.order.refresh_from_db()
-        assert self.order.status == Order.Status.CANCELED
+        empty_order.refresh_from_db()
+        assert empty_order.status == Order.Status.CANCELED

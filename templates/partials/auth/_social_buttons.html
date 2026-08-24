@@ -1,0 +1,19 @@
+{% load static socialaccount %}
+<div class="flex flex-col gap-3 mb-3">
+  {% get_providers as providers %}
+  {% for provider in providers %}
+  <a href="{% provider_login_url provider.id %}" class="inline-flex items-center justify-center gap-3 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 hover:border-gray-400 transition-all">
+    {% if provider.id == 'google' %}
+    <img src="{% static 'img/social/google.svg' %}" alt="Google" width="20" height="20">
+    {% elif provider.id == 'facebook' %}
+    <img src="{% static 'img/social/facebook.svg' %}" alt="Facebook" width="20" height="20">
+    {% elif provider.id == 'apple' %}
+    <img src="{% static 'img/social/apple.svg' %}" alt="Apple" width="20" height="20">
+    {% else %}
+    <i class="bi bi-{{ provider.id }}"></i>
+    {% endif %}
+    <span>Continuar com {{ provider.name }}</span>
+  </a>
+  {% endfor %}
+</div>
+{% if divider %}<hr class="my-6">{% endif %}

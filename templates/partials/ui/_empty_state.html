@@ -1,0 +1,8 @@
+{% load static %}
+<div class="col-12">
+  <div class="text-center py-12 reveal {% if delay_class %}{{ delay_class }}{% endif %}">
+    <i class="{{ icon|default:'bi bi-box-seam' }} text-5xl text-[var(--color-muted)] mb-3"></i>
+    <p class="font-semibold text-[var(--text-strong)]">{{ title|default:"Nenhum item encontrado." }}</p>
+    {% if subtitle %}<p class="text-[var(--color-muted)] text-sm mt-2">{{ subtitle }}</p>{% endif %}
+  </div>
+</div>

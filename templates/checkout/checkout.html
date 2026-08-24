@@ -1,137 +1,53 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container py-5">
-  <div class="row g-4">
-    <div class="col-lg-8">
-      <h1 class="h3 mb-4 reveal">Finalizar pedido</h1>
-      <div class="stepper reveal reveal-delay-1" aria-label="Etapas do pedido">
-        <span class="stepper__step is-done">
-          <span class="stepper__num" aria-hidden="true">1</span>
-          <span class="stepper__label">Carrinho</span>
-        </span>
-        <span class="stepper__line is-done" aria-hidden="true"></span>
-        <span class="stepper__step is-active">
-          <span class="stepper__num" aria-hidden="true">2</span>
-          <span class="stepper__label">Pagamento</span>
-        </span>
-        <span class="stepper__line" aria-hidden="true"></span>
-        <span class="stepper__step">
-          <span class="stepper__num" aria-hidden="true">3</span>
-          <span class="stepper__label">Confirmação</span>
-        </span>
-      </div>
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
+  <div class="grid lg:grid-cols-3 gap-8">
+    <div class="lg:col-span-2">
+      <h1 class="text-2xl lg:text-3xl font-bold text-[var(--text-strong)] mb-8 reveal">Finalizar pedido</h1>
+      {% include "partials/ui/_stepper.html" with step=2 %}
 
-      <form method="post">
+      <form method="post" class="space-y-6">
         {% csrf_token %}
-        {% if CHECKOUT_HOSTED %}
-        <div class="card card-elevated border-0 mb-4 reveal reveal-delay-1">
-          <div class="card-body p-4">
-            <div class="d-flex align-items-center gap-3">
-              <div class="bg-brand-dark rounded-circle p-3 d-flex align-items-center justify-content-center">
-                <i class="bi bi-shield-check fs-4 text-white"></i>
-              </div>
-              <div>
-                <h6 class="mb-1">Pagamento seguro com Asaas</h6>
-                <p class="mb-0 small text-muted-custom">Você será direcionado para a página de pagamento (Pix ou cartão de crédito).</p>
-              </div>
+        <div class="bg-[var(--surface-card)] shadow-lg rounded-2xl border-l-4 border-brand-500 p-6 reveal reveal-delay-1">
+          <div class="flex items-center gap-4">
+            <div class="flex-shrink-0 w-14 h-14 rounded-xl bg-dark-500 flex items-center justify-center">
+              <i class="bi bi-shield-check text-2xl text-white"></i>
+            </div>
+            <div>
+              <h6 class="text-lg font-semibold text-[var(--text-strong)] mb-1">Pagamento seguro com Asaas</h6>
+              <p class="text-[var(--color-muted)] text-sm mb-0">Você será direcionado para a página de pagamento (Pix ou cartão de crédito).</p>
             </div>
           </div>
         </div>
-        <button class="btn btn-gradient btn-lg w-100 reveal reveal-delay-2"><i class="bi bi-arrow-right me-2"></i>Pagar com Asaas</button>
-        {% else %}
-        <div class="card card-elevated border-0 mb-4 reveal reveal-delay-1">
-          <div class="card-body p-4">
-            <h6 class="mb-3">Forma de pagamento</h6>
-            <div class="row g-3" role="radiogroup" aria-label="Forma de pagamento">
-              <div class="col-12 col-md-4">
-                <label class="form-check form-check-input-card d-flex flex-column align-items-center p-3 border rounded radius-lg h-100 cursor-pointer" for="pm_pix">
-                  <input class="form-check-input visually-hidden" type="radio" name="payment_method" id="pm_pix" value="PIX" checked>
-                  <i class="bi bi-qr-code fs-1 mb-2 text-brand-dark"></i>
-                  <span class="fw-medium">Pix (QR Code)</span>
-                </label>
-              </div>
-              {% if CARD_ENABLED %}
-              <div class="col-12 col-md-4">
-                <label class="form-check form-check-input-card d-flex flex-column align-items-center p-3 border rounded radius-lg h-100 cursor-pointer" for="pm_card">
-                  <input class="form-check-input visually-hidden" type="radio" name="payment_method" id="pm_card" value="CREDIT_CARD">
-                  <i class="bi bi-credit-card fs-1 mb-2 text-muted"></i>
-                  <span class="fw-medium">Cartão de crédito</span>
-                </label>
-              </div>
-              {% endif %}
-            </div>
-
-            <div id="card-fields" class="mt-4 d-none">
-              <div class="card card-filled border-0 p-4">
-                <h6 class="mb-3">Dados do cartão</h6>
-                <div class="row g-3">
-                  <div class="col-12"><label class="form-label small">Titular do cartão</label>
-                    <input class="form-control form-control-brand" type="text" name="card_holder" autocomplete="cc-name" required></div>
-                  <div class="col-12"><label class="form-label small">CPF do titular</label>
-                    <input class="form-control form-control-brand" type="text" name="card_cpf" inputmode="numeric" maxlength="14" placeholder="000.000.000-00"></div>
-                  <div class="col-12"><label class="form-label small">Número</label>
-                    <input class="form-control form-control-brand" type="text" name="card_number" inputmode="numeric" autocomplete="cc-number" required pattern="[\d ]{13,19}"></div>
-                  <div class="col-6"><label class="form-label small">Validade (MM)</label>
-                    <input class="form-control form-control-brand" type="text" name="card_expiry_month" inputmode="numeric" maxlength="2" required pattern="(0[1-9]|1[0-2])"></div>
-                  <div class="col-6"><label class="form-label small">Validade (AAAA)</label>
-                    <input class="form-control form-control-brand" type="text" name="card_expiry_year" inputmode="numeric" maxlength="4" required pattern="20[2-9][0-9]"></div>
-                  <div class="col-6"><label class="form-label small">CVV</label>
-                    <input class="form-control form-control-brand" type="text" name="card_ccv" inputmode="numeric" maxlength="4" autocomplete="cc-csc" required pattern="[0-9]{3,4}"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <button class="btn btn-gradient btn-lg w-100 reveal reveal-delay-2" data-loading><i class="bi bi-check2-circle me-2"></i>Confirmar e pagar</button>
-        {% endif %}
+        <button type="submit" class="w-full px-8 py-4 bg-gradient-to-r from-dark-500 to-dark-600 text-white rounded-xl text-lg font-semibold hover:from-dark-600 hover:to-dark-700 transition-all shadow-lg hover:shadow-xl reveal reveal-delay-2 flex items-center justify-center gap-2">
+          <i class="bi bi-arrow-right"></i> Pagar com Asaas
+        </button>
       </form>
     </div>
 
-    <div class="col-lg-4 reveal reveal-delay-1">
-      <div class="card card-elevated border-0 sticky-top sticky-offset">
-        <div class="card-body p-4">
-          <h6 class="mb-3">Resumo do pedido</h6>
-          {% if cart %}
-            <ul class="list-unstyled mb-3">
-              {% for line in cart %}
-              <li class="d-flex justify-content-between py-2 border-bottom">
-                <div>
-                  <div class="fw-medium small">{{ line.name }}</div>
-                  <div class="text-muted-custom small">Qtd: {{ line.qty }} × R$ {{ line.price|floatformat:2 }}</div>
-                </div>
-                <span class="fw-semibold">R$ {{ line.subtotal|floatformat:2 }}</span>
-              </li>
-              {% endfor %}
-            </ul>
-          {% endif %}
-          <hr>
-          <div class="d-flex justify-content-between fw-bold fs-5">
-            <span>Total</span>
-            <span class="text-brand-darker">R$ {{ cart.total|floatformat:2 }}</span>
-          </div>
+    <div class="lg:col-span-1">
+      <div class="bg-[var(--surface-card)] shadow-lg rounded-2xl border-l-4 border-brand-500 p-6 sticky top-24 reveal reveal-delay-1">
+        <h6 class="text-lg font-semibold text-[var(--text-strong)] mb-4">Resumo do pedido</h6>
+        {% if cart %}
+        <ul class="space-y-3 mb-4">
+          {% for line in cart %}
+          <li class="flex justify-between py-3 border-b border-[var(--border-soft)] last:border-0">
+            <div>
+              <div class="font-medium text-[var(--text-strong)] text-sm">{{ line.name }}</div>
+              <div class="text-[var(--color-muted)] text-xs">Qtd: {{ line.qty }} × R$ {{ line.price|floatformat:2 }}</div>
+            </div>
+            <span class="font-semibold text-[var(--text-strong)]">R$ {{ line.subtotal|floatformat:2 }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+        <hr class="my-4">
+        <div class="flex justify-between items-baseline">
+          <span class="text-xl font-bold text-[var(--text-strong)]">Total</span>
+          <span class="text-2xl font-bold text-brand-600">R$ {{ cart.total|floatformat:2 }}</span>
         </div>
       </div>
     </div>
   </div>
 </div>
-{% endblock %}
-
-{% block extra_scripts %}
-{% if not CHECKOUT_HOSTED %}
-<script>
-  const cardRadio = document.getElementById('pm_card');
-  const cardFields = document.getElementById('card-fields');
-  function toggleCardFields() {
-    const show = cardRadio?.checked === true;
-    if (!cardFields) return;
-    cardFields.classList.toggle('d-none', !show);
-    cardFields.querySelectorAll('input').forEach((input) => {
-      input.disabled = !show;
-    });
-  }
-  document.querySelectorAll('input[name="payment_method"]').forEach((radio) => {
-    radio.addEventListener('change', toggleCardFields);
-  });
-</script>
-{% endif %}
 {% endblock %}

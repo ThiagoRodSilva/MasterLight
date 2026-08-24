@@ -1,0 +1,8 @@
+{% load static %}
+<a href="{{ url }}" class="inline-flex items-center gap-2 px-4 py-2 border rounded-full text-sm transition-all
+  {% if variant == 'chip-primary' %}bg-brand-100 border-brand-300 text-brand-800 hover:bg-brand-500 hover:border-brand-500 hover:text-brand-900{% endif %}
+  {% if variant == 'chip-secondary' %}bg-[var(--surface-page-alt)] border-[var(--border-soft)] text-[var(--text-strong)] hover:bg-[var(--surface-dark)] hover:border-[var(--border-strong)] hover:text-[var(--text-strong)]{% endif %}
+  {% if is_active and variant == 'chip-primary' %}bg-brand-500 border-brand-500 text-brand-900{% endif %}
+  {% if is_active and variant == 'chip-secondary' %}bg-dark-500 border-dark-500 text-white{% endif %}">
+  {{ label }}
+</a>

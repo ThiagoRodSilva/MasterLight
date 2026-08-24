@@ -1,0 +1,12 @@
+{% load static %}
+<div class="{{ wrapper_class|default:'mb-4' }}">
+  {% if label %}<label for="{{ id|default:name }}" class="block text-sm font-medium text-[var(--text-strong)] mb-1.5">{{ label }}{% if required %} <span class="text-red-500">*</span>{% endif %}</label>{% endif %}
+  <select name="{{ name }}" id="{{ id|default:name }}" class="w-full px-4 py-2.5 border border-[var(--border-soft)] rounded-xl text-[var(--text-strong)] placeholder-[var(--color-muted)] focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all appearance-none bg-[var(--surface-card)] bg-no-repeat bg-right pr-10 {{ select_class|default:'' }}" {% if required %}required{% endif %}>
+    <option value="" {% if not value %}selected{% endif %}>{{ empty_label|default:"Selecione..." }}</option>
+    {% for option_value, option_label in choices %}
+      <option value="{{ option_value }}" {% if option_value == value %}selected{% endif %}>{{ option_label }}</option>
+    {% endfor %}
+  </select>
+  {% if help_text %}<p class="mt-1.5 text-sm text-[var(--color-muted)]">{{ help_text }}</p>{% endif %}
+  {% if errors %}<p class="mt-1.5 text-sm text-red-600">{{ errors }}</p>{% endif %}
+</div>

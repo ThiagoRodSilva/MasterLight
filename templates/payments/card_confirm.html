@@ -1,28 +1,24 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container py-5">
-  <div class="row justify-content-center">
-    <div class="col-md-8 reveal">
-      <div class="card card-elevated card-bordered-start-brand border-0 auth-panel mx-auto">
-        <div class="card-body p-5 text-center">
-          <div class="bg-brand-dark icon-circle d-inline-flex mb-4">
-            <i class="bi bi-credit-card fs-1 text-white"></i>
-          </div>
-          <h1 class="mb-2">Pagamento com cartão</h1>
-          <p class="text-muted-custom mb-4">Pedido <strong>#{{ order.pk|truncatechars:8 }}</strong> — total
-            <strong class="text-brand-darker">R$ {{ order.total|floatformat:2 }}</strong></p>
-
-          <div class="alert alert-info mb-4">
-            Seu pagamento está sendo processado pela operadora do cartão.
-            Assim que for confirmado, o status do pedido é atualizado automaticamente.
-          </div>
-
-          {% include "payments/_status_poll.html" %}
-
-          <a href="{% url 'accounts-me' %}" class="btn btn-outline-brand w-100">Meus pedidos</a>
-        </div>
+<div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
+  <div class="reveal">
+    <div class="bg-[var(--surface-card)] shadow-xl rounded-2xl border-l-4 border-brand-500 p-8 text-center max-w-md mx-auto">
+      <div class="w-20 h-20 mx-auto mb-6 rounded-full bg-dark-500 flex items-center justify-center">
+        <i class="bi bi-credit-card text-3xl text-white"></i>
       </div>
+      <h1 class="text-2xl lg:text-3xl font-bold text-[var(--text-strong)] mb-2">Pagamento com cartão</h1>
+      <p class="text-[var(--color-muted)] mb-6">Pedido <strong class="text-[var(--text-strong)]">#{{ order.pk|truncatechars:8 }}</strong> — total
+        <strong class="text-brand-600 text-xl">R$ {{ order.total|floatformat:2 }}</strong></p>
+
+      <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl text-blue-800 text-left">
+        <p class="mb-0">Seu pagamento está sendo processado pela operadora do cartão. Assim que for confirmado, o status do pedido é atualizado automaticamente.</p>
+      </div>
+
+      {% include "payments/_status_poll.html" %}
+
+      <a href="{% url 'accounts-me' %}" class="inline-flex items-center justify-center gap-2 px-6 py-3 border-2 border-brand-500 text-brand-700 rounded-xl font-semibold hover:bg-brand-100 hover:text-brand-900 transition-all w-full">Meus pedidos</a>
     </div>
   </div>
 </div>
+{% endblock %}
 {% endblock %}

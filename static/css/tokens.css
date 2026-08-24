@@ -8,9 +8,7 @@
 
 :root {
   /* Tipografia */
-  --font-sans: "Inter", var(--bs-body-font-family), system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --bs-body-font-family: var(--font-sans);
-  --bs-headings-font-family: var(--font-sans);
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 
   /* Brand — amarelo/preto/branco (paleta injetada também no base.html) */
   --brand-primary: #ffc107;
@@ -20,7 +18,7 @@
   --brand-accent: #198754;
   --brand-dark: #111111;
   --brand-light: #ffffff;
-  --brand-bg-light: #f8f8f6;
+  --brand-bg-light: #1a1a1a;
 
   /* Rampa do amarelo (tints) e do preto */
   --brand-50: color-mix(in srgb, var(--brand-primary) 8%, white);
@@ -52,22 +50,20 @@
   --color-warning-100: #fef3c7;
   --color-info: #0d6efd;
   --color-info-100: #cfe2ff;
-  --color-muted: #6c757d;
+  --color-muted: #9ca3af;
 
-  /* Superfícies e texto */
-  --surface-page: var(--brand-light);
-  --surface-page-alt: var(--brand-bg-light);
+/* Superfícies e texto */
+  --surface-page: var(--brand-dark);
+  --surface-page-alt: var(--brand-secondary-alt);
   --surface-dark: var(--brand-dark);
-  --surface-card: var(--brand-light);
-  --surface-card-dark: #1a1a1a;
-  --text-strong: #2d2d2d;
+  --surface-card: var(--brand-secondary-alt);
+  --surface-card-dark: #2d2d2d;
+  --text-strong: #ffffff;
   --text-on-dark: #ffffff;
   --text-on-brand: var(--brand-dark);
-  --border-soft: rgba(17, 17, 17, 0.15);
-  --border-strong: rgba(17, 17, 17, 0.22);
+  --border-soft: rgba(255, 255, 255, 0.10);
+  --border-strong: rgba(255, 255, 255, 0.20);
   --border-on-dark: rgba(255, 255, 255, 0.15);
-
-  /* Escala tipográfica fluida (clamp) */
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
   --text-base: 1.125rem;
@@ -114,12 +110,6 @@
   --shadow-accent: 0 4px 14px rgba(25, 135, 84, 0.25);
   --shadow-nav: 0 4px 20px rgba(0, 0, 0, 0.15);
 
-  /* Variáveis legadas usadas por .btn-social */
-  --border-color: var(--border-soft);
-  --border-hover: var(--border-strong);
-  --border-radius: var(--radius-md);
-  --bg-hover: var(--brand-bg-light);
-
   /* Transições */
   --transition-fast: 150ms ease;
   --transition-base: 300ms ease;
@@ -145,7 +135,7 @@
 .bg-light-alt { background-color: var(--brand-bg-light) !important; }
 .bg-success { background-color: var(--brand-accent) !important; }
 
-/* Gradient utilities (legacy: gradiente do preto para o amarelo) */
+/* Gradient utilities */
 .bg-gradient-primary {
   background: linear-gradient(135deg, var(--brand-dark), var(--brand-primary)) !important;
 }

@@ -1,47 +1,42 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container py-5">
-  <div class="d-flex flex-column flex-md-row gap-4 align-items-center mb-5">
-    <div class="avatar avatar-lg bg-brand-200 text-brand-dark">
+<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
+  <div class="flex flex-col md:flex-row gap-6 items-center mb-10">
+    <div class="avatar avatar-xl">
       {% if profile_user.avatar %}
-        <img src="{{ profile_user.avatar }}" alt="{{ profile_user.get_full_name|default:profile_user.get_display_name }}" class="rounded-circle">
+        <img src="{{ profile_user.avatar }}" alt="{{ profile_user.get_full_name|default:profile_user.get_display_name }}" class="rounded-full w-full h-full object-cover">
       {% else %}
         {{ profile_user.get_full_name|first|upper|default:profile_user.get_display_name|first|upper }}
       {% endif %}
     </div>
-    <div class="text-center text-md-start">
-      <h1 class="mb-1">{{ profile_user.get_full_name|default:profile_user.get_display_name }}</h1>
-      <p class="text-muted mb-2">{{ profile_user.get_role_display }}</p>
+    <div class="text-center md:text-start flex-1">
+      <h1 class="text-2xl font-bold text-[var(--text-strong)] mb-1">{{ profile_user.get_full_name|default:profile_user.get_display_name }}</h1>
+      <p class="text-[var(--color-muted)] mb-4">{{ profile_user.get_role_display }}</p>
       {% if user == profile_user %}
-        <a href="{% url 'accounts-me-edit' %}" class="btn btn-brand"><i class="bi bi-pencil me-1"></i> Editar dados</a>
+      <a href="{% url 'accounts-me-edit' %}" class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-dark-500 to-dark-600 text-white rounded-xl font-semibold hover:from-dark-600 hover:to-dark-700 transition-all"><i class="bi bi-pencil"></i> Editar dados</a>
       {% endif %}
     </div>
   </div>
 
-  <div class="row g-4">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
     {% with pp=profile_user.public_profile %}
       {% if pp.website %}
-      <div class="col-12 col-md-6">
-        <div class="card card-elevated h-100">
-          <div class="card-body d-flex align-items-center">
-            <i class="bi bi-globe me-3 text-muted fs-4"></i>
-            <a href="{{ pp.website }}" target="_blank" rel="noopener" class="text-decoration-none fw-medium">{{ pp.website }}</a>
-          </div>
+      <div class="bg-[var(--surface-card)] shadow-lg rounded-2xl border-l-4 border-brand-500 p-6">
+        <div class="flex items-center gap-3">
+          <i class="bi bi-globe text-brand-500 text-2xl"></i>
+          <a href="{{ pp.website }}" target="_blank" rel="noopener" class="text-decoration-none font-medium text-[var(--text-strong)] hover:text-brand-600">{{ pp.website }}</a>
         </div>
       </div>
       {% endif %}
       {% if pp.instagram %}
-      <div class="col-12 col-md-6">
-        <div class="card card-elevated h-100">
-          <div class="card-body d-flex align-items-center">
-            <i class="bi bi-instagram me-3 text-danger fs-4"></i>
-            <a href="{{ pp.instagram }}" target="_blank" rel="noopener" class="text-decoration-none fw-medium">@{{ pp.instagram|cut:"https://instagram.com/"|cut:"https://www.instagram.com/"|cut:"@" }}</a>
-          </div>
+      <div class="bg-[var(--surface-card)] shadow-lg rounded-2xl border-l-4 border-brand-500 p-6">
+        <div class="flex items-center gap-3">
+          <i class="bi bi-instagram text-red-500 text-2xl"></i>
+          <a href="{{ pp.instagram }}" target="_blank" rel="noopener" class="text-decoration-none font-medium text-[var(--text-strong)] hover:text-brand-600">@{{ pp.instagram|cut:"https://instagram.com/"|cut:"https://www.instagram.com/"|cut:"@" }}</a>
         </div>
       </div>
       {% endif %}
     {% endwith %}
   </div>
-
 </div>
 {% endblock %}

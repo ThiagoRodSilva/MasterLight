@@ -1,0 +1,33 @@
+{% load static %}
+<div class="flex items-center justify-center gap-2 flex-wrap mb-8 reveal reveal-delay-1" aria-label="Etapas do pedido">
+  <div class="flex items-center gap-2">
+    <div class="flex items-center gap-2">
+      <span class="flex items-center justify-center w-8 h-8 rounded-full {% if step >= 1 %}bg-brand-500 text-brand-900{% else %}bg-[var(--border-soft)] text-[var(--color-muted)]{% endif %} font-bold text-sm">
+        1
+      </span>
+      <span class="hidden sm:block font-medium {% if step == 1 %}text-[var(--text-strong)]{% else %}text-[var(--color-muted)]{% endif %}">Carrinho</span>
+    </span>
+    {% if step >= 2 %}
+    <span class="w-10 h-0.5 bg-brand-500"></span>
+    {% else %}
+    <span class="w-10 h-0.5 bg-[var(--border-soft)]"></span>
+    {% endif %}
+    <span class="flex items-center gap-2">
+      <span class="flex items-center justify-center w-8 h-8 rounded-full {% if step >= 2 %}bg-brand-500 text-brand-900{% else %}bg-[var(--border-soft)] text-[var(--color-muted)]{% endif %} font-bold text-sm">
+        2
+      </span>
+      <span class="hidden sm:block font-medium {% if step == 2 %}text-[var(--text-strong)]{% else %}text-[var(--color-muted)]{% endif %}">Pagamento</span>
+    </span>
+    {% if step >= 3 %}
+    <span class="w-10 h-0.5 bg-brand-500"></span>
+    {% else %}
+    <span class="w-10 h-0.5 bg-[var(--border-soft)]"></span>
+    {% endif %}
+    <span class="flex items-center gap-2">
+      <span class="flex items-center justify-center w-8 h-8 rounded-full {% if step >= 3 %}bg-brand-500 text-brand-900{% else %}bg-[var(--border-soft)] text-[var(--color-muted)]{% endif %} font-bold text-sm">
+        3
+      </span>
+      <span class="hidden sm:block font-medium {% if step == 3 %}text-[var(--text-strong)]{% else %}text-[var(--color-muted)]{% endif %}">Confirmação</span>
+    </span>
+  </div>
+</div>

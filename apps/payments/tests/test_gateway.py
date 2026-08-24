@@ -2,8 +2,7 @@
 
 from django.test import TestCase, override_settings
 
-from apps.checkout.models import Address
-from apps.payments.services import AsaasGateway, ManualGateway, get_gateway, prepare_card_payload
+from apps.payments.services import AsaasGateway, ManualGateway, get_gateway
 from apps.tests.helpers import make_user
 
 
@@ -28,11 +27,15 @@ class TestGetGateway(TestCase):
             get_gateway()
 
 
-class TestPrepareCardPayload(TestCase):
+@override_settings(PAYMENT_PROVIDER="asaas", ASAAS_API_KEY="teste", ASAAS_SANDBOX=True)
+class TestAsaasGatewayHostedCheckout(TestCase):
+    """Testes do gateway Asaas para checkout hospedado."""
+
     def _user(self):
         return make_user()
 
     def _address(self, user):
+        from apps.checkout.models import Address
         return Address.objects.create(
             user=user,
             street="Rua A",
@@ -43,50 +46,42 @@ class TestPrepareCardPayload(TestCase):
             country="BR",
         )
 
-    def _post(self, **overrides):
-        base = {
-            "card_holder": "Fulano",
-            "card_cpf": "123.456.789-01",
-            "card_number": "4111111111111111",
-            "card_expiry_month": "12",
-            "card_expiry_year": "2035",
-            "card_ccv": "123",
-        }
-        base.update(overrides)
-        return base
+    def test_create_checkout_returns_url(self):
+        from apps.checkout.models import Order, OrderItem
+        from apps.shop.models import Category, Product
 
-    def test_returns_card_and_holder_with_sanitized_cpf(self):
         user = self._user()
-        address = self._address(user)
-        card, holder = prepare_card_payload(self._post(), user, address)
-        assert holder["cpf_cnpj"] == "12345678901"
-        assert holder["postal_code"] == "01001000"
-        assert holder["address_number"] == "10"
-        assert card["expiry_month"] == "12"
+        self._address(user)
 
-    def test_missing_cpf_raises(self):
-        user = self._user()
-        address = self._address(user)
-        with self.assertRaisesRegex(ValueError, "CPF"):
-            prepare_card_payload(self._post(card_cpf=""), user, address)
+        category = Category.objects.create(name="Teste", slug="teste")
+        product = Product.objects.create(
+            name="Produto Teste", slug="produto-teste", price=100, category=category, stock=10
+        )
+        order = Order.objects.create(user=user, status=Order.Status.AWAITING_PAYMENT)
+        OrderItem.objects.create(order=order, product=product, name=product.name, qty=1, unit_price=product.price)
+        order.recompute_total()
 
-    def test_falls_back_to_user_cpf(self):
-        user = self._user()
-        user.cpf = "11122233344"
-        user.save(update_fields=["cpf"])
-        address = self._address(user)
-        card, holder = prepare_card_payload(self._post(card_cpf=""), user, address)
-        assert holder["cpf_cnpj"] == "11122233344"
+        from django.test import RequestFactory
 
-    def test_missing_address_raises(self):
-        user = self._user()
-        with self.assertRaisesRegex(ValueError, "endere"):
-            prepare_card_payload(self._post(), user, None)
+        from apps.tests.helpers import mock_asaas
 
-    def test_expired_card_raises(self):
-        user = self._user()
-        address = self._address(user)
-        with self.assertRaisesRegex(ValueError, "vencido"):
-            prepare_card_payload(
-                self._post(card_expiry_month="01", card_expiry_year="2020"), user, address
+        factory = RequestFactory()
+        request = factory.post("/")
+        request.user = user
+
+        with mock_asaas() as fake:
+            gateway = AsaasGateway()
+            result = gateway.create_checkout(
+                order,
+                billing_types=["PIX", "CREDIT_CARD"],
+                charge_type="DETACHED",
+                callback_urls={
+                    "successUrl": "http://test/success",
+                    "cancelUrl": "http://test/cancel",
+                    "expiredUrl": "http://test/expired",
+                },
             )
+
+        assert result.ok is True
+        assert result.url == fake.checkout_url
+        assert result.checkout_id

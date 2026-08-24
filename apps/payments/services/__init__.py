@@ -1,14 +1,4 @@
-"""Serviços de pagamento - camada de negócio.
-
-Módulos:
-- billing: Resolução de forma de pagamento e tokenização de cartão
-- charge: Cobrança de pedidos com rollback automático
-- subscription: Assinaturas recorrentes
-- payment_link: Links de pagamento avulsos
-- checkout: Checkout hospedado (Asaas)
-- order_transition: Transições de status de pedido (pago/reembolsado)
-- webhook: Processamento genérico de webhook
-"""
+"""Serviços de pagamento - camada de negócio."""
 
 # Re-exporta gateways e dataclasses/errors para compatibilidade
 from apps.payments.gateways import (
@@ -22,24 +12,22 @@ from apps.payments.gateways import (
     get_gateway,
 )
 
-from .billing import BillingParams, prepare_card_payload, resolve_billing
-from .charge import charge_order, charge_with_rollback
-from .checkout import checkout_or_charge, create_checkout_for_order
-from .order_transition import mark_order_paid, reverse_order_refund
-from .payment_link import create_payment_link
-from .subscription import subscribe_plan
-from .webhook import webhook_handler
+# Import functions from orchestration module
+from apps.payments.orchestration import (
+    checkout_or_charge,
+    create_checkout_for_order,
+    create_payment_link,
+    mark_order_paid,
+    reverse_order_refund,
+    subscribe_plan,
+    webhook_handler,
+)
 
 __all__ = [
-    "BillingParams",
-    "prepare_card_payload",
-    "resolve_billing",
-    "charge_order",
-    "charge_with_rollback",
-    "subscribe_plan",
-    "create_payment_link",
     "create_checkout_for_order",
     "checkout_or_charge",
+    "subscribe_plan",
+    "create_payment_link",
     "mark_order_paid",
     "reverse_order_refund",
     "webhook_handler",

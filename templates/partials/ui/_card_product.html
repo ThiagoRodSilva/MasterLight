@@ -1,0 +1,18 @@
+{% load static %}
+<div class="{{ col_class|default:'col-12 sm:col-md-6 lg:col-xl-3' }} reveal {% if delay_class %}{{ delay_class }}{% endif %}">
+  <a href="{% url url_name product.slug %}" class="block text-[var(--text-strong)] hover:no-underline group">
+    <div class="bg-[var(--surface-card)] shadow-md rounded-xl border-l-4 border-brand-500 h-full overflow-hidden hover:shadow-lg transition-shadow">
+      {% if product.cover %}
+      <div class="aspect-square bg-[var(--surface-page-alt)] relative overflow-hidden">
+        <img src="{{ product.cover.image }}" alt="{{ product.cover.alt|default:product.name }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+      </div>
+      {% endif %}
+      <div class="p-4 flex flex-col h-full">
+        <h6 class="font-semibold text-[var(--text-strong)] mb-1 line-clamp-1">{{ product.name }}</h6>
+        <span class="text-[var(--color-muted)] text-xs mb-2">{{ product.category|default:"Geral" }}</span>
+        <span class="inline-block px-2 py-1 bg-brand-500 text-brand-900 text-xs font-medium rounded-full mb-3">{{ price_prefix|default:"R$ " }}{{ product.price|floatformat:2 }}</span>
+        <span class="mt-auto inline-block w-full text-center px-3 py-2 bg-gradient-to-r from-dark-500 to-dark-600 text-white rounded-lg text-sm font-semibold hover:from-dark-600 hover:to-dark-700 transition-all">{{ cta_text|default:"Ver detalhes" }}</span>
+      </div>
+    </div>
+  </a>
+</div>

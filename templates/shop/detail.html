@@ -1,26 +1,14 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="container py-5">
-  <nav aria-label="breadcrumb" class="mb-4 reveal">
-    <ol class="breadcrumb mb-0 bg-transparent">
-      <li class="breadcrumb-item"><a href="{% url 'home' %}">Início</a></li>
-      <li class="breadcrumb-item"><a href="{% url 'shop-list' %}">Loja</a></li>
-      <li class="breadcrumb-item active" aria-current="page">{{ product.name }}</li>
-    </ol>
-  </nav>
+  {% include "partials/ui/_breadcrumb.html" with parent_url="shop-list" parent_name="Loja" current=product.name %}
   <div class="row g-4">
     <div class="col-lg-6 reveal">
       <div id="cover" class="ratio ratio-1x1 bg-light-alt radius-lg overflow-hidden">
         {% if product.cover %}<img id="cover-img" src="{{ product.cover.image }}" class="img-fluid object-fit-cover" alt="{{ product.cover.alt }}">{% endif %}
       </div>
       {% if product.images.all %}
-      <div class="gallery-thumb" role="tablist" aria-label="Galeria de imagens">
-        {% for img in product.images.all %}
-        <button type="button" class="gallery-thumb__item {% if forloop.first %}is-active{% endif %}" data-gallery-img="{{ img.image }}" data-gallery-alt="{{ img.alt }}" aria-label="Imagem {{ forloop.counter }}">
-          <img src="{{ img.image }}" alt="{{ img.alt }}">
-        </button>
-        {% endfor %}
-      </div>
+      {% include "partials/ui/_gallery_thumbs.html" with images=product.images.all %}
       {% endif %}
     </div>
     <div class="col-lg-6 reveal reveal-delay-1">
@@ -36,27 +24,8 @@
           {% if product.stock > 0 %}<i class="bi bi-cart3"></i> Adicionar ao carrinho{% else %}<i class="bi bi-bag-x"></i> Esgotado{% endif %}
         </button>
       </form>
-      <div class="trust-row mt-4">
-        <span class="trust-item"><i class="bi bi-shield-check"></i> Pagamento seguro</span>
-        <span class="trust-item"><i class="bi bi-arrow-repeat"></i> Troca garantida</span>
-        <span class="trust-item"><i class="bi bi-truck"></i> Envio rápido</span>
-      </div>
+      {% include "partials/ui/_trust_row.html" with items='[{"icon": "bi bi-shield-check", "text": "Pagamento seguro"}, {"icon": "bi bi-arrow-repeat", "text": "Troca garantida"}, {"icon": "bi bi-truck", "text": "Envio rápido"}]' %}
     </div>
   </div>
 </div>
-{% endblock %}
-
-{% block extra_scripts %}
-<script>
-  const coverImg = document.getElementById('cover-img');
-  document.querySelectorAll('.gallery-thumb__item').forEach((thumb) => {
-    thumb.addEventListener('click', () => {
-      if (!coverImg) return;
-      coverImg.src = thumb.dataset.galleryImg;
-      coverImg.alt = thumb.dataset.galleryAlt || coverImg.alt;
-      document.querySelectorAll('.gallery-thumb__item').forEach((t) => t.classList.remove('is-active'));
-      thumb.classList.add('is-active');
-    });
-  });
-</script>
 {% endblock %}

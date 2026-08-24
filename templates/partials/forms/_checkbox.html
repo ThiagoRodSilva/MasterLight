@@ -1,0 +1,7 @@
+{% load static %}
+<div class="flex items-start gap-3 {{ wrapper_class|default:'mb-4' }}">
+  <input type="checkbox" name="{{ name }}" id="{{ id|default:name }}" class="h-4 w-4 mt-0.5 text-brand-500 border-gray-300 rounded focus:ring-brand-500 focus:ring-2 {{ input_class|default:'' }}" value="{{ value|default:'1' }}" {% if checked %}checked{% endif %} {% if required %}required{% endif %}>
+  <label for="{{ id|default:name }}" class="text-gray-700 cursor-pointer mt-0.5">{{ label }}</label>
+  {% if help_text %}<p class="ml-7 text-sm text-gray-500">{{ help_text }}</p>{% endif %}
+  {% if errors %}<p class="ml-7 text-sm text-red-600">{{ errors }}</p>{% endif %}
+</div>

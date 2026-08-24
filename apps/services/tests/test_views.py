@@ -225,7 +225,7 @@ class TestServiceRequestFlow(TestCase):
         sr = self._quoted_request(cliente, provider)
         self.client.force_login(cliente)
         with mock.patch(
-            "apps.payments.services.charge.charge_order", side_effect=ValueError("gateway fora")
+            "apps.payments.services.checkout_or_charge", return_value=None
         ):
             response = self.client.post(reverse("services-request-approve", kwargs={"pk": sr.pk}))
         assert response.status_code == 302
@@ -236,14 +236,14 @@ class TestServiceRequestFlow(TestCase):
         from unittest import mock
 
         from apps.checkout.models import Order
-        from apps.payments.services import ChargeResult
 
         provider = make_user(role=CustomUser.Role.PRESTADOR)
         cliente = make_user(role=CustomUser.Role.CLIENTE)
         sr = self._quoted_request(cliente, provider)
         self.client.force_login(cliente)
-        fake = ChargeResult(ok=False, redirect_url="", message="falha ao gerar")
-        with mock.patch("apps.payments.services.charge.charge_order", return_value=fake):
+        with mock.patch(
+            "apps.payments.services.checkout_or_charge", return_value=None
+        ):
             response = self.client.post(reverse("services-request-approve", kwargs={"pk": sr.pk}))
         assert response.status_code == 302
         order = Order.objects.get(user=cliente)

@@ -7,39 +7,86 @@
   <meta name="theme-color" content="#111111">
   <title>{% block title %}{{ BRAND_NAME }}{% endblock %}</title>
   <link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
-  <style>
-    :root {
-      --bs-primary: {{ BRAND_PALETTE.primary }};
-      --bs-primary-rgb: 255, 193, 7;
-      --bs-dark: {{ BRAND_PALETTE.dark }};
-      --bs-secondary: {{ BRAND_PALETTE.secondary }};
-      --bs-secondary-rgb: 17, 17, 17;
-      --bs-success: {{ BRAND_PALETTE.accent }};
-      --bs-success-rgb: 25, 135, 84;
+
+  <!-- Tailwind CSS via CDN (desenvolvimento) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#fff9e6', 100: '#fff3cc', 200: '#ffe799', 300: '#ffdb66', 400: '#ffcf33',
+              500: '#FFC107', 600: '#e6a800', 700: '#cc8700', 800: '#996600', 900: '#664400'
+            },
+            dark: { 50: '#f2f2f2', 100: '#e6e6e6', 500: '#111111', 600: '#0d0d0d', 800: '#1a1a1a', 900: '#111111', 950: '#0a0a0a' },
+            accent: { 50: '#e8f5e9', 100: '#c8e6c9', 500: '#198754' }
+          },
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+          borderRadius: { 'sm': '0.25rem', 'md': '0.5rem', 'lg': '0.75rem', 'xl': '1rem', '2xl': '1.5rem', 'full': '9999px' },
+          boxShadow: { 'brand': '0 4px 14px rgba(17,17,17,0.25)', 'nav': '0 4px 20px rgba(0,0,0,0.15)' },
+          aspectRatio: {
+            'square': '1 / 1',
+            'video': '16 / 9',
+            '4/3': '4 / 3',
+            '3/2': '3 / 2',
+          }
+        }
+      }
     }
-  </style>
-  <link href="{% static 'vendor/bootstrap/bootstrap.min.css' %}" rel="stylesheet">
+  </script>
+
+  <!-- Bootstrap Icons (mantido para ícones) -->
   <link href="{% static 'vendor/bootstrap-icons/bootstrap-icons.min.css' %}" rel="stylesheet">
+
+  <!-- Design tokens para referência (CSS custom properties) -->
   <link href="{% static 'css/tokens.css' %}" rel="stylesheet">
-  <link href="{% static 'css/components.css' %}" rel="stylesheet">
+
+  <!-- Estilos específicos do projeto (mínimo) -->
   <link href="{% static 'css/styles.css' %}" rel="stylesheet">
+
   {% block extra_head %}{% endblock %}
   {% block extra_css %}{% endblock %}
 </head>
-<body class="d-flex flex-column min-vh-100">
-  <a href="#main-content" class="visually-hidden-focusable skip-link">Pular para o conteúdo principal</a>
-  {% block navbar %}{% include "partials/navbar.html" %}{% endblock navbar %}
+<body class="min-h-screen flex flex-col bg-[var(--surface-page)] text-[var(--text-strong)] font-sans">
+  <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-brand-500 text-brand-900 px-4 py-2 rounded-md z-50">Pular para o conteúdo principal</a>
 
-  {% include "partials/messages.html" %}
+  {% block navbar %}{% include "partials/layout/navbar.html" %}{% endblock navbar %}
+
+  {% include "partials/layout/messages.html" %}
 
   <main id="main-content" class="flex-grow-1">
     {% block content %}{% endblock %}
   </main>
 
-  {% block footer %}{% include "partials/footer.html" %}{% endblock footer %}
+  {% block footer %}{% include "partials/layout/footer.html" %}{% endblock footer %}
 
-  <script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}"></script>
-  <script src="{% static 'js/main.js' %}"></script>
+  <!-- Modal de Confirmação Genérico - usando <dialog> nativo -->
+  <dialog id="confirm-modal" class="modal-dialog" role="dialog" aria-labelledby="confirm-modal-label" aria-modal="true">
+    <div class="modal-backdrop fixed inset-0 bg-black/50"></div>
+    <div class="modal-content fixed inset-0 flex items-center justify-center p-4 z-10">
+      <div class="bg-[var(--surface-card)] rounded-xl shadow-xl max-w-md w-full">
+        <div class="flex items-center justify-between p-4 border-b border-[var(--border-soft)]">
+          <h5 class="modal-title text-lg font-semibold flex items-center gap-2" id="confirm-modal-label">
+            <i class="bi bi-exclamation-triangle text-yellow-600"></i>Confirmar ação
+          </h5>
+          <button type="button" class="text-[var(--color-muted)] hover:text-[var(--text-strong)] modal-close" aria-label="Fechar">
+            <i class="bi bi-x-lg text-2xl"></i>
+          </button>
+        </div>
+        <div class="p-4">
+          <p id="confirm-modal-message" class="text-[var(--text-strong)]">Tem certeza que deseja prosseguir?</p>
+        </div>
+        <div class="flex justify-end gap-3 p-4 border-t border-[var(--border-soft)]">
+          <button type="button" class="px-4 py-2 border border-[var(--border-strong)] text-[var(--text-strong)] rounded-lg hover:bg-[var(--surface-page-alt)] modal-close">Cancelar</button>
+          <button type="button" class="px-4 py-2 bg-dark-500 text-white rounded-lg hover:bg-dark-600" data-confirm-submit><i class="bi bi-check-lg me-1"></i>Confirmar</button>
+        </div>
+      </div>
+    </div>
+
+  <!-- Scripts externos -->
+  <script src="{% static 'js/main.js' %}" defer></script>
+
   {% block extra_scripts %}{% endblock %}
 </body>
 </html>
