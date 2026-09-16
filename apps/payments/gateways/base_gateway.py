@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 class BasePaymentGateway:
     """Classe base com utilitários comuns para gateways de pagamento.
 
-    Extrai lógica compartilhada entre ManualGateway e AsaasGateway:
+    Extrai lógica compartilhada entre os gateways (Asaas):
     - Criação idempotente de Transaction (_upsert_transaction)
     - Lógica de reembolso com validação de transição (refund)
     - Estrutura base para autenticação de webhook
@@ -47,9 +47,7 @@ class BasePaymentGateway:
         from apps.payments.models import Transaction
 
         if external_id:
-            tx = Transaction.objects.filter(
-                provider=self.name, external_id=external_id
-            ).first()
+            tx = Transaction.objects.filter(provider=self.name, external_id=external_id).first()
             if tx is not None:
                 tx.amount = amount
                 tx.raw_payload = raw_payload
@@ -69,9 +67,7 @@ class BasePaymentGateway:
         except IntegrityError:
             # Race condition: outro webhook criou a transação entre o filter e o create.
             # Busca a existente e atualiza (idempotente).
-            tx = Transaction.objects.filter(
-                provider=self.name, external_id=external_id
-            ).first()
+            tx = Transaction.objects.filter(provider=self.name, external_id=external_id).first()
             if tx is not None:
                 tx.amount = amount
                 tx.raw_payload = raw_payload
@@ -113,9 +109,7 @@ class BasePaymentGateway:
 
     def _validate_webhook_auth(self, headers: dict, expected_token: str) -> str:
         """Valida token de webhook; levanta WebhookAuthError se inválido."""
-        token = str(
-            headers.get("asaas-access-token") or headers.get("x-webhook-token") or ""
-        )
+        token = str(headers.get("asaas-access-token") or headers.get("x-webhook-token") or "")
         if not expected_token:
             from .base import WebhookAuthError
 

@@ -300,7 +300,12 @@ class TestSystemCheck(TestCase):
             errors = asaas_api_key_check(None)
             assert not any(e.id == "payments.E001" for e in errors)
 
-    def test_payment_provider_check_passes_for_manual(self):
-        with self.settings(PAYMENT_PROVIDER="manual"):
+    def test_payment_provider_check_passes_for_asaas(self):
+        with self.settings(PAYMENT_PROVIDER="asaas"):
             errors = payment_provider_check(None)
             assert not any(e.id == "payments.E002" for e in errors)
+
+    def test_payment_provider_check_fails_for_manual(self):
+        with self.settings(PAYMENT_PROVIDER="manual"):
+            errors = payment_provider_check(None)
+            assert any(e.id == "payments.E002" for e in errors)

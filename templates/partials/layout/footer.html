@@ -4,7 +4,7 @@
       <div class="lg:col-span-1">
         <p class="text-xl font-bold">{{ BRAND_NAME }}</p>
         <p class="text-white/50 text-sm mt-1">{{ BRAND_TAGLINE }}</p>
-        <p class="text-white/50 text-sm mt-4">Serviços elétricos, manutenção e programa de indicação em um só lugar.</p>
+        <p class="text-white/50 text-sm mt-4">Serviços elétricos e programa de indicação em um só lugar.</p>
         <div class="flex gap-4 mt-4 text-2xl">
           <a class="text-white hover:text-brand-500 transition-colors" href="https://www.instagram.com/masterlightoficial/" aria-label="Instagram"><i class="bi bi-instagram"></i></a>
           <a class="text-white hover:text-brand-500 transition-colors" href="https://www.facebook.com/masterlightoficial/" aria-label="Facebook"><i class="bi bi-facebook"></i></a>
@@ -20,9 +20,6 @@
           <li><a class="text-white/70 hover:text-brand-500 transition-colors" href="{% url 'portfolio-list' %}">Portfólio</a></li>
           {% if AFFILIATES_ENABLED %}
           <li><a class="text-white/70 hover:text-brand-500 transition-colors" href="{% url 'affiliate-landing' %}">Programa de afiliados</a></li>
-          {% endif %}
-          {% if MAINTENANCE_ENABLED %}
-          <li><a class="text-white/70 hover:text-brand-500 transition-colors" href="{% url 'services-plan-list' %}">Manutenção</a></li>
           {% endif %}
         </ul>
       </div>

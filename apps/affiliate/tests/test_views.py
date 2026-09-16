@@ -10,6 +10,7 @@ from apps.tests.helpers import make_affiliate, make_user
 class TestAffiliateLanding(TestCase):
     def setUp(self):
         from apps.core.models import SiteSettings
+
         settings = SiteSettings.objects.get_or_create(pk=1)[0]
         settings.affiliates_enabled = True
         settings.save(update_fields=["affiliates_enabled"])

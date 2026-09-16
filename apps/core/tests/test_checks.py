@@ -29,7 +29,9 @@ class TestSecretKeyCheck(TestCase):
 
     def test_strong_secret_key_no_error_when_debug_false(self):
         """DEBUG=False + SECRET_KEY forte -> sem erros core.E001."""
-        with override_settings(DEBUG=False, SECRET_KEY="django-insecure-abcdefghijklmnopqrstuvwxyz1234567890"):
+        with override_settings(
+            DEBUG=False, SECRET_KEY="django-insecure-abcdefghijklmnopqrstuvwxyz1234567890"
+        ):
             errors = run_checks()
             core_errors = [e for e in errors if e.id == "core.E001"]
             self.assertEqual(len(core_errors), 0)

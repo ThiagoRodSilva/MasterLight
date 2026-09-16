@@ -99,11 +99,15 @@ class TestProviderApprovalServices(TestCase):
         assert application.reviewed_at is not None
 
     def test_approve_non_pending_raises(self):
-        application = ProviderApplication.objects.create(user=make_user(email="pending@example.com"))
+        application = ProviderApplication.objects.create(
+            user=make_user(email="pending@example.com")
+        )
         application.status = ProviderApplication.Status.REJECTED
         application.save()
         with self.assertRaises(ValueError):
-            approve_provider_application(application, make_user(is_superuser=True, email="admin2@example.com"))
+            approve_provider_application(
+                application, make_user(is_superuser=True, email="admin2@example.com")
+            )
 
     def test_reject_keeps_cliente(self):
         candidate = make_user(role=CustomUser.Role.CLIENTE, email="candidate2@example.com")

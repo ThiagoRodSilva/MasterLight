@@ -51,9 +51,13 @@ class AffiliateProfile(BaseModel):
         super().clean()
         if self.commission_rate is not None:
             if self.commission_rate <= 0:
-                raise ValidationError({"commission_rate": "A taxa de comissão deve ser maior que zero."})
+                raise ValidationError(
+                    {"commission_rate": "A taxa de comissão deve ser maior que zero."}
+                )
             if self.commission_rate > 1:
-                raise ValidationError({"commission_rate": "A taxa de comissão não pode exceder 100% (1.0)."})
+                raise ValidationError(
+                    {"commission_rate": "A taxa de comissão não pode exceder 100% (1.0)."}
+                )
 
     def save(self, *args, **kwargs):
         if not self.code:
@@ -65,7 +69,9 @@ class AffiliateProfile(BaseModel):
                     self.code = candidate
                     break
             else:
-                raise RuntimeError("Não foi possível gerar código único de afiliado após várias tentativas.")
+                raise RuntimeError(
+                    "Não foi possível gerar código único de afiliado após várias tentativas."
+                )
         super().save(*args, **kwargs)
 
     def __str__(self) -> str:
@@ -83,6 +89,7 @@ class ReferralManager(models.Manager):
 
     def pending_or_approved(self):
         return self.active().filter(status__in=["pending", "approved"])
+
 
 class Referral(BaseModel):
     """Indicacao de um pedido a um afiliado (gera comissao quando pago)."""
@@ -138,7 +145,6 @@ class Referral(BaseModel):
 
     def __str__(self) -> str:
         return f"Referral {self.affiliate.code} -> {self.status}"
-
 
 
 class PayoutRequestManager(models.Manager):

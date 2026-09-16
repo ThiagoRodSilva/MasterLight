@@ -22,14 +22,10 @@ class TestServiceFormImage(TestCase):
         return data
 
     def test_url_de_imagem_valida_salva(self):
-        form = ServiceForm(
-            data=self._data(image="https://exemplo.com/servico.jpg")
-        )
+        form = ServiceForm(data=self._data(image="https://exemplo.com/servico.jpg"))
         assert form.is_valid()
 
     def test_url_de_imagem_invalida_rejeita(self):
-        form = ServiceForm(
-            data=self._data(image="https://exemplo.com/arquivo.pdf")
-        )
+        form = ServiceForm(data=self._data(image="https://exemplo.com/arquivo.pdf"))
         assert not form.is_valid()
         assert "image" in form.errors

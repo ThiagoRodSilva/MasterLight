@@ -12,7 +12,6 @@ class SiteSettingsAdmin(admin.ModelAdmin):
     list_display = (
         "services_enabled",
         "affiliates_enabled",
-        "maintenance_enabled",
         "provider_registration_enabled",
     )
     readonly_fields = ("updated_at",)

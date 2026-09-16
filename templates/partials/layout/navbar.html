@@ -19,9 +19,6 @@
           {% if AFFILIATES_ENABLED %}
           <a class="block px-4 py-3 text-white/80 hover:text-white hover:bg-white/10 {% if request.resolver_match.url_name == 'affiliate-landing' %}text-white bg-white/10{% endif %}" href="{% url 'affiliate-landing' %}" role="menuitem">Afiliação</a>
           {% endif %}
-          {% if MAINTENANCE_ENABLED %}
-          <a class="block px-4 py-3 text-white/80 hover:text-white hover:bg-white/10 {% if request.resolver_match.url_name == 'services-plan-list' %}text-white bg-white/10{% endif %}" href="{% url 'services-plan-list' %}" role="menuitem">Manutenção</a>
-          {% endif %}
 
           {% if user.is_authenticated %}
           <hr class="border-white/10 mx-2 my-2">
@@ -60,9 +57,6 @@
           <li><a class="nav-link px-3 py-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10 {% if request.resolver_match.url_name == 'portfolio-list' %}text-white bg-white/10{% endif %}" href="{% url 'portfolio-list' %}">Portfólio</a></li>
           {% if AFFILIATES_ENABLED %}
           <li><a class="nav-link px-3 py-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10 {% if request.resolver_match.url_name == 'affiliate-landing' %}text-white bg-white/10{% endif %}" href="{% url 'affiliate-landing' %}">Afiliação</a></li>
-          {% endif %}
-          {% if MAINTENANCE_ENABLED %}
-          <li><a class="nav-link px-3 py-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10 {% if request.resolver_match.url_name == 'services-plan-list' %}text-white bg-white/10{% endif %}" href="{% url 'services-plan-list' %}">Manutenção</a></li>
           {% endif %}
         </ul>
 

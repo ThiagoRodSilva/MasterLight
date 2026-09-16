@@ -124,7 +124,11 @@ class TestSocialLoginFlow(TestCase):
 
         self.google_app, _ = SocialApp.objects.get_or_create(
             provider="google",
-            defaults={"name": "Google Test", "client_id": "test-google-id", "secret": "test-google-secret"},
+            defaults={
+                "name": "Google Test",
+                "client_id": "test-google-id",
+                "secret": "test-google-secret",
+            },
         )
         self.google_app.sites.add(SiteSettings.objects.get(pk=1).pk)
 
@@ -160,7 +164,11 @@ class TestSocialLoginFlow(TestCase):
         """Login Facebook segue o mesmo fluxo de novo usuário (Google)."""
         fb_app, _ = SocialApp.objects.get_or_create(
             provider="facebook",
-            defaults={"name": "Facebook Test", "client_id": "test-fb-id", "secret": "test-fb-secret"},
+            defaults={
+                "name": "Facebook Test",
+                "client_id": "test-fb-id",
+                "secret": "test-fb-secret",
+            },
         )
         fb_app.sites.add(SiteSettings.objects.get(pk=1).pk)
 
@@ -175,7 +183,11 @@ class TestSocialLoginFlow(TestCase):
         """Login Apple (form_post) segue o mesmo fluxo de novo usuário."""
         apple_app, _ = SocialApp.objects.get_or_create(
             provider="apple",
-            defaults={"name": "Apple Test", "client_id": "test-apple-id", "secret": "test-apple-secret"},
+            defaults={
+                "name": "Apple Test",
+                "client_id": "test-apple-id",
+                "secret": "test-apple-secret",
+            },
         )
         apple_app.sites.add(SiteSettings.objects.get(pk=1).pk)
 
@@ -200,7 +212,11 @@ class TestSocialSignupFlow(TestCase):
 
         self.google_app, _ = SocialApp.objects.get_or_create(
             provider="google",
-            defaults={"name": "Google Test", "client_id": "test-google-id", "secret": "test-google-secret"},
+            defaults={
+                "name": "Google Test",
+                "client_id": "test-google-id",
+                "secret": "test-google-secret",
+            },
         )
         self.google_app.sites.add(SiteSettings.objects.get(pk=1).pk)
 

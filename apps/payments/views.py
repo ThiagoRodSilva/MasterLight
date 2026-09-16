@@ -104,8 +104,6 @@ class CardConfirmationView(ClienteRequiredMixin, TemplateView):
         return ctx
 
 
-
-
 class OrderStatusView(ClienteRequiredMixin, View):
     """Retorna o status do pedido em JSON (usado pelo polling das telas).
 
@@ -124,17 +122,6 @@ class OrderStatusView(ClienteRequiredMixin, View):
         )
 
 
-class ManualConfirmationView(ClienteRequiredMixin, TemplateView):
-    """Confirmação de pagamento manual (gateway `manual`)."""
-
-    template_name = "payments/manual_confirm.html"
-
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        ctx["order"] = get_object_or_404(Order, pk=self.kwargs["order_pk"], user=self.request.user)
-        return ctx
-
-
 class CheckoutCallbackView(ClienteRequiredMixin, TemplateView):
     """Retorno do Asaas Checkout (successUrl/cancelUrl/expiredUrl).
 
@@ -149,4 +136,3 @@ class CheckoutCallbackView(ClienteRequiredMixin, TemplateView):
         ctx["order"] = get_object_or_404(Order, pk=self.kwargs["order_pk"], user=self.request.user)
         ctx["outcome"] = self.kwargs.get("outcome", "success")
         return ctx
-

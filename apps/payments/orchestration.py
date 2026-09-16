@@ -1,7 +1,7 @@
 """Servicos orquestracao pagamentos (camada de negocio).
 
 Orquestra gateways (ver `apps/payments.gateways`) e conceitos financeiros:
-cobranca de pedido, assinatura de plano, link de pagamento e webhook.
+cobranca de pedido, link de pagamento e webhook.
 """
 
 from dataclasses import asdict
@@ -13,7 +13,6 @@ from .gateways import (
     AsaasGateway,
     ChargeResult,
     CheckoutResult,
-    ManualGateway,
     PaymentGateway,
     PaymentLinkResult,
     WebhookAuthError,
@@ -24,14 +23,12 @@ __all__ = [
     "AsaasGateway",
     "ChargeResult",
     "CheckoutResult",
-    "ManualGateway",
     "PaymentGateway",
     "PaymentLinkResult",
     "WebhookAuthError",
     "get_gateway",
     "create_checkout_for_order",
     "checkout_or_charge",
-    "subscribe_plan",
     "create_payment_link",
     "mark_order_paid",
     "reverse_order_refund",
@@ -59,8 +56,6 @@ def create_checkout_for_order(
     *,
     billing_types: list[str] | None = None,
     charge_type: str = "DETACHED",
-    cycle: str = "",
-    next_due_date=None,
 ) -> CheckoutResult:
     """Cria uma sessão de Checkout hosted para a Order no gateway configurado.
 
@@ -70,17 +65,27 @@ def create_checkout_for_order(
     """
     base = request.build_absolute_uri
     callback_urls = {
-        "successUrl": base(reverse("payments-checkout-callback", kwargs={"order_pk": order.pk, "outcome": "success"})),
-        "cancelUrl": base(reverse("payments-checkout-callback", kwargs={"order_pk": order.pk, "outcome": "cancel"})),
-        "expiredUrl": base(reverse("payments-checkout-callback", kwargs={"order_pk": order.pk, "outcome": "expired"})),
+        "successUrl": base(
+            reverse(
+                "payments-checkout-callback", kwargs={"order_pk": order.pk, "outcome": "success"}
+            )
+        ),
+        "cancelUrl": base(
+            reverse(
+                "payments-checkout-callback", kwargs={"order_pk": order.pk, "outcome": "cancel"}
+            )
+        ),
+        "expiredUrl": base(
+            reverse(
+                "payments-checkout-callback", kwargs={"order_pk": order.pk, "outcome": "expired"}
+            )
+        ),
     }
     return get_gateway().create_checkout(
         order,
         billing_types=billing_types,
         charge_type=charge_type,
         callback_urls=callback_urls,
-        cycle=cycle,
-        next_due_date=next_due_date,
     )
 
 
@@ -91,8 +96,6 @@ def checkout_or_charge(
     address=None,
     billing_types: list[str] | None = None,
     charge_type: str = "DETACHED",
-    cycle: str = "",
-    next_due_date=None,
     fail_message: str = "Falha ao gerar cobrança.",
 ) -> dict | None:
     """Dispara Checkout hosted (Asaas).
@@ -104,7 +107,7 @@ def checkout_or_charge(
     """
     from django.conf import settings
 
-    if getattr(settings, "PAYMENT_PROVIDER", "manual") != "asaas":
+    if getattr(settings, "PAYMENT_PROVIDER", "asaas") != "asaas":
         raise ValueError("Apenas o provedor Asaas (checkout hospedado) é suportado.")
 
     try:
@@ -113,8 +116,6 @@ def checkout_or_charge(
             request,
             billing_types=billing_types,
             charge_type=charge_type,
-            cycle=cycle,
-            next_due_date=next_due_date,
         )
     except ValueError as exc:
         _cancel_order_if_pending(order)
@@ -127,21 +128,6 @@ def checkout_or_charge(
     return {"url": result.url}
 
 
-def subscribe_plan(
-    plan,
-    billing_type: str = "PIX",
-    credit_card_token: str = "",
-    remote_ip: str = "",
-) -> ChargeResult:
-    """Cria transacao de assinatura e chama gateway configurado."""
-    return get_gateway().subscribe(
-        plan,
-        billing_type=billing_type,
-        credit_card_token=credit_card_token,
-        remote_ip=remote_ip,
-    )
-
-
 def create_payment_link(
     *,
     name: str,
@@ -151,7 +137,6 @@ def create_payment_link(
     charge_type: str = "DETACHED",
     due_date_limit_days=None,
     max_installment_count=None,
-    subscription_cycle: str = "",
     end_date=None,
     external_reference: str = "",
 ) -> PaymentLinkResult:
@@ -164,7 +149,6 @@ def create_payment_link(
         charge_type=charge_type,
         due_date_limit_days=due_date_limit_days,
         max_installment_count=max_installment_count,
-        subscription_cycle=subscription_cycle,
         end_date=end_date,
         external_reference=external_reference,
     )
@@ -219,9 +203,11 @@ def reverse_order_refund(tx) -> None:
         locked_order.status = Order.Status.REFUNDED
         locked_order.save(update_fields=["status", "updated_at"])
 
-        referral = locked_order.referrals.select_for_update().filter(
-            status=Referral.Status.APPROVED
-        ).first()
+        referral = (
+            locked_order.referrals.select_for_update()
+            .filter(status=Referral.Status.APPROVED)
+            .first()
+        )
         if referral is None:
             return
         affiliate = AffiliateProfile.objects.select_for_update().get(pk=referral.affiliate_id)

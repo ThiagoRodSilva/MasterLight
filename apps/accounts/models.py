@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from apps.accounts.models import ProviderApplication
     from apps.affiliate.models import AffiliateProfile, Referral
     from apps.checkout.models import Address, Order
-    from apps.services.models import MaintenancePlan, Service, ServiceRequest
+    from apps.services.models import Service, ServiceRequest
 
 
 class CustomUser(AbstractUser):
@@ -62,8 +62,6 @@ class CustomUser(AbstractUser):
         assigned_service_requests: models.Manager["ServiceRequest"]
         created_services: models.Manager["Service"]
         services: models.Manager["Service"]
-        maintenance_plans: models.Manager["MaintenancePlan"]
-        maintenance_plans_as_provider: models.Manager["MaintenancePlan"]
         reviewed_applications: models.Manager["ProviderApplication"]
 
     def __str__(self) -> str:
@@ -93,11 +91,7 @@ class CustomUser(AbstractUser):
 
     def has_complete_payment_profile(self) -> bool:
         """Verifica se usuário tem CPF, telefone e endereço ativo para pagamentos."""
-        return bool(
-            self.cpf
-            and self.telefone
-            and self.addresses.filter(is_active=True).exists()
-        )
+        return bool(self.cpf and self.telefone and self.addresses.filter(is_active=True).exists())
 
     def get_display_name(self) -> str:
         """Retorna nome de exibição seguro (sem vazar email completo).

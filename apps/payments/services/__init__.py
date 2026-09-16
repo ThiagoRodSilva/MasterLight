@@ -5,7 +5,6 @@ from apps.payments.gateways import (
     AsaasGateway,
     ChargeResult,
     CheckoutResult,
-    ManualGateway,
     PaymentGateway,
     PaymentLinkResult,
     WebhookAuthError,
@@ -19,20 +18,17 @@ from apps.payments.orchestration import (
     create_payment_link,
     mark_order_paid,
     reverse_order_refund,
-    subscribe_plan,
     webhook_handler,
 )
 
 __all__ = [
     "create_checkout_for_order",
     "checkout_or_charge",
-    "subscribe_plan",
     "create_payment_link",
     "mark_order_paid",
     "reverse_order_refund",
     "webhook_handler",
     "AsaasGateway",
-    "ManualGateway",
     "ChargeResult",
     "CheckoutResult",
     "PaymentGateway",

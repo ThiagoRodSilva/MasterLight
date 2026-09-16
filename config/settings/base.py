@@ -164,13 +164,12 @@ CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
 
 # Pagamentos (app payments)
-PAYMENT_PROVIDER = env("PAYMENT_PROVIDER", default="manual")
+PAYMENT_PROVIDER = env("PAYMENT_PROVIDER", default="asaas")
 # Chave do Asaas lida crua via helper (ver env_helpers.py): sem o proxy de '$'
 # do django-environ, que zeraria chaves '$aact_...' em ambientes como a Vercel.
 ASAAS_API_KEY = asaas_api_key()
 ASAAS_SANDBOX = env.bool("ASAAS_SANDBOX", default=True)
 ASAAS_WEBHOOK_TOKEN = env("ASAAS_WEBHOOK_TOKEN", default="")
-MANUAL_WEBHOOK_TOKEN = env("MANUAL_WEBHOOK_TOKEN", default="")
 
 # Afiliados
 AFFILIATE_COOKIE_NAME = "ref"
@@ -220,10 +219,6 @@ SOCIAL_SIGNUP_EXEMPT_URLS = [
     "services-request-approve",
     "services-request-paylink",
     "services-request-cancel",
-    "services-plan-list",
-    "services-plan-subscribe",
-    "services-visits",
-    "services-visit-complete",
     "portfolio-list",
     "portfolio-detail",
     "portfolio-create",

@@ -12,7 +12,11 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("", home_view, name="home"),
     path("accounts/", include("apps.accounts.urls")),
-    path("social/completar-cadastro/", SocialSignupCompleteView.as_view(), name="social_signup_complete"),
+    path(
+        "social/completar-cadastro/",
+        SocialSignupCompleteView.as_view(),
+        name="social_signup_complete",
+    ),
     path("portfolio/", include("apps.portfolio.urls")),
     path("servicos/", include("apps.services.urls")),
     path("afiliados/", include("apps.affiliate.urls")),

@@ -3,7 +3,6 @@ from django.urls import path
 from .views import (
     CardConfirmationView,
     CheckoutCallbackView,
-    ManualConfirmationView,
     OrderStatusView,
     PixConfirmationView,
     ReconcilePaymentsView,
@@ -13,11 +12,6 @@ from .views import (
 urlpatterns = [
     path("webhook/", WebhookView.as_view(), name="payments-webhook"),
     path("reconciliar/", ReconcilePaymentsView.as_view(), name="payments-reconcile"),
-    path(
-        "manual/<uuid:order_pk>/",
-        ManualConfirmationView.as_view(),
-        name="payments-manual-confirm",
-    ),
     path(
         "pix/<uuid:order_pk>/",
         PixConfirmationView.as_view(),

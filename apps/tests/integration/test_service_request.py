@@ -42,7 +42,11 @@ class TestServiceRequestFlow(AsaasMockMixin, TestCase):
         self.client.force_login(self.client_user)
         response = self.client.post(
             reverse("services-request", args=[self.service.slug]),
-            {"prestador": self.provider.id, "address": "Rua Teste, 123", "scheduled_at": "2025-01-15T10:00"},
+            {
+                "prestador": self.provider.id,
+                "address": "Rua Teste, 123",
+                "scheduled_at": "2025-01-15T10:00",
+            },
             follow=True,
         )
         return response
@@ -69,7 +73,9 @@ class TestServiceRequestFlow(AsaasMockMixin, TestCase):
         from apps.payments.services import AsaasGateway
 
         AsaasGateway().charge(order, billing_type="PIX")
-        payload = json.dumps({"event": "PAYMENT_CONFIRMED", "payment": {"id": self.asaas.payment_id}})
+        payload = json.dumps(
+            {"event": "PAYMENT_CONFIRMED", "payment": {"id": self.asaas.payment_id}}
+        )
         AsaasGateway().webhook(payload, {"x-webhook-token": "segredo"})
 
     def test_service_request_complete_flow(self):
@@ -85,7 +91,9 @@ class TestServiceRequestFlow(AsaasMockMixin, TestCase):
         self.assertEqual(service_request.final_price, Decimal("200.00"))
 
         self._client_approve_and_pay(service_request)
-        order = Order.objects.filter(user=self.client_user, kind=Order.Kind.SERVICE).latest("created_at")
+        order = Order.objects.filter(user=self.client_user, kind=Order.Kind.SERVICE).latest(
+            "created_at"
+        )
         self.assertEqual(order.status, Order.Status.AWAITING_PAYMENT)
         self.assertEqual(order.items.count(), 1)
         self.assertEqual(order.items.first().unit_price, Decimal("200.00"))
@@ -106,7 +114,9 @@ class TestServiceRequestFlow(AsaasMockMixin, TestCase):
         service_request = ServiceRequest.objects.get(cliente=self.client_user)
 
         self.client.force_login(self.client_user)
-        response = self.client.post(reverse("services-request-cancel", args=[service_request.pk]), follow=True)
+        response = self.client.post(
+            reverse("services-request-cancel", args=[service_request.pk]), follow=True
+        )
         self.assertEqual(response.status_code, 200)
 
         service_request.refresh_from_db()
@@ -163,7 +173,11 @@ class TestServiceRequestPayLinkFlow(AsaasMockMixin, TestCase):
         self.client.force_login(self.client_user)
         response = self.client.post(
             reverse("services-request", args=[self.service.slug]),
-            {"prestador": self.provider.id, "address": "Rua Teste, 456", "scheduled_at": "2025-01-15T10:00"},
+            {
+                "prestador": self.provider.id,
+                "address": "Rua Teste, 456",
+                "scheduled_at": "2025-01-15T10:00",
+            },
             follow=True,
         )
         self.assertEqual(response.status_code, 200)
@@ -183,6 +197,7 @@ class TestServiceRequestPayLinkFlow(AsaasMockMixin, TestCase):
         )
         self.assertEqual(response.status_code, 200)
         import json
+
         data = json.loads(response.content)
         self.assertIn("url", data)
         service_request.refresh_from_db()
@@ -198,13 +213,17 @@ class TestServiceRequestPayLinkFlow(AsaasMockMixin, TestCase):
                 "payment": {
                     "id": payment_id,
                     "paymentLink": link_id,
-                    "value": float(service_request.final_price or service_request.service.base_price),
+                    "value": float(
+                        service_request.final_price or service_request.service.base_price
+                    ),
                 },
             }
         )
         AsaasGateway().webhook(payload, {"x-webhook-token": "segredo"})
 
         service_request.refresh_from_db()
-        order = Order.objects.filter(user=self.client_user, kind=Order.Kind.SERVICE).latest("created_at")
+        order = Order.objects.filter(user=self.client_user, kind=Order.Kind.SERVICE).latest(
+            "created_at"
+        )
         self.assertEqual(order.status, Order.Status.PAID)
         self.assertEqual(service_request.status, ServiceRequest.Status.APPROVED)

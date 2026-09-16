@@ -10,7 +10,14 @@ from .models import AffiliateProfile, PayoutRequest, Referral
 class ReferralInline(admin.TabularInline):
     model = Referral
     extra = 0
-    readonly_fields = ("status", "commission_amount", "commission_rate", "referred", "order", "created_at")
+    readonly_fields = (
+        "status",
+        "commission_amount",
+        "commission_rate",
+        "referred",
+        "order",
+        "created_at",
+    )
     can_delete = False
     show_change_link = True
 
@@ -26,7 +33,14 @@ class AffiliateProfileAdmin(admin.ModelAdmin):
 
 @admin.register(Referral)
 class ReferralAdmin(admin.ModelAdmin):
-    list_display = ("affiliate", "referred", "order", "status", "commission_amount", "commission_rate")
+    list_display = (
+        "affiliate",
+        "referred",
+        "order",
+        "status",
+        "commission_amount",
+        "commission_rate",
+    )
     list_filter = ("status",)
     date_hierarchy = "created_at"
     readonly_fields = ("commission_rate", "commission_amount", "created_at", "updated_at")

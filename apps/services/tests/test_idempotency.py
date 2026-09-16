@@ -2,24 +2,17 @@
 
 from decimal import Decimal
 
-from django.db import IntegrityError
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from apps.accounts.models import CustomUser
 from apps.checkout.models import Order
 from apps.core.models import SiteSettings
-from apps.services.models import (
-    MaintenancePlan,
-    MaintenancePlanTemplate,
-    Service,
-    ServiceCategory,
-    ServiceRequest,
-)
-from apps.tests.helpers import make_user
+from apps.services.models import Service, ServiceCategory, ServiceRequest
+from apps.tests.helpers import AsaasMockMixin, make_user
 
 
-class TestIdempotency(TestCase):
+class TestIdempotency(AsaasMockMixin, TestCase):
     """Testes de idempotencia: POST duplicado nao deve criar duplicatas."""
 
     def setUp(self):
@@ -65,35 +58,6 @@ class TestIdempotency(TestCase):
         # Deve redirecionar com mensagem de erro, nao criar 2a order
         assert Order.objects.filter(user=self.cliente).count() == 1
         assert sr.order == order1  # Mesma order
-
-    def test_double_post_subscribe_creates_single_plan(self):
-        """Duplo POST em services-plan-subscribe deve criar apenas 1 MaintenancePlan + 1 Order."""
-        prestador = make_user(role=CustomUser.Role.PRESTADOR)
-        self.client.force_login(self.cliente)
-
-        # Primeiro POST
-        response1 = self.client.post(
-            reverse("services-plan-subscribe"),
-            {"plan_type": "mensal", "prestador": prestador.pk},
-        )
-        assert response1.status_code == 302
-        plan1 = MaintenancePlan.objects.get(client=self.cliente)
-        order1 = plan1.order
-        assert MaintenancePlan.objects.filter(client=self.cliente, is_active=True).count() == 1
-        assert Order.objects.filter(user=self.cliente, kind=Order.Kind.SUBSCRIPTION).count() == 1
-
-        # Segundo POST (duplo submit ou voltar a pagina e submeter novamente)
-        response2 = self.client.post(
-            reverse("services-plan-subscribe"),
-            {"plan_type": "mensal", "prestador": prestador.pk},
-        )
-        assert response2.status_code == 302
-        # Deve redirecionar com mensagem de erro
-        assert MaintenancePlan.objects.filter(client=self.cliente, is_active=True).count() == 1
-        assert Order.objects.filter(user=self.cliente, kind=Order.Kind.SUBSCRIPTION).count() == 1
-        plan2 = MaintenancePlan.objects.get(client=self.cliente)
-        assert plan2 == plan1
-        assert plan2.order == order1
 
 
 class TestQuoteFormValidation(TestCase):
@@ -164,7 +128,7 @@ class TestQuoteFormValidation(TestCase):
         assert sr.final_price is None or sr.final_price == self.service.base_price
 
 
-class TestFinalPriceZero(TestCase):
+class TestFinalPriceZero(AsaasMockMixin, TestCase):
     """Testes para final_price = 0 na aprovacao."""
 
     def setUp(self):
@@ -181,7 +145,6 @@ class TestFinalPriceZero(TestCase):
         )
         self.service.providers.add(self.provider)
 
-    @override_settings(PAYMENT_PROVIDER="manual")
     def test_approve_with_final_price_zero_creates_order_item_zero(self):
         """Aprovar orçamento com final_price=0 deve criar OrderItem com unit_price=0."""
         sr = ServiceRequest.objects.create(
@@ -198,12 +161,13 @@ class TestFinalPriceZero(TestCase):
         order = sr.order
         assert order is not None
         from apps.checkout.models import OrderItem
+
         item = OrderItem.objects.get(order=order)
         assert item.unit_price == Decimal("0.00")
         assert order.total == Decimal("0.00")
 
 
-class TestCancelRequestCancelsOrder(TestCase):
+class TestCancelRequestCancelsOrder(AsaasMockMixin, TestCase):
     """Cancelar request com Order AWAITING_PAYMENT deve cancelar a Order."""
 
     def setUp(self):
@@ -220,7 +184,6 @@ class TestCancelRequestCancelsOrder(TestCase):
         )
         self.service.providers.add(self.provider)
 
-    @override_settings(PAYMENT_PROVIDER="manual")
     def test_cancel_request_cancels_awaiting_payment_order(self):
         """Cancelar request com Order AWAITING_PAYMENT deve setar Order.status = CANCELED."""
         sr = ServiceRequest.objects.create(
@@ -244,49 +207,6 @@ class TestCancelRequestCancelsOrder(TestCase):
         order.refresh_from_db()
         assert sr.status == ServiceRequest.Status.CANCELED
         assert order.status == Order.Status.CANCELED
-
-
-class TestMaintenancePlanTemplateUniqueConstraint(TestCase):
-    """Teste da constraint unique em MaintenancePlanTemplate.plan_type (is_active=True)."""
-
-    def setUp(self):
-        super().setUp()
-        # Delete seed plans to avoid unique constraint conflicts
-        MaintenancePlanTemplate.objects.all().delete()
-
-    def test_duplicate_active_plan_type_raises_integrity_error(self):
-        """Dois templates ativos com mesmo plan_type devem falhar com IntegrityError."""
-        MaintenancePlanTemplate.objects.create(
-            name="Plano Mensal 1",
-            plan_type="mensal",
-            value="79.90",
-            is_active=True,
-        )
-        # Segundo template ativo com mesmo plan_type deve falhar
-        with self.assertRaises(IntegrityError):
-            MaintenancePlanTemplate.objects.create(
-                name="Plano Mensal 2",
-                plan_type="mensal",
-                value="99.90",
-                is_active=True,
-            )
-
-    def test_inactive_duplicate_plan_type_allowed(self):
-        """Template inativo com mesmo plan_type de ativo deve ser permitido."""
-        MaintenancePlanTemplate.objects.create(
-            name="Plano Mensal Ativo",
-            plan_type="mensal",
-            value="79.90",
-            is_active=True,
-        )
-        # Inativo com mesmo plan_type deve ser permitido
-        template2 = MaintenancePlanTemplate.objects.create(
-            name="Plano Mensal Inativo",
-            plan_type="mensal",
-            value="99.90",
-            is_active=False,
-        )
-        assert template2.pk is not None
 
 
 class TestGetMethodReturns405(TestCase):
@@ -318,26 +238,6 @@ class TestGetMethodReturns405(TestCase):
         response = self.client.get(reverse("services-request-cancel", kwargs={"pk": sr.pk}))
         # View foi convertida para View POST-only com get() redirecionando
         assert response.status_code in (302, 405)
-
-    def test_get_visit_complete_returns_405(self):
-        """GET em services-visit-complete deve retornar 405 (nao 500)."""
-        from apps.checkout.models import Order
-        order = Order.objects.create(user=self.cliente, status=Order.Status.PAID, kind=Order.Kind.SUBSCRIPTION)
-        plan = MaintenancePlan.objects.create(
-            plan_type="mensal",
-            value="79.90",
-            next_due_date="2025-01-01",
-            client=self.cliente,
-            prestador=self.provider,
-            order=order,
-        )
-        from django.utils import timezone
-
-        from apps.services.models import MaintenanceVisit
-        visit = MaintenanceVisit.objects.create(plan=plan, scheduled_at=timezone.now())
-        self.client.force_login(self.provider)
-        response = self.client.get(reverse("services-visit-complete", kwargs={"pk": visit.pk}))
-        assert response.status_code == 405
 
 
 class TestServiceListViewMineExcludesInactive(TestCase):
@@ -392,11 +292,3 @@ class TestSectionsEnabled(TestCase):
         settings.save(update_fields=["services_enabled"])
         response = self.client.get(reverse("services-list"))
         assert response.status_code == 404
-
-    def test_maintenance_list_404_when_disabled(self):
-        settings = SiteSettings.load()
-        settings.maintenance_enabled = False
-        settings.save(update_fields=["maintenance_enabled"])
-        response = self.client.get(reverse("services-plan-list"))
-        assert response.status_code == 404
-

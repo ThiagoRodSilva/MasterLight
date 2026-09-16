@@ -23,7 +23,9 @@ class TestAsaasEndToEnd(AsaasMockMixin, TestCase):
     def _pay(self, order):
         """Gera cobrança asaas e dispara webhook CONFIRMED."""
         AsaasGateway().charge(order, billing_type="PIX")
-        payload = json.dumps({"event": "PAYMENT_CONFIRMED", "payment": {"id": self.asaas.payment_id}})
+        payload = json.dumps(
+            {"event": "PAYMENT_CONFIRMED", "payment": {"id": self.asaas.payment_id}}
+        )
         AsaasGateway().webhook(payload, {"x-webhook-token": "segredo"})
 
     def test_paid_transaction_approves_referral(self):

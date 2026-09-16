@@ -168,17 +168,6 @@ class TestApprovalPayLink(AsaasMockMixin, TestCase):
         response = self.client.post(reverse("services-request-paylink", kwargs={"pk": sr.pk}))
         assert response.status_code == 404
 
-    def test_paylink_manual_provider_returns_error(self):
-        provider = make_user(role=CustomUser.Role.PRESTADOR)
-        cliente = make_user(role=CustomUser.Role.CLIENTE)
-        sr = self._make_quoted_request(cliente, provider)
-
-        self.client.force_login(cliente)
-        with override_settings(PAYMENT_PROVIDER="manual"):
-            response = self.client.post(reverse("services-request-paylink", kwargs={"pk": sr.pk}))
-        assert response.status_code == 400
-        assert response.json()["error"]
-
     def test_paylink_persists_link_id(self):
         provider = make_user(role=CustomUser.Role.PRESTADOR)
         cliente = make_user(role=CustomUser.Role.CLIENTE)
@@ -278,6 +267,7 @@ class TestApprovalPayLink(AsaasMockMixin, TestCase):
         # Create order directly (bypassing approve view which requires QUOTED status)
         from apps.checkout.models import Order, OrderItem
         from apps.payments.models import Transaction
+
         order = Order.objects.create(
             user=cliente,
             status=Order.Status.AWAITING_PAYMENT,

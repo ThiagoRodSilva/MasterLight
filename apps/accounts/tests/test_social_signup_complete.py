@@ -36,27 +36,34 @@ class SocialSignupCompleteViewTest(TestCase):
 
     def test_form_valid_creates_address_and_logs_in(self):
         """Form válido -> cria Address, conecta SocialAccount, loga usuário."""
-        user = CustomUser.objects.create_user(username="social", email="social@test.com", password="x")
+        user = CustomUser.objects.create_user(
+            username="social", email="social@test.com", password="x"
+        )
         sociallogin = mock.Mock(spec=SocialLogin)
         sociallogin.user = user
         sociallogin.connect = mock.Mock()
 
-        request = self.factory.post(self.url, {
-            "role": "cliente",
-            "cpf": "123.456.789-09",
-            "telefone": "11999999999",
-            "street": "Rua Teste",
-            "number": "123",
-            "city": "São Paulo",
-            "state": "SP",
-            "zip_code": "01234567",
-            "country": "Brasil",
-        })
+        request = self.factory.post(
+            self.url,
+            {
+                "role": "cliente",
+                "cpf": "123.456.789-09",
+                "telefone": "11999999999",
+                "street": "Rua Teste",
+                "number": "123",
+                "city": "São Paulo",
+                "state": "SP",
+                "zip_code": "01234567",
+                "country": "Brasil",
+            },
+        )
         self._add_middleware(request)
         request.session["sociallogin"] = {"mock": "data"}
         request.user = user
 
-        with mock.patch("allauth.socialaccount.models.SocialLogin.deserialize", return_value=sociallogin):
+        with mock.patch(
+            "allauth.socialaccount.models.SocialLogin.deserialize", return_value=sociallogin
+        ):
             response = self.view(request)
 
         self.assertEqual(response.status_code, 302)

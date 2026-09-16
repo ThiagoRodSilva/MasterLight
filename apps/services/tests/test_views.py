@@ -150,7 +150,9 @@ class TestServiceRequestFlow(TestCase):
             created_by=self.provider,
         )
         cliente = make_user(role=CustomUser.Role.CLIENTE)
-        sr = ServiceRequest.objects.create(cliente=cliente, service=service, prestador=self.provider)
+        sr = ServiceRequest.objects.create(
+            cliente=cliente, service=service, prestador=self.provider
+        )
         self.client.force_login(self.provider)
         response = self.client.get(reverse("services-provider-requests"))
         assert response.status_code == 200
@@ -224,9 +226,7 @@ class TestServiceRequestFlow(TestCase):
         cliente = make_user(role=CustomUser.Role.CLIENTE)
         sr = self._quoted_request(cliente, provider)
         self.client.force_login(cliente)
-        with mock.patch(
-            "apps.payments.services.checkout_or_charge", return_value=None
-        ):
+        with mock.patch("apps.payments.services.checkout_or_charge", return_value=None):
             response = self.client.post(reverse("services-request-approve", kwargs={"pk": sr.pk}))
         assert response.status_code == 302
         order = Order.objects.get(user=cliente)
@@ -241,9 +241,7 @@ class TestServiceRequestFlow(TestCase):
         cliente = make_user(role=CustomUser.Role.CLIENTE)
         sr = self._quoted_request(cliente, provider)
         self.client.force_login(cliente)
-        with mock.patch(
-            "apps.payments.services.checkout_or_charge", return_value=None
-        ):
+        with mock.patch("apps.payments.services.checkout_or_charge", return_value=None):
             response = self.client.post(reverse("services-request-approve", kwargs={"pk": sr.pk}))
         assert response.status_code == 302
         order = Order.objects.get(user=cliente)
@@ -372,7 +370,9 @@ class TestProviderRequestListQueries(TestCase):
 
     def test_provider_requests_uses_select_related(self):
         """ProviderServiceRequestListView deve usar select_related para service, cliente, prestador."""
-        ServiceRequest.objects.create(cliente=self.cliente, service=self.service, prestador=self.provider)
+        ServiceRequest.objects.create(
+            cliente=self.cliente, service=self.service, prestador=self.provider
+        )
         self.client.force_login(self.provider)
         # Framework: session + user + socialaccount = 3
         # Sitesettings: 1
@@ -402,7 +402,9 @@ class TestMyRequestsQueries(TestCase):
 
     def test_my_requests_uses_select_related(self):
         """MyServiceRequestListView deve usar select_related para service, prestador."""
-        ServiceRequest.objects.create(cliente=self.cliente, service=self.service, prestador=self.provider)
+        ServiceRequest.objects.create(
+            cliente=self.cliente, service=self.service, prestador=self.provider
+        )
         self.client.force_login(self.cliente)
         # Framework: session + user + socialaccount = 3
         # Sitesettings: 1

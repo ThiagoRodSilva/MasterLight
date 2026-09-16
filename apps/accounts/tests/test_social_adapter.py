@@ -47,7 +47,9 @@ class CustomSocialAccountAdapterTest(TestCase):
     def test_save_user_creates_cliente_role(self):
         """Cria usuário com role=cliente."""
         sociallogin = mock.Mock(spec=SocialLogin)
-        user = CustomUser.objects.create_user(username="social", email="social@test.com", password="x")
+        user = CustomUser.objects.create_user(
+            username="social", email="social@test.com", password="x"
+        )
         sociallogin.user = user
         result_user = self.adapter.save_user(self.request, sociallogin)
         self.assertEqual(result_user.role, CustomUser.Role.CLIENTE)

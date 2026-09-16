@@ -12,7 +12,6 @@ class TestSiteSettingsSaveUpdateFields(TestCase):
         obj = SiteSettings.load()
         obj.services_enabled = True
         obj.affiliates_enabled = True
-        obj.maintenance_enabled = True
         obj.provider_registration_enabled = True
         obj.save()
 
@@ -25,7 +24,6 @@ class TestSiteSettingsSaveUpdateFields(TestCase):
         reloaded = SiteSettings.load()
         self.assertFalse(reloaded.services_enabled)
         self.assertTrue(reloaded.affiliates_enabled)
-        self.assertTrue(reloaded.maintenance_enabled)
         self.assertTrue(reloaded.provider_registration_enabled)
 
         # Simula instância B (stale, ainda tem services_enabled=True em memória)
@@ -49,14 +47,12 @@ class TestSiteSettingsSaveUpdateFields(TestCase):
         obj = SiteSettings.load()
         obj.services_enabled = False
         obj.affiliates_enabled = False
-        obj.maintenance_enabled = False
         obj.provider_registration_enabled = False
         obj.save()  # sem update_fields
 
         reloaded = SiteSettings.load()
         self.assertFalse(reloaded.services_enabled)
         self.assertFalse(reloaded.affiliates_enabled)
-        self.assertFalse(reloaded.maintenance_enabled)
         self.assertFalse(reloaded.provider_registration_enabled)
 
     def test_updated_at_updated_on_partial_save(self):
