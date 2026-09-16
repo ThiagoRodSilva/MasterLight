@@ -24,19 +24,21 @@ class TestCheckoutOrCharge(TestCase):
         super().setUp()
         self.factory = RequestFactory()
         self.user = make_user(role=CustomUser.Role.CLIENTE)
-        from apps.shop.models import Category, Product
-        category = Category.objects.create(name="Teste", slug="teste")
-        product = Product.objects.create(name="Produto Teste", slug="produto-teste", price=100, category=category, stock=10)
-        self.order = Order.objects.create(
-            user=self.user, status=Order.Status.AWAITING_PAYMENT
+        from apps.services.models import Service, ServiceCategory
+
+        category = ServiceCategory.objects.create(name="Teste", slug="teste")
+        service = Service.objects.create(
+            name="Serviço Teste", slug="servico-teste", base_price=100, category=category
         )
+        self.order = Order.objects.create(user=self.user, status=Order.Status.AWAITING_PAYMENT)
         from apps.checkout.models import OrderItem
+
         OrderItem.objects.create(
             order=self.order,
-            product=product,
-            name=product.name,
+            service=service,
+            name=service.name,
             qty=1,
-            unit_price=product.price,
+            unit_price=service.base_price,
         )
         self.order.recompute_total()
 
@@ -55,7 +57,10 @@ class TestCheckoutOrCharge(TestCase):
         request = _with_middleware(self.factory.post("/", {}))
         with self.settings(PAYMENT_PROVIDER="asaas", ASAAS_API_KEY="teste", ASAAS_SANDBOX=True):
             # Mock create_checkout_for_order para levantar erro
-            with patch("apps.payments.orchestration.create_checkout_for_order", side_effect=ValueError("Falha no Asaas")):
+            with patch(
+                "apps.payments.orchestration.create_checkout_for_order",
+                side_effect=ValueError("Falha no Asaas"),
+            ):
                 with patch("django.contrib.messages.error"):
                     request = _with_middleware(self.factory.post("/", {}))
                     result = checkout_or_charge(self.order, request)
@@ -72,9 +77,7 @@ class TestCheckoutOrCharge(TestCase):
     def test_empty_cart_returns_none(self):
         """Pedido sem itens deve falhar ao criar checkout."""
         request = _with_middleware(self.factory.post("/", {}))
-        empty_order = Order.objects.create(
-            user=self.user, status=Order.Status.AWAITING_PAYMENT
-        )
+        empty_order = Order.objects.create(user=self.user, status=Order.Status.AWAITING_PAYMENT)
         with self.settings(PAYMENT_PROVIDER="asaas", ASAAS_API_KEY="teste", ASAAS_SANDBOX=True):
             result = checkout_or_charge(empty_order, request)
         assert result is None

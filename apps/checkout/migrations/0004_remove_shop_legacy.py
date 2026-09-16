@@ -21,11 +21,20 @@ def drop_shop_legacy(apps, schema_editor):
                     cursor, "checkout_orderitem"
                 )
             }
-            for column in ("product_id", "variant_id"):
-                if column in columns:
-                    cursor.execute(
-                        f'ALTER TABLE "checkout_orderitem" DROP COLUMN "{column}"'
-                    )
+            to_drop = [col for col in ("product_id", "variant_id") if col in columns]
+            if to_drop and connection.vendor == "sqlite":
+                # SQLite não remove índices dependentes no DROP COLUMN
+                # (Postgres remove automaticamente). Dropa-os antes.
+                constraints = connection.introspection.get_constraints(
+                    cursor, "checkout_orderitem"
+                )
+                for name, info in constraints.items():
+                    if info.get("index") and set(info.get("columns") or []) & set(to_drop):
+                        cursor.execute(f'DROP INDEX IF EXISTS "{name}"')
+            for column in to_drop:
+                cursor.execute(
+                    f'ALTER TABLE "checkout_orderitem" DROP COLUMN "{column}"'
+                )
         for table in ("shop_productimage", "shop_productvariant", "shop_product", "shop_category"):
             if table in tables:
                 cursor.execute(f'DROP TABLE "{table}"')

@@ -36,6 +36,7 @@ class TestAsaasGatewayHostedCheckout(TestCase):
 
     def _address(self, user):
         from apps.checkout.models import Address
+
         return Address.objects.create(
             user=user,
             street="Rua A",
@@ -48,17 +49,19 @@ class TestAsaasGatewayHostedCheckout(TestCase):
 
     def test_create_checkout_returns_url(self):
         from apps.checkout.models import Order, OrderItem
-        from apps.shop.models import Category, Product
+        from apps.services.models import Service, ServiceCategory
 
         user = self._user()
         self._address(user)
 
-        category = Category.objects.create(name="Teste", slug="teste")
-        product = Product.objects.create(
-            name="Produto Teste", slug="produto-teste", price=100, category=category, stock=10
+        category = ServiceCategory.objects.create(name="Teste", slug="teste")
+        service = Service.objects.create(
+            name="Serviço Teste", slug="servico-teste", base_price=100, category=category
         )
         order = Order.objects.create(user=user, status=Order.Status.AWAITING_PAYMENT)
-        OrderItem.objects.create(order=order, product=product, name=product.name, qty=1, unit_price=product.price)
+        OrderItem.objects.create(
+            order=order, service=service, name=service.name, qty=1, unit_price=service.base_price
+        )
         order.recompute_total()
 
         from django.test import RequestFactory

@@ -1,6 +1,6 @@
 # MasterLight
 
-Plataforma de **serviços elétricos + loja + afiliados** com assinatura de manutenção recorrente, autenticação social (Google/Facebook/Apple) e pagamentos Pix/cartão/boleto via Asaas.
+Plataforma de **serviços elétricos + afiliados** com assinatura de manutenção recorrente, autenticação social (Google/Facebook/Apple) e pagamentos Pix/cartão via Asaas.
 
 ![CI](https://github.com/ThiagoRodSilva/MasterLight/actions/workflows/ci.yml/badge.svg)
 ![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
@@ -35,12 +35,11 @@ Plataforma de **serviços elétricos + loja + afiliados** com assinatura de manu
 
 A MasterLight une três negócios em uma única plataforma Django:
 
-1. **Loja** — catálogo de produtos com categorias, variantes e imagens.
-2. **Serviços de elétrica** — prestadores se cadastram via self-service, clientes solicitam orçamento, aprovam com pagamento online e acompanham o status.
-3. **Afiliados** — divulgação com link `?ref=CODE`, comissão por venda e saque via Pix.
-4. **Assinatura de manutenção** — planos mensal/trimestral/anual com cobrança recorrente e agenda de visitas para o prestador.
+1. **Serviços de elétrica** — prestadores se cadastram via self-service, clientes solicitam orçamento, aprovam com pagamento online e acompanham o status.
+2. **Afiliados** — divulgação com link `?ref=CODE`, comissão por venda e saque via Pix.
+3. **Assinatura de manutenção** — planos mensal/trimestral/anual com cobrança recorrente e agenda de visitas para o prestador.
 
-O público pode navegar em `/loja/`, `/servicos/` e `/afiliados/`. Seções são ligadas/desligadas por flags no banco (`SiteSettings`, editável no Admin).
+O público pode navegar em `/servicos/` e `/afiliados/`. Seções são ligadas/desligadas por flags no banco (`SiteSettings`, editável no Admin).
 
 ## Stack
 
@@ -50,19 +49,18 @@ O público pode navegar em `/loja/`, `/servicos/` e `/afiliados/`. Seções são
 | Banco | PostgreSQL (Supabase) via `DATABASE_URL` — `psycopg[binary]` |
 | Auth | django-allauth (Google / Facebook / Apple) + login email/username |
 | Frontend | Bootstrap 5.3.3 self-hosted · django-crispy-forms · widget-tweaks |
-| Pagamentos | `PaymentGateway` abstrato — `ManualGateway` (dev) e `AsaasGateway` (Pix/cartão/boleto) |
+| Pagamentos | `PaymentGateway` abstrato — `ManualGateway` (dev) e `AsaasGateway` (Pix/cartão) |
 | Estáticos | Whitenoise (collectstatic no build) |
 | Testes | runner nativo Django + coverage (SQLite em memória) |
 | CI | GitHub Actions (ruff, migrations, check, testes) |
 
 ## Funcionalidades
 
-- **Loja**: produtos com `ProductImage`/`ProductVariant`, categorias, busca (`?q=`), paginação, destaque (`featured`).
 - **Serviços**: `Service` + `ServiceCategory`, self-service de prestador (`services-my`), solicitação de orçamento (`services-request`), orçamento (`ServiceQuoteView`), aprovação que cria `Order` e cobra (`ServiceRequestApproveView`), link de pagamento avulso com reconciliação (`ServiceRequestPayLinkView`), cancelamento.
 - **Assinatura de manutenção**: `MaintenancePlan` (mensal/trimestral/anual), cobrança recorrente via `subscribe()` ou Checkout hosted `RECURRENT`, `MaintenanceVisit` pendentes/concluídas no dashboard do prestador.
 - **Afiliados**: landing pública (`affiliate-landing`), painel (`affiliate-dashboard`), cadastro de chave Pix, `Referral` por `?ref=` cookie, `PayoutRequest`.
-- **Checkout**: carrinho por sessão (classe Python, sem model), `Order`/`OrderItem`/`Address`, recompute de total e decremento de estoque.
-- **Pagamentos**: `Transaction` com `external_id` (id Asaas) e `raw_payload` (ex.: `bankSlip` do boleto); webhook valida `x-webhook-token`.
+- **Checkout**: `Order`/`OrderItem`/`Address`, recompute de total.
+- **Pagamentos**: `Transaction` com `external_id` (id Asaas) e `raw_payload` (ex.: `pix` do QR Code); webhook valida `x-webhook-token`.
 - **Admin**: registro completo com `list_display`/`list_filter`/inlines + `SiteSettings` (flags de seção) e `ProviderApplication` (aprovação de prestador).
 
 ## Arquitetura
@@ -82,9 +80,8 @@ apps/
 ├── accounts/    # CustomUser (roles), perfis, ProviderApplication, signup social
 ├── portfolio/   # Portfólio do prestador
 ├── services/    # Serviços, orçamentos, planos de manutenção
-├── shop/        # Produtos, categorias, variantes, imagens
 ├── affiliate/   # Landing, painel, Referral, PayoutRequest
-├── checkout/    # Cart (sessão), Order, OrderItem, Address
+├── checkout/    # Order, OrderItem, Address
 ├── payments/    # Transaction, PaymentGateway, webhook, reconciliação
 └── tests/       # helpers/factories compartilhados
 ```
@@ -97,16 +94,14 @@ apps/
 | `apps.accounts` | `CustomUser` (roles), `PublicProfile`, `ProviderApplication`, signals de perfil |
 | `apps.portfolio` | CRUD do portfólio do prestador (imagem por URL) |
 | `apps.services` | Categorias/serviços, orçamentos, self-service de prestador, planos de manutenção e visitas |
-| `apps.shop` | Produtos, variantes, imagens, listagem/detalhe/busca |
 | `apps.affiliate` | Landing pública, painel, `Referral`, `PayoutRequest` |
-| `apps.checkout` | Carrinho (sessão), `Order`, `OrderItem`, `Address` |
+| `apps.checkout` | `Order`, `OrderItem`, `Address` |
 | `apps.payments` | `Transaction`, `ManualGateway`/`AsaasGateway`, webhook, reconciliação |
 
 ### Pontos-chave
 
-- **PKs UUID**: todos os modelos de domínio herdam `BaseModel` — URLs de detalhe/edição usam `<uuid:pk>`. Listagens públicas de `shop`/`services` usam `<slug:slug>` (slugs aleatórios auto-gerados por `RandomSlugMixin`).
+- **PKs UUID**: todos os modelos de domínio herdam `BaseModel` — URLs de detalhe/edição usam `<uuid:pk>`. Listagens públicas de `services` usam `<slug:slug>` (slugs aleatórios auto-gerados por `RandomSlugMixin`).
 - **Roles** (`CustomUser.Role`): `cliente`, `prestador`, `afiliado`, `admin` — comparadas como strings cruas nos mixins (`ProviderRequiredMixin`, `AffiliateRequiredMixin`, `ClienteRequiredMixin`, `OwnerRequiredMixin`) e no `SectionEnabledMixin` (404 quando a seção está off).
-- **`Cart`** em `apps/checkout` é classe Python por sessão — não é model.
 - **Business logic** mora em `services.py` (camada de aplicação); views são wrappers. Services levantam `ValueError` para erros de domínio e usam `transaction.atomic()`.
 - **Gateway abstrato**: `PaymentGateway` em `apps/payments/services.py` com `charge`/`refund`/`webhook`/`subscribe`/`tokenize_credit_card` + `create_payment_link`; providers registrados em `_REGISTRY` e selecionados por `PAYMENT_PROVIDER`.
 
@@ -118,20 +113,19 @@ apps/
 | `/admin/` | Django Admin | ❌ |
 | `/accounts/` | accounts (`me`, `u/<username>`) | parcial |
 | `/portfolio/` | portfolio | parcial |
-| `/servicos/` | services (loja de serviços, planos, visitas) | parcial |
-| `/loja/` | shop |  |
+| `/servicos/` | services (catálogo de serviços, planos, visitas) | parcial |
 | `/afiliados/` | affiliate (landing + painel) | parcial |
 | `/carrinho/` | checkout | ❌ |
 | `/pagamentos/` | payments (webhook, confirmações, status) | parcial |
 | `/social/` | allauth (login social) |  |
 
-> Cada app declara `urls.py` próprio (raiz `home` em `config/urls.py`) com **nomes de URL manualmente prefixados** (ex.: `checkout-*`, `services-*`, `shop-*`), sem `app_name`. Use `reverse("...")`/`reverse_lazy("...")` com esses nomes.
+> Cada app declara `urls.py` próprio (raiz `home` em `config/urls.py`) com **nomes de URL manualmente prefixados** (ex.: `checkout-*`, `services-*`), sem `app_name`. Use `reverse("...")`/`reverse_lazy("...")` com esses nomes.
 
 ## Modelo de dados
 
 | App | Modelo | Destaques |
 |---|---|---|
-| core | `SiteSettings` | singleton (pk=1), flags `store_enabled`/`services_enabled`/`affiliates_enabled`/`maintenance_enabled`/`provider_registration_enabled` |
+| core | `SiteSettings` | singleton (pk=1), flags `services_enabled`/`affiliates_enabled`/`maintenance_enabled`/`provider_registration_enabled` |
 | accounts | `CustomUser` | `USERNAME_FIELD="email"`, `role`, `asaas_customer_id`, avatar (URL) |
 | accounts | `PublicProfile` / `ProviderApplication` | 1:1 user; aplicação de prestador com status |
 | portfolio | `PortfolioItem` | `image` (URL), `created_by` |
@@ -139,7 +133,6 @@ apps/
 | services | `ServiceRequest` | `cliente`, `prestador`, `service`, `order` 1:1 `checkout.Order`, status `pending→quoted→approved→concluded/canceled` |
 | services | `MaintenancePlan` | `plan_type` (mensal/trimestral/anual), `value`, `next_due_date`, `order` 1:1, `asaas_subscription_id`, `cycle_days()` |
 | services | `MaintenanceVisit` | `plan`, `scheduled_at`, `completed_at`, `is_pending` |
-| shop | `Category` / `Product` | `sku` único, `stock`, `featured`, `cover`; `ProductVariant`, `ProductImage` (URL) |
 | affiliate | `AffiliateProfile` | `code` (p/ `?ref=`), `pix_key`, `commission_rate`, `balance` |
 | affiliate | `Referral` / `PayoutRequest` | status pending/approved/rejected/paid/canceled; saque via Pix |
 | checkout | `Order` / `OrderItem` / `Address` | status, `kind` (product/service/subscription), `recompute_total()`/`decrement_stock()` |
@@ -209,8 +202,7 @@ Fluxos suportados pelo `AsaasGateway`:
 |---|---|---|
 | Pix | cobrança `PIX` | `payments-pix-confirm` (QR code) |
 | Cartão | tokenização via `tokenize_credit_card` | `payments-card-confirm` |
-| Boleto | cobrança `BOLETO`, guarda `bankSlip` em `raw_payload` | `payments-boleto-confirm` |
-| Checkout hosted | `create_checkout()` (`POST /checkouts`, página do Asaas) — **fluxo padrão com provider `asaas`** (loja, orçamento e assinatura), webhook `CHECKOUT_PAID`/`CHECKOUT_EXPIRED` | redireciona para a URL do Asaas; callback `payments-checkout-callback` |
+| Checkout hosted | `create_checkout()` (`POST /checkouts`, página do Asaas) — **fluxo padrão com provider `asaas`** (orçamento e assinatura), webhook `CHECKOUT_PAID`/`CHECKOUT_EXPIRED` | redireciona para a URL do Asaas; callback `payments-checkout-callback` |
 | Link avulso | `create_payment_link()` (`POST /paymentLinks`, tela hospedada) | nova aba; pago, o webhook `payment.paymentLink` **reconcilia**: cria `Order`+`Transaction` e aprova a `ServiceRequest` |
 
 > Em desenvolvimento, deixe `PAYMENT_PROVIDER=manual` — nenhuma API real é chamada, apenas transações marcadas.
@@ -260,7 +252,7 @@ DJANGO_SETTINGS_MODULE=config.settings.test venv/bin/coverage run manage.py test
 venv/bin/coverage report --fail-under=70
 ```
 
-- Helpers compartilhados em `apps/tests/helpers.py`: `make_user`/`make_product`/`make_category`/`make_affiliate`, `create_order()` e o mock `FakeAsaasApi` (`AsaasMockMixin` ou `mock_asaas()`).
+- Helpers compartilhados em `apps/tests/helpers.py`: `make_user`/`make_service`/`make_service_category`/`make_affiliate`, `create_order()` e o mock `FakeAsaasApi` (`AsaasMockMixin` ou `mock_asaas()`).
 - Testes por app em `apps/**/tests/`.
 - CI (`.github/workflows/ci.yml`, Python 3.12): ruff → `makemigrations --check` → `manage.py check` (dev e vercel) → testes + cobertura.
 
@@ -299,7 +291,7 @@ venv/bin/coverage report --fail-under=70
 
 ## FAQ / Troubleshooting
 
-**Uma rota pública voltou 404 "do nada".** Cheque o `SiteSettings` no Admin (`pk=1`) — cada seção tem uma flag (`store_enabled`, `services_enabled`, ...). Quando off, a view devolve 404. Não é env var.
+**Uma rota pública voltou 404 "do nada".** Cheque o `SiteSettings` no Admin (`pk=1`) — cada seção tem uma flag (`services_enabled`, `affiliates_enabled`, ...). Quando off, a view devolve 404. Não é env var.
 
 **Login do admin falha na produção.** Confirme que a `DATABASE_URL` da Vercel aponta para o Supabase onde o usuário foi criado (session mode 5432).
 
@@ -311,9 +303,9 @@ venv/bin/coverage report --fail-under=70
 
 ## Roadmap
 
-- [x] Asaas Checkout hosted (página de pagamento do Asaas) substituindo o checkout embutido em loja, orçamento e assinatura.
+- [x] Asaas Checkout hosted (página de pagamento do Asaas) substituindo o checkout embutido em orçamento e assinatura.
 - [x] Reconciliação automática de `paymentLink` (link avulso agora cria `Order`+`Transaction` e aprova a solicitação no webhook).
-- [ ] Parcelamento (installments) e boleto no cartão.
+- [ ] Parcelamento (installments) no cartão.
 - [ ] `GET /checkouts/{id}` na reconciliação ativa (`sync_payments`) — hoje os checkouts são reconciliados apenas por webhook.
 - [ ] Expandir cobertura de testes além de 95% (meta mínima 70% no CI).
 
@@ -329,7 +321,7 @@ venv/bin/coverage report --fail-under=70
 
 - **Navbar**: preta, sticky — funcional mas "crua" (sem contador de carrinho, sem CTA, mobile básico).
 - **Home**: hero centrado simples + 3 cards + 4 passos + 3 destaques + faixa escura. Sem prova social, sem destaques de produtos/serviços, sem "por que confiar".
-- **Listagens** (loja/serviços/portfólio): topo título+busca + chips + grid uniforme de cards. Sem card em destaque, sem contexto/suporte.
+- **Listagens** (serviços/portfólio): topo título+busca + chips + grid uniforme de cards. Sem card em destaque, sem contexto/suporte.
 - **Detalhes** (produto/serviço): 2 colunas básicas, sem galeria clicável, sem stock/garantia, sem relacionados.
 - **Painéis** (afiliado/prestador/me): stat-cards + tabelas direto, sem cabeçalho de página, sem consistência entre páginas.
 - **Checkout/pagamento**: estrutura 2-col boa; stepper frágil (3 badges soltos), confirmações ok.
@@ -361,14 +353,14 @@ venv/bin/coverage report --fail-under=70
 ### Fase 2 — Home (`templates/home.html` + `apps/core/views.py`)
 
 - **Hero**: eyebrow ("Elétrica residencial e comercial"), título display, sub, CTAs duplos, **stats strip** (ex.: "500+ projetos · 4,9/5 satisfação · resposta em 24h" — valores estáticos de marketing no template, sem model), trust badges.
-- **"O que oferece"**: cards enriquecidos (ícone em tile colorido, título, descrição, CTA-link "Ver loja →").
+- **"O que oferece"**: cards enriquecidos (ícone em tile colorido, título, descrição, CTA-link "Ver serviços →").
 - **Nova seção "Destaques"**: grid de **produtos `featured=True`** (o campo já existe) e/ou serviços — exige passar queryset na `home_view` (hoje passa `{}`).
 - **"Como funciona"**: timeline horizontal numerada com linha.
 - **Manutenção**: manter faixa escura, refinar CTA.
 
 Pendência de decisão: usar estatísticas reais ou placeholders de marketing?
 
-### Fase 3 — Listagens (loja/serviços/portfólio)
+### Fase 3 — Listagens (serviços/portfólio)
 
 - Topo vira `.page-header` (eyebrow + título + descrição + busca).
 - Chips de categoria mantidos (podem virar "filtros em linha com contagem" se quiser).
@@ -376,15 +368,14 @@ Pendência de decisão: usar estatísticas reais ou placeholders de marketing?
 - Card: imagem zoom no hover, chip de categoria, preço `badge-brand`, CTA "Ver detalhes →".
 - Portfolio: manter grid, adicionar imagem cover com overlay de título.
 
-### Fase 4 — Detalhes (produto/serviço)
+### Fase 4 — Detalhes (serviço)
 
-- **Produto**: breadcrumb (mantém) + galeria com **miniaturas clicáveis** (já há imagens na listagem) + coluna de compra: preço display, estoque ("Em estoque" badge verde / "Esgotado"), qty + add-to-cart, **trust-row** (pagamento seguro, garantia, entrega), **relacionados** (mesma categoria).
-- **Serviço**: similar — preço "A partir de", nº de profissionais, CTA "Pedir orçamento", **serviços relacionados**.
+- **Serviço**: preço "A partir de", nº de profissionais, CTA "Pedir orçamento", **serviços relacionados**.
 - Portfólio: detalhe maior com descrição completa + CTA "Pedir serviço" quando prestador ativo.
 
 ### Fase 5 — Navbar & Footer
 
-- **Navbar**: adicionar **badge de contagem no carrinho** (o `Cart` é por sessão — count via template do cart do context), CTA "Entrar" mais proeminente, item "Manutenção" já existe. Manter busca e dropdown.
+- **Navbar**: CTA "Entrar" mais proeminente, item "Manutenção" já existe. Manter busca e dropdown.
 - **Footer**: 4 colunas — marca+social (mantém) + **contato** (telefone/e-mail placeholders ou do `SiteSettings` se houver) + navegação (mantém) + **newsletter** (form estático visual, sem backend) + linha de copyright com links (Privacidade/Termos).
 
 ### Fase 6 — Painéis (afiliado/prestador/me)
@@ -397,7 +388,7 @@ Pendência de decisão: usar estatísticas reais ou placeholders de marketing?
 ### Fase 7 — Checkout & pagamento
 
 - **Checkout**: stepper novo (círculos numerados conectados), cards de pagamento mantêm (`form-check-input-card` com `:has()`), resumo do pedido sticky mantém, trust-row abaixo do botão.
-- **Confirmações** (pix/card/boleto): manter card `auth-panel`, refinar ícone + copy; `checkout_callback` ok.
+- **Confirmações** (pix/card): manter card `auth-panel`, refinar ícone + copy; `checkout_callback` ok.
 
 ### Fase 8 — Verificação
 

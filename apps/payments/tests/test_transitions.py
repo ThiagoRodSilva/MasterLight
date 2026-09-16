@@ -50,11 +50,9 @@ class TestCanTransition(TestCase):
 
 @override_settings(**ASAAS_SETTINGS)
 class TestMarkOrderPaid(TestCase):
-    def test_paid_twice_does_not_double_decrement_stock(self):
+    def test_paid_twice_does_not_double_transition(self):
         user = make_user()
         order = create_order(user, qty=3)
-        product = order.items.first().product
-        initial_stock = product.stock
         tx = order.transactions.first()
         tx.provider = "asaas"
         tx.external_id = "pay_test_stock"
@@ -66,20 +64,16 @@ class TestMarkOrderPaid(TestCase):
         tx.save(update_fields=["status", "updated_at"])
 
         order.refresh_from_db()
-        product.refresh_from_db()
         assert order.status == Order.Status.PAID
-        assert product.stock == initial_stock - 3
 
 
 @override_settings(**ASAAS_SETTINGS)
 class TestRefundReversal(TestCase):
-    def test_refund_reverses_stock_order_and_commission(self):
+    def test_refund_reverses_order_and_commission(self):
         user = make_user()
         order = create_order(user, with_referral=True, qty=2)
-        product = order.items.first().product
         referral = order.referrals.get()
         affiliate = referral.affiliate
-        initial_stock = product.stock
         tx = order.transactions.first()
         tx.provider = "asaas"
         tx.external_id = "pay_test_refund"
@@ -88,11 +82,9 @@ class TestRefundReversal(TestCase):
         tx.status = "paid"
         tx.save(update_fields=["status", "updated_at"])
         order.refresh_from_db()
-        product.refresh_from_db()
         referral.refresh_from_db()
         affiliate.refresh_from_db()
         assert order.status == Order.Status.PAID
-        assert product.stock == initial_stock - 2
         assert referral.status == Referral.Status.APPROVED
         assert affiliate.balance == referral.commission_amount
 
@@ -100,11 +92,9 @@ class TestRefundReversal(TestCase):
         tx.save(update_fields=["status", "updated_at"])
 
         order.refresh_from_db()
-        product.refresh_from_db()
         referral.refresh_from_db()
         affiliate.refresh_from_db()
         assert order.status == Order.Status.REFUNDED
-        assert product.stock == initial_stock
         assert referral.status == Referral.Status.PENDING
         assert affiliate.balance == 0
 
@@ -274,7 +264,9 @@ class TestCheckoutOrChargeDoesNotCancelPaid(TestCase):
         assert order.status == Order.Status.PAID
 
         # Mock create_checkout_for_order para levantar ValueError
-        with mock.patch("apps.payments.services.create_checkout_for_order", side_effect=ValueError("erro")):
+        with mock.patch(
+            "apps.payments.services.create_checkout_for_order", side_effect=ValueError("erro")
+        ):
             with mock.patch("django.contrib.messages.error") as mock_messages:
                 from django.test import RequestFactory
 
@@ -303,6 +295,7 @@ class TestSystemCheck(TestCase):
 
     def test_asaas_api_key_check_passes_with_key(self):
         from apps.payments.checks import asaas_api_key_check
+
         with self.settings(PAYMENT_PROVIDER="asaas", ASAAS_API_KEY="test-key"):
             errors = asaas_api_key_check(None)
             assert not any(e.id == "payments.E001" for e in errors)

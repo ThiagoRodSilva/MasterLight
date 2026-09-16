@@ -3,7 +3,7 @@
 from decimal import Decimal
 
 from django.conf import settings
-from django.test import Client, TestCase
+from django.test import Client, TestCase, override_settings
 
 from apps.affiliate.models import Referral
 from apps.affiliate.services import create_payout_request, create_referral
@@ -35,44 +35,57 @@ class TestApproveReferral(TestCase):
     def test_order_paid_without_referral(self):
         user = make_user()
         order = create_order(user, with_referral=False)
-        tx = Transaction.objects.create(order=order, provider="manual", external_id="test", amount=order.total, status=Transaction.Status.PENDING)
+        tx = Transaction.objects.create(
+            order=order,
+            provider="manual",
+            external_id="test",
+            amount=order.total,
+            status=Transaction.Status.PENDING,
+        )
         tx.status = "paid"
         tx.save(update_fields=["status", "updated_at"])
         order.refresh_from_db()
         assert order.status == Order.Status.PAID
 
-    def test_paid_order_decrements_stock(self):
+    def test_paid_order_marks_status(self):
         user = make_user()
         order = create_order(user, with_referral=False)
-        item = order.items.first()
-        item.qty = 3
-        item.save(update_fields=["qty"])
-        order.recompute_total()
-        product = item.product
-        initial_stock = product.stock
-        tx = Transaction.objects.create(order=order, provider="manual", external_id="test", amount=order.total, status=Transaction.Status.PENDING)
+        tx = Transaction.objects.create(
+            order=order,
+            provider="manual",
+            external_id="test",
+            amount=order.total,
+            status=Transaction.Status.PENDING,
+        )
         tx.status = "paid"
         tx.save(update_fields=["status", "updated_at"])
-        product.refresh_from_db()
-        assert product.stock == initial_stock - 3
+        order.refresh_from_db()
+        assert order.status == Order.Status.PAID
 
-    def test_unpaid_order_does_not_decrement_stock(self):
+    def test_unpaid_order_remains_open(self):
         user = make_user()
         order = create_order(user, with_referral=False)
-        item = order.items.first()
-        item.qty = 3
-        item.save(update_fields=["qty"])
-        order.recompute_total()
-        product = item.product
-        initial_stock = product.stock
-        product.refresh_from_db()
-        assert product.stock == initial_stock
+        Transaction.objects.create(
+            order=order,
+            provider="manual",
+            external_id="test",
+            amount=order.total,
+            status=Transaction.Status.PENDING,
+        )
+        order.refresh_from_db()
+        assert order.status == Order.Status.OPEN
 
     def test_order_paid_and_balance_credited_with_referral(self):
         user = make_user()
         order = create_order(user, with_referral=True)
         referral = order.referrals.first()
-        tx = Transaction.objects.create(order=order, provider="manual", external_id="test", amount=order.total, status=Transaction.Status.PENDING)
+        tx = Transaction.objects.create(
+            order=order,
+            provider="manual",
+            external_id="test",
+            amount=order.total,
+            status=Transaction.Status.PENDING,
+        )
         tx.status = "paid"
         tx.save(update_fields=["status", "updated_at"])
         order.refresh_from_db()
@@ -88,9 +101,16 @@ class TestApproveReferral(TestCase):
         order = create_order(user, with_referral=True)
         # Ensure transaction exists
         from apps.payments.models import Transaction
+
         tx = order.transactions.first()
         if tx is None:
-            tx = Transaction.objects.create(order=order, provider="manual", external_id="test", amount=order.total, status=Transaction.Status.PENDING)
+            tx = Transaction.objects.create(
+                order=order,
+                provider="manual",
+                external_id="test",
+                amount=order.total,
+                status=Transaction.Status.PENDING,
+            )
         # First mark as paid (to trigger order -> PAID)
         tx.status = "paid"
         tx.save(update_fields=["status", "updated_at"])
@@ -110,7 +130,13 @@ class TestApproveReferral(TestCase):
         order = create_order(user, with_referral=True)
         referral = order.referrals.first()
         affiliate = referral.affiliate
-        tx = Transaction.objects.create(order=order, provider="manual", external_id="test", amount=order.total, status=Transaction.Status.PENDING)
+        tx = Transaction.objects.create(
+            order=order,
+            provider="manual",
+            external_id="test",
+            amount=order.total,
+            status=Transaction.Status.PENDING,
+        )
 
         tx.status = "paid"
         tx.save(update_fields=["status", "updated_at"])
@@ -202,20 +228,20 @@ class TestCreateReferral(TestCase):
         referral = create_referral(affiliate.code, user, order)
         assert referral is None
 
-    def test_uses_product_rate_when_available(self):
-        """Usa taxa do produto quando definida (override)."""
+    def test_uses_service_rate_when_available(self):
+        """Usa taxa do serviço quando definida (override)."""
         affiliate = make_affiliate(commission_rate=Decimal("0.10"))  # 10% default
         user = make_user()
         order = create_order(user, with_referral=False)
 
-        # Sobrescreve o item do pedido com produto que tem taxa customizada
-        product = order.items.first().product
-        product.affiliate_commission_rate = Decimal("0.20")  # 20%
-        product.save(update_fields=["affiliate_commission_rate"])
+        # Sobrescreve o item do pedido com serviço que tem taxa customizada
+        service = order.items.first().service
+        service.affiliate_commission_rate = Decimal("0.20")  # 20%
+        service.save(update_fields=["affiliate_commission_rate"])
 
         referral = create_referral(affiliate.code, user, order)
         assert referral is not None
-        # Comissão deve ser baseada na taxa do produto (20%), não do afiliado (10%)
+        # Comissão deve ser baseada na taxa do serviço (20%), não do afiliado (10%)
         expected = (order.total * Decimal("0.20")).quantize(Decimal("0.01"))
         assert referral.commission_amount == expected
 
@@ -282,6 +308,7 @@ class TestServiceOrderReferral(TestCase):
 class TestSubscriptionReferral(TestCase):
     """Testes de referral em assinatura de plano de manutencao."""
 
+    @override_settings(PAYMENT_PROVIDER="asaas")
     def test_approve_referral_subscription(self):
         """Assinar plano cria referral com comissao sobre 1a parcela (order.total)."""
         from unittest import mock
@@ -291,16 +318,27 @@ class TestSubscriptionReferral(TestCase):
         provider = make_user(role="prestador")
 
         # Usa template existente do seed (plan_type=mensal)
-        template = MaintenancePlanTemplate.objects.filter(plan_type="mensal", is_active=True).first()
+        template = MaintenancePlanTemplate.objects.filter(
+            plan_type="mensal", is_active=True
+        ).first()
         assert template is not None
 
         # Usa test client para ter middleware de mensagens
         self.client.cookies[settings.AFFILIATE_COOKIE_NAME] = affiliate.code
         self.client.force_login(client)
 
-        with mock.patch("apps.payments.services.create_checkout_for_order") as mock_checkout:
-            mock_checkout.return_value = type("Result", (), {"ok": True, "url": "/success/", "message": ""})()
-            self.client.post("/servicos/planos/assinar/", {"plan_type": template.plan_type, "prestador": provider.pk, "value": str(template.value)})
+        with mock.patch("apps.payments.orchestration.create_checkout_for_order") as mock_checkout:
+            mock_checkout.return_value = type(
+                "Result", (), {"ok": True, "url": "/success/", "message": ""}
+            )()
+            self.client.post(
+                "/servicos/planos/assinar/",
+                {
+                    "plan_type": template.plan_type,
+                    "prestador": provider.pk,
+                    "value": str(template.value),
+                },
+            )
 
         # Verifica se plano e order foram criados com referral
         plan = MaintenancePlan.objects.filter(client=client, is_active=True).first()
@@ -347,6 +385,7 @@ class TestPaymentLinkReferral(TestCase):
 
         # Simula pagamento webhook criando order + transaction
         from apps.payments.gateways.asaas import AsaasGateway
+
         gateway = AsaasGateway()
 
         # Mock payment data
@@ -369,12 +408,3 @@ class TestPaymentLinkReferral(TestCase):
         assert referral.affiliate == affiliate
         assert referral.referred == client
         assert referral.commission_amount == order.total * affiliate.commission_rate
-
-
-class TestCheckoutProductReferral(TestCase):
-    """Testes de referral em checkout de produtos (loja).
-
-    O checkout de produtos ja era testado em TestApproveReferral.test_order_paid_and_balance_credited_with_referral
-    que cria order com referral via create_order helper. O fluxo de view e testado la indiretamente.
-    """
-    pass

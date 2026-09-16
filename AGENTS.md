@@ -1,6 +1,6 @@
 # AGENTS.md
 
-MasterLight — Django 5.0.7 / Python 3.12 / PostgreSQL (Supabase) platform for electric services, shop, affiliates, and maintenance subscriptions. Brand: yellow `#FFC107` / black `#111` / white. Venv: `.venv` (3.12).
+MasterLight — Django 5.0.7 / Python 3.12 / PostgreSQL (Supabase) platform for electric services, affiliates, and maintenance subscriptions. Brand: yellow `#FFC107` / black `#111` / white. Venv: `.venv` (3.12).
 
 ## Quick Commands
 
@@ -54,11 +54,10 @@ ruff check .
   - `manage.py` defaults to `dev`, or `test` when running tests
   - `wsgi.py` defaults to `vercel`, falls back to `production`
 - **All models inherit `apps.core.models.BaseModel`** — UUID PK, `created_at`/`updated_at`, `is_active`. Public querysets always filter `is_active=True`.
-- **`Cart` (apps/checkout) is a Python class per session, not a database model.** Keep it that way.
 - **`CustomUser` uses `USERNAME_FIELD="email"`** — roles are compared as raw strings (`"prestador"`, `"afiliado"`, `"cliente"`, `"admin"`) via `RoleRequiredMixin` subclasses in `apps/core/mixins.py`, not enum members.
 - **Business logic lives in `services.py` per app.** Views are thin wrappers; services raise `ValueError` for domain errors and use `transaction.atomic()`.
 - **Gateway abstraction**: `PaymentGateway` base in `apps/payments/gateways/base.py`; providers registered in `_REGISTRY`, selected by `PAYMENT_PROVIDER` env var. Providers: `"manual"` (dev) and `"asaas"` (real: Pix / card only — boleto was removed).
-- **URLs use manual name prefixes** (`checkout-*`, `services-*`, `shop-*`) — no `app_name` namespaces. Use `reverse()` / `reverse_lazy()` with those names.
+- **URLs use manual name prefixes** (`checkout-*`, `services-*`) — no `app_name` namespaces. Use `reverse()` / `reverse_lazy()` with those names.
 - **Templates live entirely at root `templates/`** (subdirectories per app: `templates/<app>/`, `templates/partials/`). No templates inside apps.
 - **Static files**: Tailwind CSS via CDN (dev) in `base.html`; Bootstrap Icons self-hosted at `static/vendor/bootstrap-icons/`; custom CSS in `static/css/{styles.css, tokens.css}`; fonts Inter self-hosted.
 - **No media upload** — images are `URLField` with `validate_image_url` validation. `SERVE_MEDIA=False` on Vercel (ephemeral filesystem).
@@ -66,8 +65,8 @@ ruff check .
 ## Key Gotchas
 
 - **`ASAAS_API_KEY` starts with `$`** — django-environ treats `$x` as a variable reference, so the key is read raw via `os.getenv` in `config/settings/env_helpers.py` (`asaas_api_key()`). A system check (`payments.E001`) fails if `PAYMENT_PROVIDER=asaas` without a key.
-- **SiteSettings section flags** (`store_enabled`, `services_enabled`, `affiliates_enabled`, `maintenance_enabled`, `provider_registration_enabled`) are in the DB (`SiteSettings`, singleton pk=1). When off, the view returns 404. If a public route appears broken, check the Admin's SiteSettings first.
-- **Slugs are random and auto-generated** (`RandomSlugMixin` + `random_slug()` hex) — `Product.slug`, `Category.slug`, `Service.slug`, `ServiceCategory.slug` are `editable=False`, never user-provided, and preserved on update.
+- **SiteSettings section flags** (`services_enabled`, `affiliates_enabled`, `maintenance_enabled`, `provider_registration_enabled`) are in the DB (`SiteSettings`, singleton pk=1). When off, the view returns 404. If a public route appears broken, check the Admin's SiteSettings first.
+- **Slugs are random and auto-generated** (`RandomSlugMixin` + `random_slug()` hex) — `Service.slug`, `ServiceCategory.slug` are `editable=False`, never user-provided, and preserved on update.
 - **Boleto support was removed** (commit `97400c8`). Only Pix and card are supported via Asaas gateway.
 - **`tests/e2e/` uses pytest-playwright** and requires a live dev server — separate from the unit test suite in `apps/**/tests/`.
 - **Signals**: `accounts` signals connect in `apps/accounts/apps.py` (post_save for profile creation); `payments` and `affiliate` signals are imported in their respective `apps.py` `ready()` methods.
@@ -82,8 +81,8 @@ ruff check .
 ## Test Helpers (`apps/tests/helpers.py`)
 
 - `make_user(role=, email=, cpf=, telefone=, address=)` — creates user with valid CPF/phone
-- `make_product(...)`, `make_category(...)`, `make_affiliate(user=)`
-- `create_order(user=, with_referral=, product=, qty=)` — minimal Order + OrderItem + Transaction (manual provider)
+- `make_service(...)`, `make_service_category(...)`, `make_affiliate(user=)`
+- `create_order(user=, with_referral=, service=, qty=)` — minimal Order + OrderItem + Transaction (manual provider)
 - `FakeAsaasApi` — full mock of Asaas v3 API
 - `AsaasMockMixin` — TestCase mixin that installs `FakeAsaasApi` in `self.asaas`
 - `mock_asaas()` — context manager version

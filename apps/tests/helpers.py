@@ -1,4 +1,5 @@
 """Helpers compartilhados para testes."""
+
 from __future__ import annotations
 
 from contextlib import contextmanager
@@ -10,7 +11,6 @@ from django.test import TestCase
 
 from apps.affiliate.models import AffiliateProfile
 from apps.checkout.models import Order, OrderItem
-from apps.shop.models import Category
 
 User = get_user_model()
 
@@ -28,6 +28,7 @@ def make_user(
     """Cria um usuário de teste com CPF/telefone/endereço válidos para Asaas."""
     if email is None:
         from apps.core.models import random_slug
+
         email = f"{role}-{cpf[:6]}-{random_slug(6)}@test.com"
     user = User.objects.create_user(
         username=email,
@@ -46,49 +47,42 @@ def make_user(
     return user
 
 
-def make_category(name: str = "Teste", slug: str | None = None) -> Category:
+def make_service_category(name: str = "Teste", slug: str | None = None):
     from apps.core.models import random_slug
+    from apps.services.models import ServiceCategory
 
     if slug is None:
         slug = f"teste-{random_slug(6)}"
-    return Category.objects.create(name=name, slug=slug)
+    return ServiceCategory.objects.create(name=name, slug=slug)
 
 
-def make_product(
+def make_service(
     *,
-    name: str = "Produto Teste",
+    name: str = "Serviço Teste",
     slug: str | None = None,
-    sku: str | None = None,
-    price: Decimal = Decimal("49.90"),
-    stock: int = 10,
+    base_price: Decimal = Decimal("49.90"),
     category=None,
     is_active: bool = True,
-    featured: bool = False,
 ):
     from apps.core.models import random_slug
-    from apps.shop.models import Product
+    from apps.services.models import Service
 
     if category is None:
-        category = make_category()
+        category = make_service_category()
     params = {
         "name": name,
-        "price": price,
-        "stock": stock,
+        "base_price": base_price,
         "category": category,
         "is_active": is_active,
-        "featured": featured,
     }
     if slug is not None:
         params["slug"] = slug
-    if sku is not None:
-        params["sku"] = sku
     else:
-        params["sku"] = f"SKU-{random_slug(6).upper()}"
-    return Product.objects.create(**params)
+        params["slug"] = f"servico-{random_slug(6)}"
+    return Service.objects.create(**params)
 
 
 def make_affiliate(user=None, commission_rate: Decimal = Decimal("0.10")) -> AffiliateProfile:
-
     if user is None:
         user = make_user(role="afiliado")
     affil, _ = AffiliateProfile.objects.get_or_create(
@@ -97,14 +91,16 @@ def make_affiliate(user=None, commission_rate: Decimal = Decimal("0.10")) -> Aff
     return affil
 
 
-def create_order(user=None, with_referral: bool = False, product=None, qty=1) -> Order:
-    """Cria Order mínima com 1 item (produto) — útil para testes de pagamento."""
+def create_order(user=None, with_referral: bool = False, service=None, qty=1) -> Order:
+    """Cria Order mínima com 1 item (serviço) — útil para testes de pagamento."""
     if user is None:
         user = make_user()
     order = Order.objects.create(user=user, status=Order.Status.OPEN)
-    if product is None:
-        product = make_product()
-    OrderItem.objects.create(order=order, product=product, name=product.name, qty=qty, unit_price=product.price)
+    if service is None:
+        service = make_service()
+    OrderItem.objects.create(
+        order=order, service=service, name=service.name, qty=qty, unit_price=service.base_price
+    )
     order.recompute_total()
     if with_referral:
         from apps.affiliate.models import Referral
@@ -167,7 +163,16 @@ class FakeAsaasApi:
         return f"https://asaas.com/checkout/{self.checkout_id}"
 
     def __call__(self, method, url, headers=None, json=None, params=None, timeout=None):
-        self.calls.append({"method": method, "url": url, "headers": headers, "json": json, "params": params, "body": json})
+        self.calls.append(
+            {
+                "method": method,
+                "url": url,
+                "headers": headers,
+                "json": json,
+                "params": params,
+                "body": json,
+            }
+        )
         # Handle fail_next for testing retry logic
         if self.fail_next is not None:
             status_code, response_data = self.fail_next
@@ -189,7 +194,9 @@ class FakeAsaasApi:
                     status_code=400,
                 )
             if json and json.get("externalReference"):
-                return FakeResponse({"id": self.customer_id, "externalReference": json["externalReference"]})
+                return FakeResponse(
+                    {"id": self.customer_id, "externalReference": json["externalReference"]}
+                )
             return FakeResponse({"id": self.customer_id})
         # GET /customers?email=...
         if method == "GET" and url.endswith("/customers"):
@@ -229,12 +236,13 @@ class FakeAsaasApi:
             # exigem DETACHED. Reproduz o 400 para pegar regressão.
             charge_types = (json or {}).get("chargeTypes") or []
             billing = (json or {}).get("billingTypes") or []
-            if (
-                "RECURRENT" in charge_types
-                and any(b != "CREDIT_CARD" for b in billing)
-            ):
+            if "RECURRENT" in charge_types and any(b != "CREDIT_CARD" for b in billing):
                 return FakeResponse(
-                    {"errors": [{"code": "invalid_object", "description": "Recurrent só aceita cartão"}]},
+                    {
+                        "errors": [
+                            {"code": "invalid_object", "description": "Recurrent só aceita cartão"}
+                        ]
+                    },
                     status_code=400,
                 )
             return FakeResponse(
@@ -247,7 +255,11 @@ class FakeAsaasApi:
                 }
             )
         # GET /payments/{id}
-        if method == "GET" and f"payments/{self.payment_id}" in url and not url.endswith("pixQrCode"):
+        if (
+            method == "GET"
+            and f"payments/{self.payment_id}" in url
+            and not url.endswith("pixQrCode")
+        ):
             return FakeResponse({"id": self.payment_id, "status": self.customer_status})
         # GET /payments?externalReference=...
         if method == "GET" and url.endswith("/payments") and "subscriptions/" not in url:
@@ -282,7 +294,9 @@ class FakeAsaasApi:
         # GET /payments/{id}/pixQrCode
         if method == "GET" and f"payments/{self.payment_id}/pixQrCode" in url:
             if self.pix_missing:
-                return FakeResponse({"errors": [{"description": "pix indisponivel"}]}, status_code=404)
+                return FakeResponse(
+                    {"errors": [{"description": "pix indisponivel"}]}, status_code=404
+                )
             return FakeResponse(
                 {"encodedImage": "base64png", "payload": "00020126580014BR.GOV.BCB.PIX"}
             )
