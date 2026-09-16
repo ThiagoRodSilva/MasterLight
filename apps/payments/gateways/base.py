@@ -28,14 +28,12 @@ class ChargeResult:
     ok: bool
     redirect_url: str
     # `transaction_id` = pk local da `Transaction` criada/atualizada no banco.
-    # `external_id` = id externo do provedor (ex.: id da cobrança no Asaas);
-    # fica vazio quando o provedor não expõe um id externo (ex.: manual).
+    # `external_id` = id externo do provedor (ex.: id da cobrança no Asaas).
     transaction_id: str = ""
     external_id: str = ""
     message: str = ""
     raw_payload: str = ""
     status: str | None = None
-    subscription_id: str = ""
 
 
 @dataclass
@@ -73,16 +71,6 @@ class PaymentGateway:
     ) -> ChargeResult:
         raise NotImplementedError
 
-    def subscribe(
-        self,
-        plan,
-        billing_type: str = "PIX",
-        credit_card_token: str = "",
-        remote_ip: str = "",
-    ) -> ChargeResult:
-        """Cria assinatura recorrente para um plano de manutenção."""
-        raise NotImplementedError
-
     def tokenize_credit_card(self, user, card: dict, holder: dict, remote_ip: str = "") -> str:
         """Tokeniza cartão de crédito; apenas providers que suportam cartão."""
         raise NotImplementedError
@@ -97,7 +85,6 @@ class PaymentGateway:
         charge_type: str = "DETACHED",
         due_date_limit_days: int | None = None,
         max_installment_count: int | None = None,
-        subscription_cycle: str = "",
         end_date=None,
         external_reference: str = "",
     ) -> PaymentLinkResult:
@@ -114,8 +101,6 @@ class PaymentGateway:
         billing_types: list[str] | None = None,
         charge_type: str = "DETACHED",
         callback_urls: dict | None = None,
-        cycle: str = "",
-        next_due_date=None,
     ) -> CheckoutResult:
         """Cria uma página de pagamento hospedada no provedor (Asaas Checkout).
 

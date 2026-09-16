@@ -1,22 +1,17 @@
 """Views de servicos: catalogo, solicitacoes e painel prestador."""
 
-from datetime import timedelta
-
 from django.conf import settings
 from django.contrib import messages
 from django.db import transaction
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
-from django.utils import timezone
 from django.views import View
 from django.views.generic import (
     CreateView,
     DeleteView,
     DetailView,
-    FormView,
     ListView,
-    TemplateView,
     UpdateView,
 )
 
@@ -28,11 +23,8 @@ from apps.core.mixins import (
     SectionEnabledMixin,
 )
 
-from .forms import MaintenancePlanForm, QuoteForm, ServiceForm, ServiceRequestForm
+from .forms import QuoteForm, ServiceForm, ServiceRequestForm
 from .models import (
-    MaintenancePlan,
-    MaintenancePlanTemplate,
-    MaintenanceVisit,
     Service,
     ServiceCategory,
     ServiceRequest,
@@ -64,7 +56,11 @@ class ServiceDetailView(SectionEnabledMixin, DetailView):
     context_object_name = "service"
 
     def get_queryset(self):
-        return Service.objects.filter(is_active=True).select_related("category", "created_by").prefetch_related("providers")
+        return (
+            Service.objects.filter(is_active=True)
+            .select_related("category", "created_by")
+            .prefetch_related("providers")
+        )
 
 
 # ---- Prestador self-service (CRUD de serviços) ------------------------------
@@ -115,7 +111,11 @@ class ServiceListViewMine(ProviderRequiredMixin, ListView):
     context_object_name = "services"
 
     def get_queryset(self):
-        return Service.objects.filter(created_by=self.request.user, is_active=True).select_related("category", "created_by").prefetch_related("providers")
+        return (
+            Service.objects.filter(created_by=self.request.user, is_active=True)
+            .select_related("category", "created_by")
+            .prefetch_related("providers")
+        )
 
 
 # -------------------------------------------------------------------------
@@ -210,7 +210,12 @@ class ServiceRequestApproveView(ClienteRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         service_request = self.get_object()
-        return render(request, self.template_name, {"service_request": service_request})
+        # Asaas é o único provider — o link avulso está sempre disponível.
+        return render(
+            request,
+            self.template_name,
+            {"service_request": service_request, "PAYLINK_ENABLED": True},
+        )
 
     def post(self, request, *args, **kwargs):
         from apps.checkout.models import Order, OrderItem
@@ -362,142 +367,3 @@ class MyServiceRequestListView(ClienteRequiredMixin, ListView):
             .select_related("service", "prestador")
             .order_by("-created_at")
         )
-
-
-# --------------------------------------------------------------------------
-# Manutenção elétrica (planos recorrentes)
-
-
-class MaintenancePlanListView(SectionEnabledMixin, TemplateView):
-    section_flag = "maintenance_enabled"
-    template_name = "services/plan_list.html"
-
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        ctx["plans"] = MaintenancePlanTemplate.objects.filter(is_active=True).order_by(
-            "ordering", "value"
-        )
-        return ctx
-
-
-class MaintenancePlanCreateView(SectionEnabledMixin, ClienteRequiredMixin, FormView):
-    section_flag = "maintenance_enabled"
-    template_name = "services/plan_form.html"
-    form_class = MaintenancePlanForm
-
-    def get_initial(self):
-        initial = super().get_initial()
-        tipo = self.request.GET.get("tipo")
-        if tipo and MaintenancePlanTemplate.objects.filter(
-            plan_type=tipo, is_active=True
-        ).exists():
-            initial["plan_type"] = tipo
-        return initial
-
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        ctx["prices"] = {
-            t.plan_type: t.value
-            for t in MaintenancePlanTemplate.objects.filter(is_active=True)
-        }
-        return ctx
-
-    def form_valid(self, form):
-        from apps.checkout.models import Order, OrderItem
-        from apps.payments.services import checkout_or_charge
-
-        value = form.cleaned_data["value"]
-        plan_type = form.cleaned_data["plan_type"]
-        prestador = form.cleaned_data["prestador"]
-        template = MaintenancePlanTemplate.objects.get(
-            plan_type=plan_type, is_active=True
-        )
-        next_due = timezone.localdate() + timedelta(days=MaintenancePlan.cycle_days_for(plan_type))
-
-        existing_plan = MaintenancePlan.objects.filter(
-            client=self.request.user,
-            plan_type=plan_type,
-            is_active=True,
-        ).exclude(order__isnull=True).first()
-        if existing_plan:
-            messages.error(
-                self.request,
-                "Você já possui um plano ativo ou aguardando pagamento deste tipo.",
-            )
-            return redirect("services-plan-list")
-
-        try:
-            with transaction.atomic():
-                order = Order.objects.create(
-                    user=self.request.user,
-                    status=Order.Status.AWAITING_PAYMENT,
-                    kind=Order.Kind.SUBSCRIPTION,
-                )
-                OrderItem.objects.create(
-                    order=order,
-                    name=template.name,
-                    qty=1,
-                    unit_price=value,
-                )
-                order.recompute_total()
-                from apps.affiliate.services import create_referral
-
-                ref_code = self.request.COOKIES.get(settings.AFFILIATE_COOKIE_NAME)
-                if ref_code:
-                    create_referral(ref_code, self.request.user, order)
-                MaintenancePlan.objects.create(
-                    plan_type=plan_type,
-                    value=value,
-                    next_due_date=next_due,
-                    client=self.request.user,
-                    prestador=prestador,
-                    order=order,
-                )
-                result = checkout_or_charge(
-                    order,
-                    self.request,
-                    charge_type="RECURRENT",
-                    cycle=plan_type,
-                    next_due_date=next_due,
-                    fail_message="Falha ao criar a assinatura.",
-                )
-        except ValueError as exc:
-            messages.error(self.request, str(exc) or "Falha ao criar a assinatura.")
-            return redirect("services-plan-list")
-        if result is None:
-            order.status = Order.Status.CANCELED
-            order.save(update_fields=["status", "updated_at"])
-            return redirect("services-plan-list")
-        messages.success(self.request, "Assinatura criada. Aguardando o primeiro pagamento.")
-        return redirect(result["url"])
-
-
-# --------------------------------------------------------------------------
-# Prestador: visitas de manutenção
-
-
-class MaintenanceVisitListView(ProviderRequiredMixin, ListView):
-    template_name = "services/visits.html"
-    context_object_name = "visits"
-    paginate_by = 20
-
-    def get_queryset(self):
-        qs = MaintenanceVisit.objects.filter(completed_at__isnull=True, is_active=True)
-        if not self.request.user.is_admin:
-            qs = qs.filter(plan__prestador=self.request.user)
-        return qs.select_related("plan", "plan__client", "plan__prestador").filter(plan__is_active=True)
-
-
-class MaintenanceVisitCompleteView(ProviderRequiredMixin, View):
-    def get_queryset(self):
-        qs = MaintenanceVisit.objects.filter(pk=self.kwargs["pk"], is_active=True)
-        if not self.request.user.is_admin:
-            qs = qs.filter(plan__prestador=self.request.user)
-        return qs
-
-    def post(self, request, *args, **kwargs):
-        visit = get_object_or_404(self.get_queryset())
-        visit.completed_at = timezone.now()
-        visit.save(update_fields=["completed_at", "updated_at"])
-        messages.success(request, "Visita concluída.")
-        return redirect("services-visits")

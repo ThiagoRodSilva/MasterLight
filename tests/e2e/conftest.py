@@ -9,12 +9,14 @@ def browser():
         yield browser
         browser.close()
 
+
 @pytest.fixture
 def page(browser):
     context = browser.new_context()
     page = context.new_page()
     yield page
     context.close()
+
 
 @pytest.fixture
 def base_url():

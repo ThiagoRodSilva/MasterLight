@@ -15,8 +15,9 @@ def home_view(request):
     portfolio = []
     if settings.services_enabled:
         portfolio = list(
-            PortfolioItem.objects.filter(is_active=True, published=True)
-            .select_related("created_by")[:3]
+            PortfolioItem.objects.filter(is_active=True, published=True).select_related(
+                "created_by"
+            )[:3]
         )
 
     paid_orders = Order.objects.filter(

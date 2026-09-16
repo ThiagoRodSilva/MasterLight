@@ -1,4 +1,4 @@
-"""Gateway real via API v3 do Asaas (Pix, cartão e assinaturas)."""
+"""Gateway real via API v3 do Asaas (Pix e cartão)."""
 
 import json
 import logging
@@ -184,8 +184,7 @@ class AsaasGateway(PaymentGateway, BasePaymentGateway):
         except ValueError as exc:
             if self._is_customer_error(exc):
                 raise ValueError(
-                    "Para realizar o pagamento, cadastre CPF, telefone e endereço "
-                    "no seu perfil."
+                    "Para realizar o pagamento, cadastre CPF, telefone e endereço " "no seu perfil."
                 ) from exc
             raise
         customer_id = customer["id"]
@@ -217,6 +216,7 @@ class AsaasGateway(PaymentGateway, BasePaymentGateway):
         O token fica vinculado ao customer; cobranças seguintes do mesmo
         cliente podem reusá-lo sem trafegar dados do cartão novamente.
         """
+
         def _run() -> dict:
             customer = self._ensure_customer(user)
             body = {
@@ -261,7 +261,6 @@ class AsaasGateway(PaymentGateway, BasePaymentGateway):
         charge_type: str = "DETACHED",
         due_date_limit_days: int | None = None,
         max_installment_count: int | None = None,
-        subscription_cycle: str = "",
         end_date=None,
         external_reference: str = "",
     ) -> PaymentLinkResult:
@@ -275,7 +274,7 @@ class AsaasGateway(PaymentGateway, BasePaymentGateway):
         if normalized not in ("UNDEFINED", "CREDIT_CARD", "PIX"):
             raise ValueError(f"billing_type inválido para link: {billing_type}.")
         charge = (charge_type or "DETACHED").upper()
-        if charge not in ("DETACHED", "INSTALLMENT", "RECURRENT"):
+        if charge not in ("DETACHED", "INSTALLMENT"):
             raise ValueError(f"charge_type inválido: {charge_type}.")
 
         body: dict = {"name": name, "billingType": normalized, "chargeType": charge}
@@ -286,10 +285,10 @@ class AsaasGateway(PaymentGateway, BasePaymentGateway):
         # dueDateLimitDays não é necessário (BOLETO removido)
         if charge == "INSTALLMENT" and max_installment_count:
             body["maxInstallmentCount"] = max_installment_count
-        if charge == "RECURRENT" and subscription_cycle:
-            body["subscriptionCycle"] = subscription_cycle
         if end_date:
-            body["endDate"] = end_date.isoformat() if hasattr(end_date, "isoformat") else str(end_date)
+            body["endDate"] = (
+                end_date.isoformat() if hasattr(end_date, "isoformat") else str(end_date)
+            )
         if external_reference:
             body["externalReference"] = external_reference
 
@@ -313,8 +312,6 @@ class AsaasGateway(PaymentGateway, BasePaymentGateway):
         billing_types: list[str] | None = None,
         charge_type: str = "DETACHED",
         callback_urls: dict | None = None,
-        cycle: str = "",
-        next_due_date=None,
     ) -> CheckoutResult:
         """Cria uma página de pagamento hospedada no Asaas (Checkout).
 
@@ -323,22 +320,13 @@ class AsaasGateway(PaymentGateway, BasePaymentGateway):
         confirmação chega via webhook `CHECKOUT_PAID`/`CHECKOUT_EXPIRED` com o
         mesmo `checkout.id` (payload tem `checkout`, não `payment`).
 
-        Em `charge_type=RECURRENT`, o Asaas só aceita `CREDIT_CARD` — o
-        `billing_types` é fixado em `["CREDIT_CARD"]` (PIX exige
-        DETACHED).
         """
         from apps.payments.models import Transaction
 
         charge = (charge_type or "DETACHED").upper()
-        if charge not in ("DETACHED", "INSTALLMENT", "RECURRENT"):
+        if charge not in ("DETACHED", "INSTALLMENT"):
             raise ValueError(f"charge_type inválido: {charge_type}.")
-        if charge == "RECURRENT":
-            # API do Asaas: em operações RECURRENT o único método de pagamento
-            # permitido é CREDIT_CARD (PIX exige DETACHED). Fixa o
-            # billingTypes para não enviar combo inválido e tomar 400.
-            normalized = ["CREDIT_CARD"]
-        else:
-            normalized = [(b or "PIX").upper() for b in (billing_types or ["PIX", "CREDIT_CARD"])]
+        normalized = [(b or "PIX").upper() for b in (billing_types or ["PIX", "CREDIT_CARD"])]
         invalid = [b for b in normalized if b not in self._BILLING_TYPES]
         if invalid:
             raise ValueError(f"billing_types inválidos: {', '.join(invalid)}.")
@@ -348,7 +336,9 @@ class AsaasGateway(PaymentGateway, BasePaymentGateway):
             items.append(
                 {
                     "name": item.name[:30],
-                    "description": (item.name or item.service.name if item.service else item.name)[:150],
+                    "description": (item.name or item.service.name if item.service else item.name)[
+                        :150
+                    ],
                     "quantity": int(item.qty or 1),
                     "value": float(item.unit_price or 0),
                 }
@@ -382,16 +372,6 @@ class AsaasGateway(PaymentGateway, BasePaymentGateway):
             "items": items,
             "customerData": customer_data,
         }
-        if charge == "RECURRENT":
-            cycle_map = {
-                "mensal": "MONTHLY",
-                "trimestral": "QUARTERLY",
-                "anual": "YEARLY",
-            }
-            body["subscription"] = {
-                "cycle": cycle_map.get(cycle, "MONTHLY"),
-                "nextDueDate": (next_due_date or date.today()).isoformat(),
-            }
         if callback_urls:
             body["callback"] = {k: v for k, v in callback_urls.items() if v}
 
@@ -460,9 +440,7 @@ class AsaasGateway(PaymentGateway, BasePaymentGateway):
                 body["creditCardToken"] = credit_card_token
                 if remote_ip:
                     body["remoteIp"] = remote_ip
-            return self.client._api(
-                "POST", "payments", body, idempotency_key=f"order-{order.pk}"
-            )
+            return self.client._api("POST", "payments", body, idempotency_key=f"order-{order.pk}")
 
         payment = self._call_with_customer_retry(order.user, _run)
         extras: dict = {}
@@ -474,7 +452,6 @@ class AsaasGateway(PaymentGateway, BasePaymentGateway):
                 # ele e o status é atualizado via webhook/reconciliação.
                 logger.warning("Asaas: QR Pix indisponível para o pagamento %s", payment.get("id"))
                 extras["pix"] = {}
-
 
         raw = json.dumps({"payment": payment, **extras})
         tx = self._upsert_transaction(
@@ -488,7 +465,9 @@ class AsaasGateway(PaymentGateway, BasePaymentGateway):
         redirect_url = self._confirmation_url(normalized, order.pk)
         logger.info(
             "Asaas: cobrança %s criada para o pedido %s (%s)",
-            payment.get("id"), order.pk, normalized,
+            payment.get("id"),
+            order.pk,
+            normalized,
         )
         return ChargeResult(
             ok=True,
@@ -499,110 +478,18 @@ class AsaasGateway(PaymentGateway, BasePaymentGateway):
             raw_payload=raw,
         )
 
-    def subscribe(
-        self,
-        plan,
-        billing_type: str = "PIX",
-        credit_card_token: str = "",
-        remote_ip: str = "",
-    ) -> ChargeResult:
-        """Cria assinatura recorrente no Asaas e mapeia a 1ª cobrança."""
-        from apps.payments.models import Transaction
-
-        normalized = (billing_type or "PIX").upper()
-        if normalized not in self._BILLING_TYPES:
-            raise ValueError(
-                f"billing_type inválido: {billing_type} (use {', '.join(sorted(self._BILLING_TYPES))})."
-            )
-
-        cycle_map = {
-            "mensal": "MONTHLY",
-            "trimestral": "QUARTERLY",
-            "anual": "YEARLY",
-        }
-        cycle = cycle_map.get(plan.plan_type, "MONTHLY")
-
-        def _run() -> dict:
-            customer = self._ensure_customer(plan.client)
-            body = {
-                "customer": customer,
-                "billingType": normalized,
-                "value": self.client._money(plan.value),
-                "nextDueDate": plan.next_due_date.isoformat(),
-                "cycle": cycle,
-            }
-            if normalized in self._TOKEN_BILLING_TYPES:
-                if not credit_card_token:
-                    raise ValueError(f"{normalized} exige um creditCardToken (tokenize primeiro).")
-                body["creditCardToken"] = credit_card_token
-                if remote_ip:
-                    body["remoteIp"] = remote_ip
-            return self.client._api(
-                "POST", "subscriptions", body, idempotency_key=f"plan-{plan.pk}"
-            )
-
-        subscription = self._call_with_customer_retry(plan.client, _run)
-        subscription_id = subscription["id"]
-
-        # Primeira cobranca da assinatura: usa o id do payment para que o
-        # webhook existente (mapeado por Transaction.external_id) o encontre.
-        external_payment_id = subscription_id
-        first_payment = None
-        try:
-            payments = self.client._api("GET", f"subscriptions/{subscription_id}/payments")
-        except ValueError:
-            payments = {}
-        rows = payments.get("data") if isinstance(payments, dict) else None
-        if rows:
-            first_payment = rows[0]
-            external_payment_id = first_payment.get("id") or subscription_id
-
-        extras: dict = {}
-        if normalized == "PIX":
-            try:
-                extras["pix"] = self._fetch_pix(external_payment_id)
-            except ValueError:
-                # Cobrança ainda não possui Pix disponível (ex.: cartão sem emissão
-                # imediata); segue sem QR, o status é atualizado via webhook.
-                extras["pix"] = {}
-
-
-        raw = json.dumps(
-            {"subscription": subscription, "first_payment": external_payment_id, **extras}
-        )
-        tx = self._upsert_transaction(
-            order=plan.order,
-            user=plan.client,
-            external_id=external_payment_id,
-            amount=plan.value,
-            status=Transaction.Status.PENDING,
-            raw_payload=raw,
-        )
-
-        plan.asaas_subscription_id = subscription_id
-        plan.save(update_fields=["asaas_subscription_id", "updated_at"])
-
-        redirect_url = self._confirmation_url(normalized, plan.order.pk)
-        logger.info(
-            "Asaas: assinatura %s criada para o plano %s (%s)",
-            subscription_id, plan.pk, normalized,
-        )
-        return ChargeResult(
-            ok=True,
-            redirect_url=redirect_url,
-            transaction_id=str(tx.pk),
-            message="Assinatura criada. Aguardando o primeiro pagamento.",
-            status=Transaction.Status.PENDING,
-            raw_payload=raw,
-            subscription_id=subscription_id,
-        )
-
     def refund(self, transaction_id, amount) -> ChargeResult:
         from apps.payments.models import Transaction
 
         tx = Transaction.objects.filter(pk=transaction_id).first()
         if tx is None or not tx.external_id:
-            return ChargeResult(ok=False, redirect_url="/", message="Tx não encontrada.")
+            return ChargeResult(ok=False, redirect_url="/", message="Tx nao encontrada.")
+        if tx.status == Transaction.Status.REFUNDED:
+            return ChargeResult(
+                ok=False,
+                redirect_url="/",
+                message="Transicao bloqueada: transacao ja reembolsada.",
+            )
         try:
             self.client._api(
                 "POST", f"payments/{tx.external_id}/refund", {"value": self.client._money(amount)}
@@ -617,73 +504,6 @@ class AsaasGateway(PaymentGateway, BasePaymentGateway):
             transaction_id=str(tx.pk),
             message="Reembolso solicitado.",
         )
-
-    def _create_subscription_transaction(self, payment, external_id):
-        """Cria Transaction para uma cobrança de assinatura (renovação).
-
-        Renovações chegam via webhook com um `payment.id` novo, ainda sem
-        `Transaction` local. O payload traz `payment.subscription`; mapeamos
-        para o `MaintenancePlan.asaas_subscription_id` e abrimos a transação
-        pendente ligada ao pedido do plano. Retorna None se não encontrar plano.
-        """
-        from apps.payments.models import Transaction
-
-        subscription_id = payment.get("subscription") if isinstance(payment, dict) else None
-        if not subscription_id:
-            return None
-        plan = self._find_plan_for_subscription(payment, subscription_id)
-        if plan is None or plan.order is None:
-            return None
-        return self._upsert_transaction(
-            order=plan.order,
-            user=plan.client,
-            external_id=external_id,
-            amount=payment.get("value") or plan.value,
-            status=Transaction.Status.PENDING,
-            raw_payload=json.dumps(payment),
-        )
-
-    def _find_plan_for_subscription(self, payment, subscription_id):
-        """Localiza o MaintenancePlan de uma cobrança de assinatura.
-
-        Busca primeiro por `asaas_subscription_id`; se ainda não vinculado
-        (ex.: Checkout RECURRENT cuja assinatura não foi ligada ao plano),
-        usa o `externalReference` da cobrança (= order.pk, herdado do checkout)
-        e registra o id da assinatura. Retorna None se não encontrar.
-        """
-        from apps.services.models import MaintenancePlan
-
-        plan = (
-            MaintenancePlan.objects.filter(
-                asaas_subscription_id=str(subscription_id), is_active=True
-            )
-            .select_related("order", "client")
-            .first()
-        )
-        if plan is not None:
-            return plan
-        if not isinstance(payment, dict):
-            return None
-        external_ref = payment.get("externalReference") or ""
-        try:
-            order_pk = uuid.UUID(str(external_ref))
-        except (ValueError, TypeError):
-            return None
-        plan = (
-            MaintenancePlan.objects.filter(order__pk=order_pk, is_active=True)
-            .select_related("order", "client")
-            .first()
-        )
-        if plan is None:
-            return None
-        if not plan.asaas_subscription_id:
-            plan.asaas_subscription_id = str(subscription_id)
-            plan.save(update_fields=["asaas_subscription_id", "updated_at"])
-            logger.info(
-                "Asaas: assinatura %s vinculada ao plano %s via cobrança",
-                subscription_id, plan.pk,
-            )
-        return plan
 
     def _resolve_checkout_payment_transaction(self, payment):
         """Resolve um `PAYMENT_*` redundante de Checkout hosted.
@@ -787,14 +607,14 @@ class AsaasGateway(PaymentGateway, BasePaymentGateway):
             raw_payload=json.dumps(payment),
         )
 
-    def _handle_checkout_webhook(self, data: dict, checkout: dict, payload_str: str) -> ChargeResult:
+    def _handle_checkout_webhook(
+        self, data: dict, checkout: dict, payload_str: str
+    ) -> ChargeResult:
         """Processa eventos de Checkout hosted (`CHECKOUT_*`).
 
         O payload traz `checkout` (não `payment`); `checkout.id` é o
         `Transaction.external_id` gravado na criação. `CHECKOUT_PAID` confirma o
-        pagamento; `CHECKOUT_EXPIRED`/`CHECKOUT_CANCELED` marcam como falha. Em
-        sessões `RECURRENT`, tentamos capturar o id da assinatura gerada para as
-        renovações continuarem via `payment.subscription`.
+        pagamento; `CHECKOUT_EXPIRED`/`CHECKOUT_CANCELED` marcam como falha.
         """
         from apps.payments.models import Transaction
 
@@ -809,13 +629,17 @@ class AsaasGateway(PaymentGateway, BasePaymentGateway):
             if external_ref:
                 tx = (
                     Transaction.objects.filter(
-                        order__pk=external_ref, provider=self.name, status=Transaction.Status.PENDING
+                        order__pk=external_ref,
+                        provider=self.name,
+                        status=Transaction.Status.PENDING,
                     )
                     .order_by("-created_at")
                     .first()
                 )
         if tx is None:
-            logger.info("Asaas webhook checkout: checkout %s sem transação local; ignorado.", checkout_id)
+            logger.info(
+                "Asaas webhook checkout: checkout %s sem transação local; ignorado.", checkout_id
+            )
             return ChargeResult(
                 ok=True,
                 redirect_url="/",
@@ -859,7 +683,9 @@ class AsaasGateway(PaymentGateway, BasePaymentGateway):
                 # (ex.: CHECKOUT_EXPIRED depois de já PAID). Ignora sem transição.
                 logger.info(
                     "Asaas webhook checkout: transição %s -> %s bloqueada (%s)",
-                    tx.status, new_status, checkout_id,
+                    tx.status,
+                    new_status,
+                    checkout_id,
                 )
                 return ChargeResult(
                     ok=True,
@@ -874,9 +700,6 @@ class AsaasGateway(PaymentGateway, BasePaymentGateway):
             tx.save(update_fields=["status", "raw_payload", "updated_at"])
             logger.info("Asaas webhook checkout: %s -> %s (%s)", event, new_status, checkout_id)
 
-        if new_status == Transaction.Status.PAID:
-            self._link_checkout_subscription(checkout_id, tx.order)
-
         return ChargeResult(
             ok=True,
             redirect_url="/",
@@ -885,117 +708,6 @@ class AsaasGateway(PaymentGateway, BasePaymentGateway):
             status=tx.status,
             raw_payload=payload_str,
         )
-
-    def _link_checkout_subscription(self, checkout_id: str, order):
-        """Captura o id da assinatura gerada por um checkout RECURRENT.
-
-        O webhook `CHECKOUT_PAID` não traz `subscription.id`; consultamos
-        `GET /checkouts/{id}` (retorna `subscriptions`) e, como fallback,
-        listamos as cobranças do pedido (`GET /payments?externalReference=<pk>`)
-        para registrar em `MaintenancePlan.asaas_subscription_id`.
-        """
-        from apps.services.models import MaintenancePlan
-
-        plan = MaintenancePlan.objects.filter(order=order, is_active=True).first()
-        if plan is None or plan.asaas_subscription_id:
-            return
-        try:
-            detail = self.client._api("GET", f"checkouts/{checkout_id}")
-        except ValueError:
-            detail = {}
-        subscriptions = detail.get("subscriptions") if isinstance(detail, dict) else None
-        subscription_id = ""
-        if isinstance(subscriptions, list) and subscriptions:
-            subscription_id = str((subscriptions[0] or {}).get("id") or "")
-        if not subscription_id and isinstance(detail, dict):
-            sub = detail.get("subscription") if isinstance(detail.get("subscription"), dict) else {}
-            subscription_id = str(sub.get("id") or "")
-
-        if not subscription_id:
-            # Fallback: a primeira cobrança da assinatura criada pelo checkout
-            # herda o externalReference do checkout (= order.pk) e traz o id da
-            # assinatura (`subscription`).
-            try:
-                payments = self.client._api(
-                    "GET", "payments", params={"externalReference": str(order.pk), "limit": 20}
-                )
-            except ValueError:
-                payments = {}
-            rows = payments.get("data") if isinstance(payments, dict) else None
-            if rows:
-                for row in rows:
-                    if isinstance(row, dict) and row.get("subscription"):
-                        subscription_id = str(row["subscription"])
-                        break
-        if subscription_id:
-            plan.asaas_subscription_id = subscription_id
-            plan.save(update_fields=["asaas_subscription_id", "updated_at"])
-            logger.info("Asaas: assinatura %s vinculada ao plano %s", subscription_id, plan.pk)
-
-    def _handle_subscription_webhook(self, data, subscription, event, payload_str) -> ChargeResult:
-        """Processa eventos de assinatura (`SUBSCRIPTION_*`).
-
-        O payload traz `subscription` (sem `payment`/`checkout`). Esses eventos
-        não mudam o status financeiro — a cobrança chega depois em `PAYMENT_*` —
-        então respondemos 200 sem transição, nunca interrompendo a fila do Asaas.
-        No `SUBSCRIPTION_CREATED` aproveitamos o id da assinatura para vincular
-        o plano local via `subscription.checkoutSession` (= id do checkout).
-        """
-        subscription_id = str(subscription.get("id") or "")
-        plan = self._link_subscription_to_plan(subscription, subscription_id)
-        if plan is None:
-            logger.info(
-                "Asaas webhook: evento de assinatura '%s' sem plano local (%s).",
-                event, subscription_id,
-            )
-        return ChargeResult(
-            ok=True,
-            redirect_url="/",
-            message=f"Evento de assinatura '{event}' processado sem transição.",
-            raw_payload=payload_str,
-        )
-
-    def _link_subscription_to_plan(self, subscription, subscription_id):
-        """Vincula o id da assinatura Asaas ao MaintenancePlan local.
-
-        Busca primeiro por `asaas_subscription_id` (já vinculado por
-        `subscribe()` ou reenvio de webhook) — idempotente. Se ainda não
-        vinculado, usa `subscription.checkoutSession` (= id do checkout =
-        `Transaction.external_id`) para localizar o plano pelo pedido. Retorna o
-        plano (ou None quando não há correspondência).
-        """
-        from apps.payments.models import Transaction
-        from apps.services.models import MaintenancePlan
-
-        plan = (
-            MaintenancePlan.objects.filter(
-                asaas_subscription_id=subscription_id, is_active=True
-            )
-            .select_related("order", "client")
-            .first()
-        )
-        if plan is not None:
-            return plan
-
-        checkout_session = str(subscription.get("checkoutSession") or "")
-        if checkout_session:
-            tx = Transaction.objects.filter(
-                external_id=checkout_session, provider=self.name
-            ).first()
-            if tx is not None and tx.order_id is not None:
-                plan = (
-                    MaintenancePlan.objects.filter(order=tx.order, is_active=True)
-                    .select_related("order", "client")
-                    .first()
-                )
-        if plan is not None and not plan.asaas_subscription_id:
-            plan.asaas_subscription_id = subscription_id
-            plan.save(update_fields=["asaas_subscription_id", "updated_at"])
-            logger.info(
-                "Asaas: assinatura %s vinculada ao plano %s via webhook",
-                subscription_id, plan.pk,
-            )
-        return plan
 
     def webhook(self, payload, headers) -> ChargeResult:
         """Processa webhook Asaas: autentica token e atualiza status."""
@@ -1024,10 +736,6 @@ class AsaasGateway(PaymentGateway, BasePaymentGateway):
             return self._handle_checkout_webhook(data, checkout, payload_str)
 
         event = str(data.get("event") or "").lower()
-        subscription = data.get("subscription") if isinstance(data, dict) else None
-        if isinstance(subscription, dict) and subscription.get("id") and event.startswith("subscription_"):
-            return self._handle_subscription_webhook(data, subscription, event, payload_str)
-
         payment = data.get("payment") if isinstance(data, dict) else None
         if not isinstance(payment, dict) or not payment.get("id"):
             raise ValueError("Payload deve conter 'payment.id'.")
@@ -1036,14 +744,12 @@ class AsaasGateway(PaymentGateway, BasePaymentGateway):
         tx = Transaction.objects.filter(external_id=external_id).first()
 
         if event == "payment_created":
-            # Cobrança criada (ex.: nova fatura da assinatura). Abre a transação
+            # Cobrança criada (ex.: fatura de paymentLink). Abre a transação
             # pendente quando ainda não existe; nenhum ajuste de status além disso.
             if tx is None:
-                tx = (
-                    self._create_subscription_transaction(payment, external_id)
-                    or self._create_payment_link_transaction(payment, external_id)
-                    or self._resolve_checkout_payment_transaction(payment)
-                )
+                tx = self._create_payment_link_transaction(
+                    payment, external_id
+                ) or self._resolve_checkout_payment_transaction(payment)
                 if tx is None:
                     # Cobrança desconhecida (ex.: checkout DETACHED sem vínculo
                     # local, evento de teste). Não interrompe a fila do Asaas.
@@ -1077,22 +783,21 @@ class AsaasGateway(PaymentGateway, BasePaymentGateway):
             )
 
         if tx is None:
-            # Renovação de assinatura, paymentLink avulso ou pagamento redundante
-            # de checkout: cobrança nova com id desconhecido, mas vinculada a uma
-            # assinatura/solicitação/pedido registrado. Abre a transação antes de
+            # PaymentLink avulso ou pagamento redundante de checkout:
+            # cobrança nova com id desconhecido, mas vinculada a uma
+            # solicitação/pedido registrado. Abre a transação antes de
             # aplicar o status do evento financeiro.
-            tx = (
-                self._create_subscription_transaction(payment, external_id)
-                or self._create_payment_link_transaction(payment, external_id)
-                or self._resolve_checkout_payment_transaction(payment)
-            )
+            tx = self._create_payment_link_transaction(
+                payment, external_id
+            ) or self._resolve_checkout_payment_transaction(payment)
             if tx is None:
                 # Evento financeiro sem transação local (ex.: teste do dashboard,
                 # pagamento de checkout sem rastreio). Responde 200 para não
                 # interromper a fila do Asaas nem marcar a entrega como falha.
                 logger.warning(
                     "Asaas webhook: evento '%s' (%s) sem transação local; ignorado.",
-                    event, external_id,
+                    event,
+                    external_id,
                 )
                 return ChargeResult(
                     ok=True,
@@ -1145,7 +850,9 @@ class AsaasGateway(PaymentGateway, BasePaymentGateway):
                 # transição, mas registra o payload para auditoria.
                 logger.info(
                     "Asaas webhook: transição %s -> %s bloqueada (%s)",
-                    tx.status, new_status, external_id,
+                    tx.status,
+                    new_status,
+                    external_id,
                 )
                 tx.raw_payload = payload_str
                 tx.save(update_fields=["raw_payload", "updated_at"])

@@ -1,10 +1,6 @@
 from django.urls import path
 
 from .views import (
-    MaintenancePlanCreateView,
-    MaintenancePlanListView,
-    MaintenanceVisitCompleteView,
-    MaintenanceVisitListView,
     MyServiceRequestListView,
     ProviderServiceRequestListView,
     ServiceCreateView,
@@ -24,10 +20,6 @@ urlpatterns = [
     path("", ServiceListView.as_view(), name="services-list"),
     path("meus-servicos/", ServiceListViewMine.as_view(), name="services-my"),
     path("novo-servico/", ServiceCreateView.as_view(), name="services-create"),
-    path("planos/", MaintenancePlanListView.as_view(), name="services-plan-list"),
-    path("planos/assinar/", MaintenancePlanCreateView.as_view(), name="services-plan-subscribe"),
-    path("visitas/", MaintenanceVisitListView.as_view(), name="services-visits"),
-    path("visitas/<uuid:pk>/concluir/", MaintenanceVisitCompleteView.as_view(), name="services-visit-complete"),
     path("<uuid:pk>/excluir/", ServiceDeleteView.as_view(), name="services-delete"),
     path(
         "prestador/solicitacoes/",

@@ -50,9 +50,7 @@ class TestCustomSignupFormRequiredData(TestCase):
             assert field in form.errors, field
 
     def test_rejects_invalid_cpf(self):
-        form = CustomSignupForm(
-            data={**SIGNUP_DATA, **SIGNUP_ADDRESS, "cpf": "111.111.111-11"}
-        )
+        form = CustomSignupForm(data={**SIGNUP_DATA, **SIGNUP_ADDRESS, "cpf": "111.111.111-11"})
         assert not form.is_valid()
         assert "cpf" in form.errors
 
@@ -72,8 +70,13 @@ class TestCustomSignupFormRequiredData(TestCase):
 
 class TestProfileEditView(TestCase):
     def _post(self, user, **overrides):
-        data = {**SIGNUP_ADDRESS, "cpf": "111.444.777-35", "telefone": "(11) 99999-0000",
-                "email": user.email, **overrides}
+        data = {
+            **SIGNUP_ADDRESS,
+            "cpf": "111.444.777-35",
+            "telefone": "(11) 99999-0000",
+            "email": user.email,
+            **overrides,
+        }
         return self.client.post(reverse("accounts-me-edit"), data)
 
     def test_requires_login(self):
@@ -96,8 +99,12 @@ class TestProfileEditView(TestCase):
     def test_edit_updates_existing_address(self):
         user = make_user(role=CustomUser.Role.CLIENTE)
         address = Address.objects.create(
-            user=user, street="Rua Velha", number="1", city="Campinas",
-            state="SP", zip_code="13000000",
+            user=user,
+            street="Rua Velha",
+            number="1",
+            city="Campinas",
+            state="SP",
+            zip_code="13000000",
         )
         self.client.force_login(user)
         response = self._post(user)

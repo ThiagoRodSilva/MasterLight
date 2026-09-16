@@ -1,4 +1,4 @@
-"""Testes de regressão para bugs de gateway de pagamento (I1-I6)."""
+"""Testes de regressão para bugs de gateway de pagamento Asaas."""
 
 import json
 from decimal import Decimal
@@ -7,7 +7,7 @@ from django.test import TestCase, override_settings
 
 from apps.checkout.models import Order
 from apps.payments.models import Transaction
-from apps.payments.services import AsaasGateway, ManualGateway
+from apps.payments.services import AsaasGateway
 from apps.services.models import Service, ServiceCategory, ServiceRequest
 from apps.tests.helpers import AsaasMockMixin, create_order, make_user
 
@@ -17,48 +17,6 @@ ASAAS_SETTINGS = {
     "ASAAS_SANDBOX": True,
     "ASAAS_WEBHOOK_TOKEN": "segredo",
 }
-
-
-@override_settings(PAYMENT_PROVIDER="manual", MANUAL_WEBHOOK_TOKEN="test-token")
-class TestManualGatewayRegressions(TestCase):
-    def test_manual_webhook_blocks_refunded_to_paid(self):
-        """Webhook manual não deve permitir transição de REFUNDED para PAID."""
-        from apps.accounts.models import CustomUser
-        from apps.payments.models import Transaction
-
-        user = make_user(role=CustomUser.Role.CLIENTE)
-        order = create_order(user, with_referral=True)
-        gateway = ManualGateway()
-
-        # Cria transação pendente
-        result = gateway.charge(order)
-        tx = Transaction.objects.get(pk=result.transaction_id)
-
-        # Webhook: paid
-        payload = json.dumps({"transaction_id": str(tx.pk), "status": "paid"})
-        result = gateway.webhook(payload, {"x-webhook-token": "test-token"})
-        self.assertTrue(result.ok)
-        tx.refresh_from_db()
-        self.assertEqual(tx.status, Transaction.Status.PAID)
-
-        # Webhook: refunded
-        payload = json.dumps({"transaction_id": str(tx.pk), "status": "refunded"})
-        result = gateway.webhook(payload, {"x-webhook-token": "test-token"})
-        self.assertTrue(result.ok)
-        tx.refresh_from_db()
-        self.assertEqual(tx.status, Transaction.Status.REFUNDED)
-
-        # Webhook: paid novamente (atrasado) - deve ser bloqueado
-        payload = json.dumps({"transaction_id": str(tx.pk), "status": "paid"})
-        result = gateway.webhook(payload, {"x-webhook-token": "test-token"})
-        self.assertTrue(result.ok)
-        self.assertIn("bloqueada", result.message)
-        tx.refresh_from_db()
-        self.assertEqual(tx.status, Transaction.Status.REFUNDED)
-
-        # Verifica que estoque não foi decrementado de novo e comissão não re-creditada
-        # (o signal de approve_referral não deve disparar novamente)
-        # Como usamos mock, verificamos apenas que o status não mudou
 
 
 @override_settings(**ASAAS_SETTINGS)
@@ -73,7 +31,9 @@ class TestAsaasGatewayRegressions(AsaasMockMixin, TestCase):
         tx = Transaction.objects.get(pk=result.transaction_id)
 
         # Confirma pagamento
-        payload = json.dumps({"event": "PAYMENT_CONFIRMED", "payment": {"id": self.asaas.payment_id}})
+        payload = json.dumps(
+            {"event": "PAYMENT_CONFIRMED", "payment": {"id": self.asaas.payment_id}}
+        )
         gateway.webhook(payload, {"x-webhook-token": "segredo"})
         tx.refresh_from_db()
         self.assertEqual(tx.status, Transaction.Status.PAID)
@@ -121,7 +81,7 @@ class TestAsaasGatewayRegressions(AsaasMockMixin, TestCase):
         )
         service.providers.add(prestador)
 
-# Cria ServiceRequest com final_price=0 (orçamento grátis)
+        # Cria ServiceRequest com final_price=0 (orçamento grátis)
         ServiceRequest.objects.create(
             cliente=cliente,
             service=service,
@@ -171,7 +131,10 @@ class TestAsaasGatewayRegressions(AsaasMockMixin, TestCase):
         # Simula segundo webhook PAYMENT_CREATED com mesmo external_id
         # (como se fosse retry do Asaas)
         payload = json.dumps(
-            {"event": "PAYMENT_CREATED", "payment": {"id": self.asaas.payment_id, "value": str(order.total)}}
+            {
+                "event": "PAYMENT_CREATED",
+                "payment": {"id": self.asaas.payment_id, "value": str(order.total)},
+            }
         )
         result2 = gateway.webhook(payload, {"x-webhook-token": "segredo"})
 
@@ -180,29 +143,70 @@ class TestAsaasGatewayRegressions(AsaasMockMixin, TestCase):
         self.assertEqual(result2.transaction_id, str(tx1.pk))
         self.assertEqual(Transaction.objects.filter(external_id=self.asaas.payment_id).count(), 1)
 
+    def test_asaas_webhook_blocks_refunded_to_paid(self):
+        """Webhook Asaas não deve permitir transição de REFUNDED para PAID."""
+        from apps.accounts.models import CustomUser
 
-@override_settings(PAYMENT_PROVIDER="manual", MANUAL_WEBHOOK_TOKEN="test-token")
-class TestManualGatewayRefund(TestCase):
-    def test_manual_refund_blocks_invalid_transition(self):
-        """Refund manual deve bloquear transição inválida (ex.: de REFUNDED)."""
+        user = make_user(role=CustomUser.Role.CLIENTE)
+        order = create_order(user, with_referral=True)
+        gateway = AsaasGateway()
+
+        # Cria transação pendente
+        result = gateway.charge(order, billing_type="PIX")
+        tx = Transaction.objects.get(pk=result.transaction_id)
+
+        # Webhook: paid
+        payload = json.dumps(
+            {"event": "PAYMENT_CONFIRMED", "payment": {"id": self.asaas.payment_id}}
+        )
+        result = gateway.webhook(payload, {"x-webhook-token": "segredo"})
+        self.assertTrue(result.ok)
+        tx.refresh_from_db()
+        self.assertEqual(tx.status, Transaction.Status.PAID)
+
+        # Webhook: refunded
+        payload = json.dumps(
+            {"event": "PAYMENT_REFUNDED", "payment": {"id": self.asaas.payment_id}}
+        )
+        result = gateway.webhook(payload, {"x-webhook-token": "segredo"})
+        self.assertTrue(result.ok)
+        tx.refresh_from_db()
+        self.assertEqual(tx.status, Transaction.Status.REFUNDED)
+
+        # Webhook: paid novamente (atrasado) - deve ser bloqueado
+        payload = json.dumps(
+            {"event": "PAYMENT_CONFIRMED", "payment": {"id": self.asaas.payment_id}}
+        )
+        result = gateway.webhook(payload, {"x-webhook-token": "segredo"})
+        self.assertTrue(result.ok)
+        self.assertIn("bloqueada", result.message)
+        tx.refresh_from_db()
+        self.assertEqual(tx.status, Transaction.Status.REFUNDED)
+
+    def test_asaas_refund_blocks_invalid_transition(self):
+        """Refund Asaas deve bloquear transição inválida (ex.: de REFUNDED)."""
         from apps.accounts.models import CustomUser
 
         user = make_user(role=CustomUser.Role.CLIENTE)
         order = create_order(user, with_referral=False)
-        gateway = ManualGateway()
+        gateway = AsaasGateway()
 
         # Cria transação e marca como PAID via webhook
-        result = gateway.charge(order)
+        result = gateway.charge(order, billing_type="PIX")
         tx = Transaction.objects.get(pk=result.transaction_id)
 
-        payload = json.dumps({"transaction_id": str(tx.pk), "status": "paid"})
-        gateway.webhook(payload, {"x-webhook-token": "test-token"})
+        payload = json.dumps(
+            {"event": "PAYMENT_CONFIRMED", "payment": {"id": self.asaas.payment_id}}
+        )
+        gateway.webhook(payload, {"x-webhook-token": "segredo"})
         tx.refresh_from_db()
         self.assertEqual(tx.status, Transaction.Status.PAID)
 
         # Marca como REFUNDED
-        payload = json.dumps({"transaction_id": str(tx.pk), "status": "refunded"})
-        gateway.webhook(payload, {"x-webhook-token": "test-token"})
+        payload = json.dumps(
+            {"event": "PAYMENT_REFUNDED", "payment": {"id": self.asaas.payment_id}}
+        )
+        gateway.webhook(payload, {"x-webhook-token": "segredo"})
         tx.refresh_from_db()
         self.assertEqual(tx.status, Transaction.Status.REFUNDED)
 

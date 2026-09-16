@@ -37,7 +37,7 @@ A MasterLight une três negócios em uma única plataforma Django:
 
 1. **Serviços de elétrica** — prestadores se cadastram via self-service, clientes solicitam orçamento, aprovam com pagamento online e acompanham o status.
 2. **Afiliados** — divulgação com link `?ref=CODE`, comissão por venda e saque via Pix.
-3. **Assinatura de manutenção** — planos mensal/trimestral/anual com cobrança recorrente e agenda de visitas para o prestador.
+3. **Pagamentos recorrentes** foram removidos: não há mais planos de manutenção nem assinaturas (ver `SIMPLIFICATION.md`).
 
 O público pode navegar em `/servicos/` e `/afiliados/`. Seções são ligadas/desligadas por flags no banco (`SiteSettings`, editável no Admin).
 
@@ -49,7 +49,7 @@ O público pode navegar em `/servicos/` e `/afiliados/`. Seções são ligadas/d
 | Banco | PostgreSQL (Supabase) via `DATABASE_URL` — `psycopg[binary]` |
 | Auth | django-allauth (Google / Facebook / Apple) + login email/username |
 | Frontend | Bootstrap 5.3.3 self-hosted · django-crispy-forms · widget-tweaks |
-| Pagamentos | `PaymentGateway` abstrato — `ManualGateway` (dev) e `AsaasGateway` (Pix/cartão) |
+| Pagamentos | `AsaasGateway` (Pix/cartão, Checkout hosted, link avulso) |
 | Estáticos | Whitenoise (collectstatic no build) |
 | Testes | runner nativo Django + coverage (SQLite em memória) |
 | CI | GitHub Actions (ruff, migrations, check, testes) |
@@ -57,10 +57,9 @@ O público pode navegar em `/servicos/` e `/afiliados/`. Seções são ligadas/d
 ## Funcionalidades
 
 - **Serviços**: `Service` + `ServiceCategory`, self-service de prestador (`services-my`), solicitação de orçamento (`services-request`), orçamento (`ServiceQuoteView`), aprovação que cria `Order` e cobra (`ServiceRequestApproveView`), link de pagamento avulso com reconciliação (`ServiceRequestPayLinkView`), cancelamento.
-- **Assinatura de manutenção**: `MaintenancePlan` (mensal/trimestral/anual), cobrança recorrente via `subscribe()` ou Checkout hosted `RECURRENT`, `MaintenanceVisit` pendentes/concluídas no dashboard do prestador.
 - **Afiliados**: landing pública (`affiliate-landing`), painel (`affiliate-dashboard`), cadastro de chave Pix, `Referral` por `?ref=` cookie, `PayoutRequest`.
 - **Checkout**: `Order`/`OrderItem`/`Address`, recompute de total.
-- **Pagamentos**: `Transaction` com `external_id` (id Asaas) e `raw_payload` (ex.: `pix` do QR Code); webhook valida `x-webhook-token`.
+- **Pagamentos**: `Transaction` com `external_id` (id Asaas) e `raw_payload` (ex.: `pix` do QR Code); webhook valida `asaas-access-token`.
 - **Admin**: registro completo com `list_display`/`list_filter`/inlines + `SiteSettings` (flags de seção) e `ProviderApplication` (aprovação de prestador).
 
 ## Arquitetura
@@ -79,7 +78,7 @@ apps/
 ├── core/        # BaseModel, mixins, SiteSettings, context processors, social_bootstrap
 ├── accounts/    # CustomUser (roles), perfis, ProviderApplication, signup social
 ├── portfolio/   # Portfólio do prestador
-├── services/    # Serviços, orçamentos, planos de manutenção
+├── services/    # Serviços e orçamentos
 ├── affiliate/   # Landing, painel, Referral, PayoutRequest
 ├── checkout/    # Order, OrderItem, Address
 ├── payments/    # Transaction, PaymentGateway, webhook, reconciliação
@@ -93,17 +92,17 @@ apps/
 | `apps.core` | `BaseModel` (UUID PK, timestamps, `is_active`), `SiteSettings`, mixins de role, branding, `bootstrap_social` |
 | `apps.accounts` | `CustomUser` (roles), `PublicProfile`, `ProviderApplication`, signals de perfil |
 | `apps.portfolio` | CRUD do portfólio do prestador (imagem por URL) |
-| `apps.services` | Categorias/serviços, orçamentos, self-service de prestador, planos de manutenção e visitas |
+| `apps.services` | Categorias/serviços, orçamentos, self-service de prestador |
 | `apps.affiliate` | Landing pública, painel, `Referral`, `PayoutRequest` |
 | `apps.checkout` | `Order`, `OrderItem`, `Address` |
-| `apps.payments` | `Transaction`, `ManualGateway`/`AsaasGateway`, webhook, reconciliação |
+| `apps.payments` | `Transaction`, `AsaasGateway`, webhook, reconciliação |
 
 ### Pontos-chave
 
 - **PKs UUID**: todos os modelos de domínio herdam `BaseModel` — URLs de detalhe/edição usam `<uuid:pk>`. Listagens públicas de `services` usam `<slug:slug>` (slugs aleatórios auto-gerados por `RandomSlugMixin`).
 - **Roles** (`CustomUser.Role`): `cliente`, `prestador`, `afiliado`, `admin` — comparadas como strings cruas nos mixins (`ProviderRequiredMixin`, `AffiliateRequiredMixin`, `ClienteRequiredMixin`, `OwnerRequiredMixin`) e no `SectionEnabledMixin` (404 quando a seção está off).
 - **Business logic** mora em `services.py` (camada de aplicação); views são wrappers. Services levantam `ValueError` para erros de domínio e usam `transaction.atomic()`.
-- **Gateway abstrato**: `PaymentGateway` em `apps/payments/services.py` com `charge`/`refund`/`webhook`/`subscribe`/`tokenize_credit_card` + `create_payment_link`; providers registrados em `_REGISTRY` e selecionados por `PAYMENT_PROVIDER`.
+- **Gateway abstrato**: `PaymentGateway` em `apps/payments/gateways/base.py` com `charge`/`refund`/`webhook`/`tokenize_credit_card`/`create_payment_link`/`create_checkout`; providers registrados em `_REGISTRY` e selecionados por `PAYMENT_PROVIDER` (apenas `asaas`).
 
 ### Mapa de URLs (raiz)
 
@@ -113,7 +112,7 @@ apps/
 | `/admin/` | Django Admin | ❌ |
 | `/accounts/` | accounts (`me`, `u/<username>`) | parcial |
 | `/portfolio/` | portfolio | parcial |
-| `/servicos/` | services (catálogo de serviços, planos, visitas) | parcial |
+| `/servicos/` | services (catálogo de serviços e orçamentos) | parcial |
 | `/afiliados/` | affiliate (landing + painel) | parcial |
 | `/carrinho/` | checkout | ❌ |
 | `/pagamentos/` | payments (webhook, confirmações, status) | parcial |
@@ -125,14 +124,12 @@ apps/
 
 | App | Modelo | Destaques |
 |---|---|---|
-| core | `SiteSettings` | singleton (pk=1), flags `services_enabled`/`affiliates_enabled`/`maintenance_enabled`/`provider_registration_enabled` |
+| core | `SiteSettings` | singleton (pk=1), flags `services_enabled`/`affiliates_enabled`/`provider_registration_enabled` |
 | accounts | `CustomUser` | `USERNAME_FIELD="email"`, `role`, `asaas_customer_id`, avatar (URL) |
 | accounts | `PublicProfile` / `ProviderApplication` | 1:1 user; aplicação de prestador com status |
 | portfolio | `PortfolioItem` | `image` (URL), `created_by` |
 | services | `ServiceCategory` / `Service` | `providers` M2M `CustomUser`, `created_by`; `image` (URL) |
 | services | `ServiceRequest` | `cliente`, `prestador`, `service`, `order` 1:1 `checkout.Order`, status `pending→quoted→approved→concluded/canceled` |
-| services | `MaintenancePlan` | `plan_type` (mensal/trimestral/anual), `value`, `next_due_date`, `order` 1:1, `asaas_subscription_id`, `cycle_days()` |
-| services | `MaintenanceVisit` | `plan`, `scheduled_at`, `completed_at`, `is_pending` |
 | affiliate | `AffiliateProfile` | `code` (p/ `?ref=`), `pix_key`, `commission_rate`, `balance` |
 | affiliate | `Referral` / `PayoutRequest` | status pending/approved/rejected/paid/canceled; saque via Pix |
 | checkout | `Order` / `OrderItem` / `Address` | status, `kind` (product/service/subscription), `recompute_total()`/`decrement_stock()` |
@@ -151,9 +148,8 @@ Todas lidas por `django-environ` de `.env` (gitignored) ou do ambiente. Veja `.e
 | `DJANGO_CONN_MAX_AGE` | — | Idade máxima da conexão (default `60`) |
 | `DJANGO_SITE_DOMAIN` / `DJANGO_SITE_NAME` |  | Domínio/nome para `django.contrib.sites` + allauth |
 | `DJANGO_LANGUAGE_CODE` / `DJANGO_TIME_ZONE` | — | `pt-br` / `America/Sao_Paulo` |
-| `PAYMENT_PROVIDER` | — | `manual` (dev) ou `asaas` |
-| `ASAAS_API_KEY` / `ASAAS_SANDBOX` / `ASAAS_WEBHOOK_TOKEN` | se `asaas` | Credenciais Asaas |
-| `MANUAL_WEBHOOK_TOKEN` | se `manual` | Token do webhook manual |
+| `PAYMENT_PROVIDER` | — | `asaas` (default) |
+| `ASAAS_API_KEY` / `ASAAS_SANDBOX` / `ASAAS_WEBHOOK_TOKEN` |  | Credenciais Asaas (E001 falha se `asaas` sem chave) |
 | `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` | p/ social | Google OAuth |
 | `FACEBOOK_CLIENT_ID`/`FACEBOOK_CLIENT_SECRET` | p/ social | Facebook OAuth |
 | `APPLE_CLIENT_ID`/`APPLE_TEAM_ID`/`APPLE_KEY_ID`/`APPLE_PRIVATE_KEY` | p/ social | Sign in with Apple |
@@ -189,7 +185,7 @@ python manage.py runserver
 
 1. Crie uma conta no Asaas (sandbox para testes).
 2. Em `.env`:
-   - `PAYMENT_PROVIDER=asaas`
+   - `PAYMENT_PROVIDER=asaas` (default já é `asaas`)
    - `ASAAS_API_KEY=<access_token de integração>`
    - `ASAAS_SANDBOX=True` (ou `False` em produção)
    - `ASAAS_WEBHOOK_TOKEN=<token do webhook no Asaas>`
@@ -202,10 +198,10 @@ Fluxos suportados pelo `AsaasGateway`:
 |---|---|---|
 | Pix | cobrança `PIX` | `payments-pix-confirm` (QR code) |
 | Cartão | tokenização via `tokenize_credit_card` | `payments-card-confirm` |
-| Checkout hosted | `create_checkout()` (`POST /checkouts`, página do Asaas) — **fluxo padrão com provider `asaas`** (orçamento e assinatura), webhook `CHECKOUT_PAID`/`CHECKOUT_EXPIRED` | redireciona para a URL do Asaas; callback `payments-checkout-callback` |
+| Checkout hosted | `create_checkout()` (`POST /checkouts`, página do Asaas) — **fluxo padrão com provider `asaas`** (orçamento), webhook `CHECKOUT_PAID`/`CHECKOUT_EXPIRED` | redireciona para a URL do Asaas; callback `payments-checkout-callback` |
 | Link avulso | `create_payment_link()` (`POST /paymentLinks`, tela hospedada) | nova aba; pago, o webhook `payment.paymentLink` **reconcilia**: cria `Order`+`Transaction` e aprova a `ServiceRequest` |
 
-> Em desenvolvimento, deixe `PAYMENT_PROVIDER=manual` — nenhuma API real é chamada, apenas transações marcadas.
+> O `ManualGateway` foi removido. `PAYMENT_PROVIDER` desconhecido faz `get_gateway()` levantar `ImproperlyConfigured` (check `payments.E002`).
 
 ## Fluxos de negócio
 
@@ -214,16 +210,9 @@ Fluxos suportados pelo `AsaasGateway`:
 1. **Prestador (self-service)**: cria o serviço em `/servicos/meus-servicos/` (`services-my`) e vira provider daquele serviço automaticamente (`ServiceCreateView`).
 2. **Cliente**: navega em `/servicos/`, vê o detalhe e escolhe **um prestador** ao solicitar orçamento (`services-request`).
 3. Prestador recebe a solicitação (`pending`) em `/servicos/prestador/solicitacoes/` (`services-provider-requests`) e envia orçamento (`final_price`) via `services-request-quote`.
-4. Cliente **aprova** o orçamento (`services-request-approve`): cria `Order(kind=SERVICE)` + `OrderItem(unit_price=final_price)`, roda `recompute_total()` e chama `checkout_or_charge` — com provider `asaas`, redireciona para o Checkout hosted; senão, para o checkout embutido.
+4. Cliente **aprova** o orçamento (`services-request-approve`): cria `Order(kind=SERVICE)` + `OrderItem(unit_price=final_price)`, roda `recompute_total()` e chama `checkout_or_charge` — redireciona para o Checkout hosted do Asaas.
 5. Webhook confirma o pagamento → signal `complete_service_request_on_paid` marca a `ServiceRequest` como `approved`.
 6. Cliente acompanha em `/servicos/minhas-solicitacoes/` (`services-my-requests`) e pode cancelar enquanto pendente (`services-request-cancel`).
-
-### Assinatura de manutenção
-
-1. Cliente assina em `/servicos/planos/` (`services-plan-list` → `services-plan-subscribe`): cria `Order(kind=SUBSCRIPTION, subscription=True)` + `OrderItem(plan=...)`.
-2. Com `PAYMENT_PROVIDER=asaas`, redireciona para o Checkout hosted `RECURRENT` (`create_checkout()`, `subscription.cycle` pelo `plan_type`) e o id da assinatura é capturado no webhook `CHECKOUT_PAID` (`_link_checkout_subscription`); com provider manual, `subscribe_plan(plan, "PIX")` cria `Transaction` PENDING e redireciona para `payments-manual-confirm`.
-3. Quando a `Transaction` vira `paid`, o signal `schedule_first_maintenance_visit` agenda a 1ª `MaintenanceVisit` (no `next_due_date`) e avança `next_due_date` por `plan.cycle_days()` (30/90/365).
-4. Prestador gerencia visitas em `/servicos/visitas/` (`services-visits`) e conclui com `services-visit-complete`.
 
 ### Afiliados
 
@@ -271,7 +260,7 @@ venv/bin/coverage report --fail-under=70
 2. Env vars (obrigatória: `DJANGO_SETTINGS_MODULE=config.settings.vercel`):
    `DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS=masterlightoficial.com.br,www.masterlightoficial.com.br,.vercel.app`,
    `DJANGO_SITE_DOMAIN`, `DJANGO_SITE_NAME`, `DATABASE_URL` (Supabase session mode),
-   `PAYMENT_PROVIDER`, `ASAAS_*`, `MANUAL_WEBHOOK_TOKEN`, sociais e SMTP, `CRON_SECRET`.
+   `PAYMENT_PROVIDER`, `ASAAS_*`, sociais e SMTP, `CRON_SECRET`.
 3. Domínio: apex + `www` para a Vercel.
 4. No Asaas, atualize o webhook para `https://SEUDOMINIO/pagamentos/webhook/`.
 5. Suba os dados após o primeiro build (ou carregue no Supabase diretamente).
@@ -287,7 +276,7 @@ venv/bin/coverage report --fail-under=70
 - Produção roda com `SECURE_SSL_REDIRECT=True` e HSTS de 1 ano (`SECURE_HSTS_SECONDS`).
 - Secrets (chaves, senhas, tokens) vivem em `.env`/env vars — `.env` e `.env.local` são gitignored. Nunca commite chaves.
 - `SECRET_KEY` de produção deve ser único e nunca reutilizado entre ambientes.
-- Webhooks de pagamento validam token (`x-webhook-token`).
+- Webhooks de pagamento validam token (`asaas-access-token`).
 
 ## FAQ / Troubleshooting
 
@@ -303,7 +292,7 @@ venv/bin/coverage report --fail-under=70
 
 ## Roadmap
 
-- [x] Asaas Checkout hosted (página de pagamento do Asaas) substituindo o checkout embutido em orçamento e assinatura.
+- [x] Asaas Checkout hosted (página de pagamento do Asaas) substituindo o checkout embutido em orçamento.
 - [x] Reconciliação automática de `paymentLink` (link avulso agora cria `Order`+`Transaction` e aprova a solicitação no webhook).
 - [ ] Parcelamento (installments) no cartão.
 - [ ] `GET /checkouts/{id}` na reconciliação ativa (`sync_payments`) — hoje os checkouts são reconciliados apenas por webhook.
@@ -375,14 +364,14 @@ Pendência de decisão: usar estatísticas reais ou placeholders de marketing?
 
 ### Fase 5 — Navbar & Footer
 
-- **Navbar**: CTA "Entrar" mais proeminente, item "Manutenção" já existe. Manter busca e dropdown.
+- **Navbar**: CTA "Entrar" mais proeminente. Manter busca e dropdown.
 - **Footer**: 4 colunas — marca+social (mantém) + **contato** (telefone/e-mail placeholders ou do `SiteSettings` se houver) + navegação (mantém) + **newsletter** (form estático visual, sem backend) + linha de copyright com links (Privacidade/Termos).
 
 ### Fase 6 — Painéis (afiliado/prestador/me)
 
 - Padrão `.page-header` em todos (título + descrição + ação primária).
 - **Affiliate**: manter stat-cards (refinar com ícone), melhorar card de link (copiar com feedback), tabelas com `.table-brand` (mantém), separar "Indicações" e "Saques" com sub-cabeçalhos.
-- **Prestador**: `my_services` grid mantém; `provider_requests`/`visits`/`my_requests` ganham header padrão + contagem de pendências.
+- **Prestador**: `my_services` grid mantém; `provider_requests`/`my_requests` ganham header padrão + contagem de pendências.
 - **Me**: perfil header + stat-cards + lista de pedidos (mantém), refinar cards.
 
 ### Fase 7 — Checkout & pagamento

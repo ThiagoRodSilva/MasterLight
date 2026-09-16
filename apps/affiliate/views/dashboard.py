@@ -33,7 +33,9 @@ class AffiliateDashboardView(AffiliateBaseMixin, ListView):
         ctx["referral_count"] = Referral.objects.active().filter(affiliate=profile).count()
 
         # Saques paginados (20 por página)
-        payouts_qs = PayoutRequest.objects.active().filter(affiliate=profile).order_by("-created_at")
+        payouts_qs = (
+            PayoutRequest.objects.active().filter(affiliate=profile).order_by("-created_at")
+        )
         paginator = Paginator(payouts_qs, 20)
         page = self.request.GET.get("payout_page", 1)
         try:

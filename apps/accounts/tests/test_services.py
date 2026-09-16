@@ -229,20 +229,26 @@ class CompleteSocialSignupServiceTest(TestCase):
         self._add_middleware(request)
         request.session["sociallogin"] = sociallogin.serialize()
 
-        form = self._create_form_mock({
-            "role": "cliente",
-            "cpf": "12345678901",
-            "telefone": "11999999999",
-            "street": "Rua Teste",
-            "number": "123",
-            "city": "São Paulo",
-            "state": "SP",
-            "zip_code": "01234567",
-            "country": "Brasil",
-        })
+        form = self._create_form_mock(
+            {
+                "role": "cliente",
+                "cpf": "12345678901",
+                "telefone": "11999999999",
+                "street": "Rua Teste",
+                "number": "123",
+                "city": "São Paulo",
+                "state": "SP",
+                "zip_code": "01234567",
+                "country": "Brasil",
+            }
+        )
 
-        with mock.patch("allauth.socialaccount.models.SocialLogin.deserialize", return_value=sociallogin):
-            with mock.patch("allauth.socialaccount.models.SocialAccount.objects.filter") as mock_filter:
+        with mock.patch(
+            "allauth.socialaccount.models.SocialLogin.deserialize", return_value=sociallogin
+        ):
+            with mock.patch(
+                "allauth.socialaccount.models.SocialAccount.objects.filter"
+            ) as mock_filter:
                 mock_filter.return_value.first.return_value = None
                 result_user = complete_social_signup(user=user, form=form, request=request)
 

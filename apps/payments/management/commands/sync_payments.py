@@ -43,21 +43,20 @@ class Command(BaseCommand):
     help = "Reconcilia transações Asaas pendentes com o status real da API."
 
     def add_arguments(self, parser):
-        parser.add_argument("--limit", type=int, default=50, help="Máximo de transações por execução.")
+        parser.add_argument(
+            "--limit", type=int, default=50, help="Máximo de transações por execução."
+        )
 
     def handle(self, *args, **options):
         gateway = AsaasGateway()
         # Transações de Checkout hosted têm `kind=checkout` (`external_id` = id do
         # checkout, não um payment); são reconciliadas pelo webhook CHECKOUT_*.
-        qs = (
-            Transaction.objects.filter(
-                provider="asaas",
-                status=Transaction.Status.PENDING,
-                kind=Transaction.Kind.PAYMENT,
-                external_id__gt="",
-            )
-            .order_by("-created_at")[: options["limit"]]
-        )
+        qs = Transaction.objects.filter(
+            provider="asaas",
+            status=Transaction.Status.PENDING,
+            kind=Transaction.Kind.PAYMENT,
+            external_id__gt="",
+        ).order_by("-created_at")[: options["limit"]]
 
         updated = 0
         for tx in qs:

@@ -11,7 +11,9 @@ class PortfolioItem(BaseModel):
     title = models.CharField(max_length=160, verbose_name="título")
     description = models.TextField(blank=True, default="", verbose_name="descrição")
     category = models.CharField(max_length=80, blank=True, default="", verbose_name="categoria")
-    image = models.URLField(blank=True, null=True, validators=[validate_image_url], verbose_name="imagem")
+    image = models.URLField(
+        blank=True, null=True, validators=[validate_image_url], verbose_name="imagem"
+    )
     video = models.URLField(blank=True, default="", verbose_name="vídeo")
     published = models.BooleanField(default=False, verbose_name="publicado")
     created_by = models.ForeignKey(

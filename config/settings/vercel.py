@@ -17,11 +17,16 @@ DEBUG = False  # noqa: F811
 # Garante que .vercel.app SEMPRE esteja presente (previews dinâmicos da Vercel),
 # independentemente do valor de DJANGO_ALLOWED_HOSTS.
 _raw_hosts = env.list("DJANGO_ALLOWED_HOSTS", default=[])
-ALLOWED_HOSTS = list(dict.fromkeys(_raw_hosts + [
-    "masterlightoficial.com.br",
-    "www.masterlightoficial.com.br",
-    ".vercel.app",
-]))
+ALLOWED_HOSTS = list(
+    dict.fromkeys(
+        _raw_hosts
+        + [
+            "masterlightoficial.com.br",
+            "www.masterlightoficial.com.br",
+            ".vercel.app",
+        ]
+    )
+)
 CSRF_TRUSTED_ORIGINS = [
     "https://masterlightoficial.com.br",
     "https://www.masterlightoficial.com.br",

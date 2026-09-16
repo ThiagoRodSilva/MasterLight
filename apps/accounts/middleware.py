@@ -24,6 +24,7 @@ class SocialSignupRequiredMiddleware:
         if request.user.is_authenticated and not request.user.is_superuser:
             # Só bloqueia usuários que vieram de login social (têm SocialAccount)
             from allauth.socialaccount.models import SocialAccount
+
             has_social_account = SocialAccount.objects.filter(user=request.user).exists()
 
             if has_social_account:
@@ -36,9 +37,8 @@ class SocialSignupRequiredMiddleware:
                     else:
                         try:
                             current_url = resolve(request.path_info).url_name
-                            is_exempt = (
-                                current_url in self.exempt_urls
-                                or (current_url and current_url.startswith("admin:"))
+                            is_exempt = current_url in self.exempt_urls or (
+                                current_url and current_url.startswith("admin:")
                             )
                         except Resolver404:
                             is_exempt = False

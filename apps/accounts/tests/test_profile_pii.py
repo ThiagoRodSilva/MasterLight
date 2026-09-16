@@ -10,7 +10,9 @@ from apps.tests.helpers import make_user
 class TestProfileDetailViewPII(TestCase):
     def setUp(self):
         self.client_user = make_user(role=CustomUser.Role.CLIENTE, email="cliente@exemplo.com")
-        self.prestador_user = make_user(role=CustomUser.Role.PRESTADOR, email="prestador@exemplo.com")
+        self.prestador_user = make_user(
+            role=CustomUser.Role.PRESTADOR, email="prestador@exemplo.com"
+        )
         self.afiliado_user = make_user(role=CustomUser.Role.AFILIADO, email="afiliado@exemplo.com")
         # Atualiza PublicProfile criado pelo signal para is_active=True
         PublicProfile.objects.filter(user=self.prestador_user).update(is_active=True)

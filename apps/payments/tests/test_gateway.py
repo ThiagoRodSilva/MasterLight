@@ -1,28 +1,32 @@
 """Testes da fabrica de gateway (registry)."""
 
+from django.core.exceptions import ImproperlyConfigured
 from django.test import TestCase, override_settings
 
-from apps.payments.services import AsaasGateway, ManualGateway, get_gateway
+from apps.payments.gateways import get_gateway
+from apps.payments.gateways.asaas import AsaasGateway
 from apps.tests.helpers import make_user
 
 
 class TestGetGateway(TestCase):
     @override_settings(PAYMENT_PROVIDER="manual", ASAAS_API_KEY="")
-    def test_default_returns_manual(self):
-        assert isinstance(get_gateway(), ManualGateway)
+    def test_unknown_manual_provider_raises(self):
+        """Provider removido deve levantar ImproperlyConfigured."""
+        with self.assertRaisesRegex(ImproperlyConfigured, "manual"):
+            get_gateway()
 
     @override_settings(PAYMENT_PROVIDER="asaas")
     def test_asaas_provider_returns_asaas_gateway(self):
         assert isinstance(get_gateway(), AsaasGateway)
 
     @override_settings(DEBUG=True, PAYMENT_PROVIDER="gateway-desconhecido")
-    def test_unknown_provider_falls_back_to_manual_in_dev(self):
-        assert isinstance(get_gateway(), ManualGateway)
+    def test_unknown_provider_raises_even_in_dev(self):
+        """Não há mais fallback para dev — provider desconhecido é erro de config."""
+        with self.assertRaises(ImproperlyConfigured):
+            get_gateway()
 
     @override_settings(DEBUG=False, PAYMENT_PROVIDER="gateway-desconhecido")
     def test_unknown_provider_raises_in_production(self):
-        from django.core.exceptions import ImproperlyConfigured
-
         with self.assertRaisesRegex(ImproperlyConfigured, "gateway-desconhecido"):
             get_gateway()
 

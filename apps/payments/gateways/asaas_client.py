@@ -11,7 +11,7 @@ class AsaasApiClient:
     """Chama endpoints `/api/v3` do Asaas com retry por falha transitória.
 
     Conhece apenas transporte HTTP: base URL, headers, idempotência e retry.
-    Toda regra de negócio (cobrança, assinatura, webhook) vive no
+    Toda regra de negócio (cobrança, webhook) vive no
     `AsaasGateway`.
     """
 

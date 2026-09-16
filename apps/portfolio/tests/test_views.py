@@ -73,7 +73,11 @@ class TestPortfolioQueries(TestCase):
         super().setUp()
         self.provider = make_user(role=CustomUser.Role.PRESTADOR)
         self.item = PortfolioItem.objects.create(
-            title="Item Query", description="", category="", published=True, created_by=self.provider
+            title="Item Query",
+            description="",
+            category="",
+            published=True,
+            created_by=self.provider,
         )
 
     def test_list_uses_select_related(self):

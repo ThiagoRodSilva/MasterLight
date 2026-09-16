@@ -108,12 +108,12 @@
 <!-- Como funciona -->
 <section class="bg-[var(--surface-page)] py-20 lg:py-28">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    {% include "partials/ui/_section_head.html" with eyebrow="Simples e rápido" title="Como funciona" description="Do orçamento à manutenção, tudo em poucos passos." %}
+    {% include "partials/ui/_section_head.html" with eyebrow="Simples e rápido" title="Como funciona" description="Do orçamento à entrega, tudo em poucos passos." %}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mt-12">
       <div class="text-center reveal reveal-delay-1">
         {% include "partials/ui/_avatar.html" with size_class="avatar-xl" icon="bi bi-search" custom_class="mx-auto mb-4" %}
         <h5 class="text-xl font-bold text-[var(--text-strong)] mt-4">1. Explore</h5>
-        <p class="text-[var(--color-muted)] mt-2">Navegue pelos serviços, conheça os prestadores e veja os planos de manutenção.</p>
+        <p class="text-[var(--color-muted)] mt-2">Navegue pelos serviços e conheça os prestadores.</p>
       </div>
       <div class="text-center reveal reveal-delay-2">
         {% include "partials/ui/_avatar.html" with size_class="avatar-xl" icon="bi bi-clipboard-check" custom_class="mx-auto mb-4" %}
@@ -126,22 +126,11 @@
         <p class="text-[var(--color-muted)] mt-2">Aprove a proposta e pague com Pix ou cartão, com total segurança.</p>
       </div>
       <div class="text-center reveal reveal-delay-4">
-        {% include "partials/ui/_avatar.html" with size_class="avatar-xl" icon="bi bi-tools" custom_class="mx-auto mb-4" %}
-        <h5 class="text-xl font-bold text-[var(--text-strong)] mt-4">4. Mantenha</h5>
-        <p class="text-[var(--color-muted)] mt-2">Acompanhe a entrega e programe a manutenção para manter tudo em ordem.</p>
+        {% include "partials/ui/_avatar.html" with size_class="avatar-xl" icon="bi bi-check2-circle" custom_class="mx-auto mb-4" %}
+        <h5 class="text-xl font-bold text-[var(--text-strong)] mt-4">4. Acompanhe</h5>
+        <p class="text-[var(--color-muted)] mt-2">Acompanhe a entrega e conclua o serviço com tranquilidade.</p>
       </div>
     </div>
   </div>
 </section>
-
-<!-- Manutenção CTA -->
-{% if MAINTENANCE_ENABLED %}
-<section class="bg-gradient-to-br from-dark-500 via-dark-600 to-dark-700 text-white py-20 lg:py-28">
-  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-    <h2 class="text-3xl lg:text-4xl font-bold mb-4 reveal">Precisa de manutenção recorrente?</h2>
-    <p class="text-white/70 text-lg mb-8 reveal reveal-delay-1">Conheça nossos planos de manutenção preventiva e mantenha sua instalação sempre em dia.</p>
-    <a href="{% url 'services-plan-list' %}" class="px-8 py-4 bg-white/10 backdrop-blur-sm text-white rounded-xl text-lg font-semibold hover:bg-white/20 transition-all border border-white/20 reveal reveal-delay-2">Ver planos</a>
-  </div>
-</section>
-{% endif %}
 {% endblock %}

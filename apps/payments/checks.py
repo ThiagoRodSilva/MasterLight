@@ -9,8 +9,8 @@ def asaas_api_key_check(app_configs, **kwargs):
     """Falha cedo no `manage.py check` quando o Asaas esta ativo sem chave.
 
     Sem isso a configuracao errada so aparece como 500 na primeira chamada a
-    API (charge/subscribe/webhook). Em testes o provider e 'manual' e a chave
-    vazia, entao o check nao dispara.
+    API (charge/webhook). Em testes o provider e 'asaas' com chave de fixture,
+    entao o check nao dispara.
     """
     if settings.PAYMENT_PROVIDER != "asaas" or settings.ASAAS_API_KEY:
         return []
@@ -33,21 +33,20 @@ def asaas_api_key_check(app_configs, **kwargs):
 def payment_provider_check(app_configs, **kwargs):
     """Falha cedo quando PAYMENT_PROVIDER não está registrado (I1).
 
-    Em dev (DEBUG=True) um provider desconhecido cai no ManualGateway
-    (`get_gateway`); em produção é erro de configuração. Este check alerta em
-    qualquer ambiente para pegar typo cedo.
+    `get_gateway()` levanta ImproperlyConfigured para provider desconhecido em
+    qualquer ambiente. Este check alerta cedo para pegar typo.
     """
     from .gateways import _REGISTRY
 
-    provider = getattr(settings, "PAYMENT_PROVIDER", "manual")
+    provider = getattr(settings, "PAYMENT_PROVIDER", "asaas")
     if provider in _REGISTRY:
         return []
     return [
         Error(
             f"PAYMENT_PROVIDER '{provider}' desconhecido.",
             hint=(
-                f"Registrados: {', '.join(sorted(_REGISTRY))}. Em produção "
-                "(DEBUG=False) `get_gateway()` também levanta ImproperlyConfigured."
+                f"Registrados: {', '.join(sorted(_REGISTRY))}. `get_gateway()` "
+                "levanta ImproperlyConfigured para providers desconhecidos."
             ),
             obj="settings.PAYMENT_PROVIDER",
             id="payments.E002",

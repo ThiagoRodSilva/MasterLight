@@ -103,10 +103,10 @@ def create_order(user=None, with_referral: bool = False, service=None, qty=1) ->
     )
     order.recompute_total()
     if with_referral:
-        from apps.affiliate.models import Referral
+        from apps.affiliate.services import create_referral
 
         affil = make_affiliate()
-        Referral.objects.create(affiliate=affil, referred=user, order=order)
+        create_referral(affil.code, user, order, affil.commission_rate)
     # Cria transação manual para testes que manipulam status diretamente
     from apps.payments.models import Transaction
 
@@ -142,16 +142,12 @@ class FakeAsaasApi:
 
     customer_id = "cus_0001"
     payment_id = "pay_0001"
-    subscription_id = "sub_0001"
     payment_link_id = "link_0001"
     payment_link_url = "https://asaas.com/payment/link_0001"
     checkout_id = "chk_0001"
-    checkout_subscription_id = "sub_0001"
     card_token = "tok_0001"
     customer_status = "PENDING"
-    empty_subscription_payments = False
     pix_missing = False
-    renewal_payment_id = "pay_renewal_0001"
     fail_customer_creation = False
     fail_next = None
 
@@ -204,10 +200,6 @@ class FakeAsaasApi:
         # POST /payments
         if method == "POST" and url.endswith("/payments"):
             return FakeResponse({"id": self.payment_id, "status": "PENDING"})
-        # POST /subscriptions
-        if method == "POST" and url.endswith("/subscriptions"):
-            self.subscription_id = "sub_0001"
-            return FakeResponse({"id": self.subscription_id})
         # POST /paymentLinks
         if method == "POST" and url.endswith("/paymentLinks"):
             return FakeResponse(
@@ -227,31 +219,16 @@ class FakeAsaasApi:
                     "url": f"https://asaas.com/checkout/{self.checkout_id}",
                     "status": "PAID",
                     "externalReference": "test-ref",
-                    "subscription": {"id": "sub_0001"},
                 }
             )
         # POST /checkouts
         if method == "POST" and url.endswith("/checkouts"):
-            # Regra da API real: RECURRENT só aceita CREDIT_CARD; PIX
-            # exigem DETACHED. Reproduz o 400 para pegar regressão.
-            charge_types = (json or {}).get("chargeTypes") or []
-            billing = (json or {}).get("billingTypes") or []
-            if "RECURRENT" in charge_types and any(b != "CREDIT_CARD" for b in billing):
-                return FakeResponse(
-                    {
-                        "errors": [
-                            {"code": "invalid_object", "description": "Recurrent só aceita cartão"}
-                        ]
-                    },
-                    status_code=400,
-                )
             return FakeResponse(
                 {
                     "id": self.checkout_id,
                     "url": f"https://asaas.com/checkout/{self.checkout_id}",
                     "status": "PENDING",
                     "externalReference": (json or {}).get("externalReference"),
-                    "subscription": {"id": "sub_0001"} if "RECURRENT" in charge_types else None,
                 }
             )
         # GET /payments/{id}
@@ -262,35 +239,11 @@ class FakeAsaasApi:
         ):
             return FakeResponse({"id": self.payment_id, "status": self.customer_status})
         # GET /payments?externalReference=...
-        if method == "GET" and url.endswith("/payments") and "subscriptions/" not in url:
-            return FakeResponse(
-                {
-                    "data": [
-                        {
-                            "id": self.payment_id,
-                            "status": self.customer_status,
-                            "subscription": self.subscription_id,
-                        }
-                    ]
-                }
-            )
+        if method == "GET" and url.endswith("/payments"):
+            return FakeResponse({"data": [{"id": self.payment_id, "status": self.customer_status}]})
         # POST /creditCards/tokenizeCreditCard
         if method == "POST" and url.endswith("/creditCards/tokenizeCreditCard"):
             return FakeResponse({"creditCardToken": self.card_token, "creditCardBrand": "VISA"})
-        # GET /subscriptions/{id}/payments
-        if method == "GET" and "subscriptions/" in url and url.endswith("/payments"):
-            data = (
-                []
-                if self.empty_subscription_payments
-                else [
-                    {
-                        "id": self.payment_id,
-                        "status": "PENDING",
-                        "value": 79.9,
-                    }
-                ]
-            )
-            return FakeResponse({"data": data})
         # GET /payments/{id}/pixQrCode
         if method == "GET" and f"payments/{self.payment_id}/pixQrCode" in url:
             if self.pix_missing:

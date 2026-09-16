@@ -15,24 +15,13 @@ def _resolve_commission_rate(order_item) -> Decimal:
 
     Prioridade:
     1. Service.affiliate_commission_rate
-    2. MaintenancePlanTemplate.affiliate_commission_rate
-    3. AffiliateProfile.commission_rate (fallback global)
+    2. AffiliateProfile.commission_rate (fallback global)
     """
     # Service (OrderItem.service)
     if order_item.service_id:
         rate = getattr(order_item.service, "affiliate_commission_rate", None)
         if rate is not None:
             return rate
-
-    # MaintenancePlanTemplate (via Order.kind=SUBSCRIPTION -> MaintenancePlan -> template)
-    if order_item.order and order_item.order.kind == "subscription":
-        from apps.services.models import MaintenancePlan
-        plan = MaintenancePlan.objects.filter(order=order_item.order).first()
-        if plan:
-            template = getattr(plan, "template", None) or plan  # fallback
-            rate = getattr(template, "affiliate_commission_rate", None)
-            if rate is not None:
-                return rate
 
     # Fallback: taxa global do afiliado (será passada pelo caller)
     return Decimal("0")
@@ -79,7 +68,11 @@ def create_referral(
 
     from apps.affiliate.models import AffiliateProfile, Referral
 
-    affil = AffiliateProfile.objects.select_related("user").filter(code=ref_code, is_active=True).first()
+    affil = (
+        AffiliateProfile.objects.select_related("user")
+        .filter(code=ref_code, is_active=True)
+        .first()
+    )
     if not affil or affil.user_id == user.pk:
         return None
 
@@ -124,9 +117,11 @@ def approve_referral(tx) -> int | None:
 
     with db_transaction.atomic():
         # Busca referral pendente OU já aprovado (idempotente)
-        referral = order.referrals.select_for_update().filter(
-            status__in=["pending", "approved"], is_active=True
-        ).first()
+        referral = (
+            order.referrals.select_for_update()
+            .filter(status__in=["pending", "approved"], is_active=True)
+            .first()
+        )
         if referral is None:
             return None
 

@@ -73,12 +73,6 @@ class CardTokenizationError(PaymentGatewayError):
     pass
 
 
-class SubscriptionError(PaymentGatewayError):
-    """Erro durante criação/gestão de assinatura recorrente."""
-
-    pass
-
-
 class CheckoutSessionError(PaymentGatewayError):
     """Erro durante criação de sessão de checkout hospedado."""
 

@@ -22,9 +22,8 @@ def execute_payout_async(payout_request_id):
         return {"status": "skipped", "message": "Payout não está pendente"}
 
     # Verifica se auto-payout está habilitado e valor atinge mínimo
-    if (
-        getattr(settings, "AFFILIATE_AUTO_PAYOUT", True)
-        and payout.amount >= Decimal(str(getattr(settings, "AFFILIATE_AUTO_PAYOUT_MIN_AMOUNT", "10.00")))
+    if getattr(settings, "AFFILIATE_AUTO_PAYOUT", True) and payout.amount >= Decimal(
+        str(getattr(settings, "AFFILIATE_AUTO_PAYOUT_MIN_AMOUNT", "10.00"))
     ):
         # TODO: Integração real com API bancária (Pix)
         # Exemplo:
@@ -38,12 +37,16 @@ def execute_payout_async(payout_request_id):
 
         # Por enquanto, marca como pago (simulação)
         from django.utils import timezone
+
         payout.status = PayoutRequest.Status.PAID
         payout.paid_at = timezone.now()
         payout.save(update_fields=["status", "paid_at", "updated_at"])
         return {"status": "success", "message": "Payout executado (simulado)"}
 
-    return {"status": "manual_required", "message": "Auto-payout desabilitado ou valor abaixo do mínimo"}
+    return {
+        "status": "manual_required",
+        "message": "Auto-payout desabilitado ou valor abaixo do mínimo",
+    }
 
 
 def process_pending_payouts():

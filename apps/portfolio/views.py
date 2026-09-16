@@ -27,7 +27,9 @@ class PortfolioDetailView(DetailView):
     context_object_name = "item"
 
     def get_queryset(self):
-        return PortfolioItem.objects.filter(published=True, is_active=True).select_related("created_by")
+        return PortfolioItem.objects.filter(published=True, is_active=True).select_related(
+            "created_by"
+        )
 
 
 class PortfolioCreateView(ProviderRequiredMixin, CreateView):
