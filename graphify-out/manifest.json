@@ -1,1297 +1,1772 @@
 {
-  "/home/thiago/masterlight/apps/__init__.py": {
-    "mtime": 1785853517.4466114,
+  ".opencode/opencode.json": {
+    "mtime": 1789489625.8851318,
+    "seen": 1789491695.2178462,
+    "ast_hash": "1efe24ecf938911d4f23e4b1c6ec91f7",
+    "semantic_hash": "1efe24ecf938911d4f23e4b1c6ec91f7"
+  },
+  ".opencode/plugins/graphify.js": {
+    "mtime": 1789489432.507116,
+    "seen": 1789491695.2178462,
+    "ast_hash": "b33d000860642c6f4907a877e0387a21",
+    "semantic_hash": "b33d000860642c6f4907a877e0387a21"
+  },
+  "apps/__init__.py": {
+    "mtime": 1789488765.7743878,
+    "seen": 1789491695.2178462,
     "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
-  "/home/thiago/masterlight/apps/accounts/__init__.py": {
-    "mtime": 1785853880.639676,
+  "apps/accounts/__init__.py": {
+    "mtime": 1789488765.775401,
+    "seen": 1789491695.2178462,
     "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
-  "/home/thiago/masterlight/apps/accounts/adapters.py": {
-    "mtime": 1787080052.6593177,
-    "ast_hash": "73119bfc69d411f7adb1cb1d3f754150",
-    "semantic_hash": "73119bfc69d411f7adb1cb1d3f754150"
+  "apps/accounts/adapters.py": {
+    "mtime": 1789488765.7769196,
+    "seen": 1789491695.2178462,
+    "ast_hash": "1032bfef9e94a29c03e1d8930ae35e53",
+    "semantic_hash": "1032bfef9e94a29c03e1d8930ae35e53"
   },
-  "/home/thiago/masterlight/apps/accounts/admin.py": {
-    "mtime": 1786238252.8156257,
-    "ast_hash": "a4698ca4413962c02419b719ff8fa8bf",
-    "semantic_hash": "a4698ca4413962c02419b719ff8fa8bf"
+  "apps/accounts/admin.py": {
+    "mtime": 1789488765.7781398,
+    "seen": 1789491695.2178462,
+    "ast_hash": "f4d0132a922e72c0d57e3ea5fa1f135c",
+    "semantic_hash": "f4d0132a922e72c0d57e3ea5fa1f135c"
   },
-  "/home/thiago/masterlight/apps/accounts/apps.py": {
-    "mtime": 1785853911.8073769,
-    "ast_hash": "821d23f464addce09d1ba917fc28a5ca",
-    "semantic_hash": "821d23f464addce09d1ba917fc28a5ca"
+  "apps/accounts/apps.py": {
+    "mtime": 1789488765.7781398,
+    "seen": 1789491695.2178462,
+    "ast_hash": "8f8a76ee7621062c867c253e4b84ae53",
+    "semantic_hash": "8f8a76ee7621062c867c253e4b84ae53"
   },
-  "/home/thiago/masterlight/apps/accounts/forms.py": {
-    "mtime": 1787160268.2412412,
-    "ast_hash": "75e1dd9a7db8154bdd29037488d8f0ab",
-    "semantic_hash": "75e1dd9a7db8154bdd29037488d8f0ab"
+  "apps/accounts/forms.py": {
+    "mtime": 1789488765.7796626,
+    "seen": 1789491695.2178462,
+    "ast_hash": "87d43254dc3bc608b625dcf583c370dd",
+    "semantic_hash": "87d43254dc3bc608b625dcf583c370dd"
   },
-  "/home/thiago/masterlight/apps/accounts/middleware.py": {
-    "mtime": 1787145614.7098014,
-    "ast_hash": "d0826b7e7a1647eeff41ef88d4ae3f6e",
-    "semantic_hash": "d0826b7e7a1647eeff41ef88d4ae3f6e"
+  "apps/accounts/middleware.py": {
+    "mtime": 1789488765.7811787,
+    "seen": 1789491695.2178462,
+    "ast_hash": "cafb4e916a12e5cb0585fc9ee74f1bc4",
+    "semantic_hash": "cafb4e916a12e5cb0585fc9ee74f1bc4"
   },
-  "/home/thiago/masterlight/apps/accounts/migrations/0001_initial.py": {
-    "mtime": 1785858195.5095022,
-    "ast_hash": "0410f8e45b2d481753b51c34ae10c2fd",
-    "semantic_hash": "0410f8e45b2d481753b51c34ae10c2fd"
+  "apps/accounts/migrations/0001_initial.py": {
+    "mtime": 1789488765.7842073,
+    "seen": 1789491695.2178462,
+    "ast_hash": "bef834dc543f37042ea4b12dc62a4b03",
+    "semantic_hash": "bef834dc543f37042ea4b12dc62a4b03"
   },
-  "/home/thiago/masterlight/apps/accounts/migrations/0002_customuser_asaas_customer_id.py": {
-    "mtime": 1786148552.6427004,
-    "ast_hash": "ec2c468d8f5250d1566ed513e12b58f4",
-    "semantic_hash": "ec2c468d8f5250d1566ed513e12b58f4"
+  "apps/accounts/migrations/0002_customuser_asaas_customer_id.py": {
+    "mtime": 1789488765.7842073,
+    "seen": 1789491695.2178462,
+    "ast_hash": "e64f4c0a52723a99a86e16e0c1c5852f",
+    "semantic_hash": "e64f4c0a52723a99a86e16e0c1c5852f"
   },
-  "/home/thiago/masterlight/apps/accounts/migrations/0003_providerapplication.py": {
-    "mtime": 1786238207.4914272,
-    "ast_hash": "02962f20e62ac0e6359885f85076a601",
-    "semantic_hash": "02962f20e62ac0e6359885f85076a601"
+  "apps/accounts/migrations/0003_providerapplication.py": {
+    "mtime": 1789488765.7872505,
+    "seen": 1789491695.2178462,
+    "ast_hash": "fb9855e56afe5f7053f864a610674e24",
+    "semantic_hash": "fb9855e56afe5f7053f864a610674e24"
   },
-  "/home/thiago/masterlight/apps/accounts/migrations/0004_alter_customuser_avatar.py": {
-    "mtime": 1786628081.005644,
-    "ast_hash": "3538e145285d5dd6312dd42f5fdb7628",
-    "semantic_hash": "3538e145285d5dd6312dd42f5fdb7628"
+  "apps/accounts/migrations/0004_alter_customuser_avatar.py": {
+    "mtime": 1789488765.7884786,
+    "seen": 1789491695.2178462,
+    "ast_hash": "7ce7b0a6827c7ee9f8d37a20d31ed03b",
+    "semantic_hash": "7ce7b0a6827c7ee9f8d37a20d31ed03b"
   },
-  "/home/thiago/masterlight/apps/accounts/migrations/__init__.py": {
-    "mtime": 1785853942.259079,
+  "apps/accounts/migrations/0005_remove_bio_fields.py": {
+    "mtime": 1789488765.7884786,
+    "seen": 1789491695.2178462,
+    "ast_hash": "748c00b1605f21135984314a78a3e475",
+    "semantic_hash": "748c00b1605f21135984314a78a3e475"
+  },
+  "apps/accounts/migrations/0006_customuser_basemodel_fields.py": {
+    "mtime": 1789488765.789997,
+    "seen": 1789491695.2178462,
+    "ast_hash": "d4c1e2d5c483abcd401e0a275a45af26",
+    "semantic_hash": "d4c1e2d5c483abcd401e0a275a45af26"
+  },
+  "apps/accounts/migrations/__init__.py": {
+    "mtime": 1789488765.7915175,
+    "seen": 1789491695.2178462,
     "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
-  "/home/thiago/masterlight/apps/accounts/models.py": {
-    "mtime": 1787080111.8066761,
-    "ast_hash": "2a0dc5da999a230980cd44a9f4704e6e",
-    "semantic_hash": "2a0dc5da999a230980cd44a9f4704e6e"
+  "apps/accounts/models.py": {
+    "mtime": 1789488765.7915175,
+    "seen": 1789491695.2178462,
+    "ast_hash": "1b079354f94e5694b540c16c93bebd98",
+    "semantic_hash": "1b079354f94e5694b540c16c93bebd98"
   },
-  "/home/thiago/masterlight/apps/accounts/services.py": {
-    "mtime": 1786238384.6224475,
-    "ast_hash": "ea3bcccef8dae53cb87c6a21a4ffcf55",
-    "semantic_hash": "ea3bcccef8dae53cb87c6a21a4ffcf55"
+  "apps/accounts/services.py": {
+    "mtime": 1789488765.7940392,
+    "seen": 1789491695.2178462,
+    "ast_hash": "b1ab87b09dac79306a1850c1a87cf7e8",
+    "semantic_hash": "b1ab87b09dac79306a1850c1a87cf7e8"
   },
-  "/home/thiago/masterlight/apps/accounts/signals.py": {
-    "mtime": 1786230459.2768335,
-    "ast_hash": "8487ff9b12dad3394a3467e38b85ca07",
-    "semantic_hash": "8487ff9b12dad3394a3467e38b85ca07"
-  },
-  "/home/thiago/masterlight/apps/accounts/tests/__init__.py": {
-    "mtime": 1786147560.7812247,
+  "apps/accounts/tests/__init__.py": {
+    "mtime": 1789488765.7945466,
+    "seen": 1789491695.2178462,
     "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
-  "/home/thiago/masterlight/apps/accounts/tests/test_login_email.py": {
-    "mtime": 1786989238.5362391,
-    "ast_hash": "c8da46ca7d3387e14a66136a668440bc",
-    "semantic_hash": "c8da46ca7d3387e14a66136a668440bc"
+  "apps/accounts/tests/test_login_email.py": {
+    "mtime": 1789488765.7960658,
+    "seen": 1789491695.2178462,
+    "ast_hash": "d9aad16aa5a929118ea2278877747835",
+    "semantic_hash": "d9aad16aa5a929118ea2278877747835"
   },
-  "/home/thiago/masterlight/apps/accounts/tests/test_profile.py": {
-    "mtime": 1786744397.1219265,
-    "ast_hash": "0ff2843d0d04c27368bf1118c2c99bc7",
-    "semantic_hash": "0ff2843d0d04c27368bf1118c2c99bc7"
+  "apps/accounts/tests/test_middleware.py": {
+    "mtime": 1789488765.797586,
+    "seen": 1789491695.2178462,
+    "ast_hash": "8a5f32aa67eaba6a9ad29ac91ddf2639",
+    "semantic_hash": "8a5f32aa67eaba6a9ad29ac91ddf2639"
   },
-  "/home/thiago/masterlight/apps/accounts/tests/test_profile_pii.py": {
-    "mtime": 1786988690.3739376,
-    "ast_hash": "fc4b2769b86d659aa8581d5711962606",
-    "semantic_hash": "fc4b2769b86d659aa8581d5711962606"
+  "apps/accounts/tests/test_profile.py": {
+    "mtime": 1789488765.7988691,
+    "seen": 1789491695.2178462,
+    "ast_hash": "e0de5ae4858092d488d678f032513dab",
+    "semantic_hash": "e0de5ae4858092d488d678f032513dab"
   },
-  "/home/thiago/masterlight/apps/accounts/tests/test_provider_approval.py": {
-    "mtime": 1786744350.8344147,
-    "ast_hash": "184b6a8b9b24a1cd6b49bf52c3384ab5",
-    "semantic_hash": "184b6a8b9b24a1cd6b49bf52c3384ab5"
+  "apps/accounts/tests/test_profile_pii.py": {
+    "mtime": 1789488765.8003898,
+    "seen": 1789491695.2178462,
+    "ast_hash": "da238cdd635eec5c1db6dc48246db9f1",
+    "semantic_hash": "da238cdd635eec5c1db6dc48246db9f1"
   },
-  "/home/thiago/masterlight/apps/accounts/tests/test_role_separation.py": {
-    "mtime": 1786894381.2334423,
-    "ast_hash": "3c079a925a5ebeba4a85e3a5e308c90e",
-    "semantic_hash": "3c079a925a5ebeba4a85e3a5e308c90e"
+  "apps/accounts/tests/test_provider_approval.py": {
+    "mtime": 1789488765.8019042,
+    "seen": 1789491695.2178462,
+    "ast_hash": "96ca08c714b4bdf634380f34d4d64033",
+    "semantic_hash": "96ca08c714b4bdf634380f34d4d64033"
   },
-  "/home/thiago/masterlight/apps/accounts/tests/test_signals.py": {
-    "mtime": 1786383189.1939952,
-    "ast_hash": "d71ab547674fc78255513c7575bab566",
-    "semantic_hash": "d71ab547674fc78255513c7575bab566"
+  "apps/accounts/tests/test_role_separation.py": {
+    "mtime": 1789488765.8019042,
+    "seen": 1789491695.2178462,
+    "ast_hash": "abff23d086afb8f76df65e497e252e54",
+    "semantic_hash": "abff23d086afb8f76df65e497e252e54"
   },
-  "/home/thiago/masterlight/apps/accounts/tests/test_social_adapter.py": {
-    "mtime": 1787080052.6153183,
-    "ast_hash": "e02b199d23cf460fb36eff8b83d80c43",
-    "semantic_hash": "e02b199d23cf460fb36eff8b83d80c43"
+  "apps/accounts/tests/test_services.py": {
+    "mtime": 1789488765.8034215,
+    "seen": 1789491695.2178462,
+    "ast_hash": "f3f477d93be74f4d4834d026d75a0a0a",
+    "semantic_hash": "f3f477d93be74f4d4834d026d75a0a0a"
   },
-  "/home/thiago/masterlight/apps/accounts/tests/test_social_signup_complete.py": {
-    "mtime": 1787080052.5913186,
-    "ast_hash": "72bb78e3653cad05ef486fdf075764c1",
-    "semantic_hash": "72bb78e3653cad05ef486fdf075764c1"
+  "apps/accounts/tests/test_signals.py": {
+    "mtime": 1789488765.8049395,
+    "seen": 1789491695.2178462,
+    "ast_hash": "1f0f755edac40798f43417ea4c8ef4cd",
+    "semantic_hash": "1f0f755edac40798f43417ea4c8ef4cd"
   },
-  "/home/thiago/masterlight/apps/accounts/urls.py": {
-    "mtime": 1787061869.388302,
-    "ast_hash": "9f670f990617c0096b570fc1d87849fa",
-    "semantic_hash": "9f670f990617c0096b570fc1d87849fa"
+  "apps/accounts/tests/test_social_adapter.py": {
+    "mtime": 1789488765.805447,
+    "seen": 1789491695.2178462,
+    "ast_hash": "5e90c8e496c0b9d3ddde374a5ca0a363",
+    "semantic_hash": "5e90c8e496c0b9d3ddde374a5ca0a363"
   },
-  "/home/thiago/masterlight/apps/accounts/views.py": {
-    "mtime": 1787081826.2924268,
-    "ast_hash": "2b483bb96752807ce1847ce246dac520",
-    "semantic_hash": "2b483bb96752807ce1847ce246dac520"
+  "apps/accounts/tests/test_social_signup_complete.py": {
+    "mtime": 1789488765.8069637,
+    "seen": 1789491695.2178462,
+    "ast_hash": "4dcd557ee9593f660c60798069256b4e",
+    "semantic_hash": "4dcd557ee9593f660c60798069256b4e"
   },
-  "/home/thiago/masterlight/apps/affiliate/__init__.py": {
-    "mtime": 1785854259.703724,
+  "apps/accounts/urls.py": {
+    "mtime": 1789488765.8084896,
+    "seen": 1789491695.2178462,
+    "ast_hash": "7cde33551192e73ce1f4d5801a65756a",
+    "semantic_hash": "7cde33551192e73ce1f4d5801a65756a"
+  },
+  "apps/accounts/views.py": {
+    "mtime": 1789488765.8084896,
+    "seen": 1789491695.2178462,
+    "ast_hash": "93608c68edf26d583ddb0de8c10e5309",
+    "semantic_hash": "93608c68edf26d583ddb0de8c10e5309"
+  },
+  "apps/affiliate/__init__.py": {
+    "mtime": 1789488765.8100076,
+    "seen": 1789491695.2178462,
     "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
-  "/home/thiago/masterlight/apps/affiliate/admin.py": {
-    "mtime": 1786371883.381801,
-    "ast_hash": "f2df1c37bddae806464a284b904af17a",
-    "semantic_hash": "f2df1c37bddae806464a284b904af17a"
+  "apps/affiliate/admin.py": {
+    "mtime": 1789488765.8115475,
+    "seen": 1789491695.2178462,
+    "ast_hash": "cbf8e999dd915fc8ea0f7995f1a573dc",
+    "semantic_hash": "cbf8e999dd915fc8ea0f7995f1a573dc"
   },
-  "/home/thiago/masterlight/apps/affiliate/apps.py": {
-    "mtime": 1785854280.8034883,
-    "ast_hash": "5f4a421bc8e46b287ac4ff6ccaa092a9",
-    "semantic_hash": "5f4a421bc8e46b287ac4ff6ccaa092a9"
+  "apps/affiliate/apps.py": {
+    "mtime": 1789488765.8130634,
+    "seen": 1789491695.2178462,
+    "ast_hash": "c3ccd6b79bcde23980dfc82a4f49b947",
+    "semantic_hash": "c3ccd6b79bcde23980dfc82a4f49b947"
   },
-  "/home/thiago/masterlight/apps/affiliate/forms.py": {
-    "mtime": 1786371629.8428013,
-    "ast_hash": "0f2af7d29fb977164b2e72feb1d6e29a",
-    "semantic_hash": "0f2af7d29fb977164b2e72feb1d6e29a"
+  "apps/affiliate/forms.py": {
+    "mtime": 1789488765.8145785,
+    "seen": 1789491695.2178462,
+    "ast_hash": "2f57ac15c81056cbff599458adff74b4",
+    "semantic_hash": "2f57ac15c81056cbff599458adff74b4"
   },
-  "/home/thiago/masterlight/apps/affiliate/middleware.py": {
-    "mtime": 1786987696.2529233,
-    "ast_hash": "d181386b84238da3a1acb38be8e6f290",
-    "semantic_hash": "d181386b84238da3a1acb38be8e6f290"
+  "apps/affiliate/middleware.py": {
+    "mtime": 1789488765.816095,
+    "seen": 1789491695.2178462,
+    "ast_hash": "d7daf7860e4eaf2470f149f393346f24",
+    "semantic_hash": "d7daf7860e4eaf2470f149f393346f24"
   },
-  "/home/thiago/masterlight/apps/affiliate/migrations/0001_initial.py": {
-    "mtime": 1785858195.527427,
-    "ast_hash": "5e93f808b59e4ba772a129bcac0faf37",
-    "semantic_hash": "5e93f808b59e4ba772a129bcac0faf37"
+  "apps/affiliate/migrations/0001_initial.py": {
+    "mtime": 1789488765.81761,
+    "seen": 1789491695.2178462,
+    "ast_hash": "887da1472a3f885f394bdc645505fb0a",
+    "semantic_hash": "887da1472a3f885f394bdc645505fb0a"
   },
-  "/home/thiago/masterlight/apps/affiliate/migrations/__init__.py": {
-    "mtime": 1785854302.799241,
+  "apps/affiliate/migrations/0002_alter_referral_options_and_more.py": {
+    "mtime": 1789488765.8188891,
+    "seen": 1789491695.2178462,
+    "ast_hash": "19f2f770f84035b5210a0f2c51317210",
+    "semantic_hash": "19f2f770f84035b5210a0f2c51317210"
+  },
+  "apps/affiliate/migrations/__init__.py": {
+    "mtime": 1789488765.8199215,
+    "seen": 1789491695.2178462,
     "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
-  "/home/thiago/masterlight/apps/affiliate/models.py": {
-    "mtime": 1786230459.2772782,
-    "ast_hash": "3fd6c2123caf02e7fe00678b079b84ba",
-    "semantic_hash": "3fd6c2123caf02e7fe00678b079b84ba"
+  "apps/affiliate/models.py": {
+    "mtime": 1789488765.8214376,
+    "seen": 1789491695.2178462,
+    "ast_hash": "88657badf6b6df5363294854866df363",
+    "semantic_hash": "88657badf6b6df5363294854866df363"
   },
-  "/home/thiago/masterlight/apps/affiliate/services.py": {
-    "mtime": 1787166861.7519877,
-    "ast_hash": "d988275781e077cb434a543d0cbfeb38",
-    "semantic_hash": "d988275781e077cb434a543d0cbfeb38"
+  "apps/affiliate/services.py": {
+    "mtime": 1789488765.8229518,
+    "seen": 1789491695.2178462,
+    "ast_hash": "aa0f02d089411fb5b5e5d04017302cc4",
+    "semantic_hash": "aa0f02d089411fb5b5e5d04017302cc4"
   },
-  "/home/thiago/masterlight/apps/affiliate/tests/__init__.py": {
-    "mtime": 1786147560.7812247,
+  "apps/affiliate/signals.py": {
+    "mtime": 1789488765.8229518,
+    "seen": 1789491695.2178462,
+    "ast_hash": "f317ed9c86d00bec89343d7dd4b9f9d3",
+    "semantic_hash": "f317ed9c86d00bec89343d7dd4b9f9d3"
+  },
+  "apps/affiliate/tasks.py": {
+    "mtime": 1789488765.8244658,
+    "seen": 1789491695.2178462,
+    "ast_hash": "68c0d5f24b4caa932a4a82cc3f85feb9",
+    "semantic_hash": "68c0d5f24b4caa932a4a82cc3f85feb9"
+  },
+  "apps/affiliate/tests/__init__.py": {
+    "mtime": 1789488765.8259852,
+    "seen": 1789491695.2178462,
     "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
-  "/home/thiago/masterlight/apps/affiliate/tests/test_middleware.py": {
-    "mtime": 1786988047.6850545,
-    "ast_hash": "2818742afc5983f2fa0263e69f98419a",
-    "semantic_hash": "2818742afc5983f2fa0263e69f98419a"
+  "apps/affiliate/tests/test_middleware.py": {
+    "mtime": 1789488765.8275313,
+    "seen": 1789491695.2178462,
+    "ast_hash": "1f18e9e140f845756f627bad07a5bdae",
+    "semantic_hash": "1f18e9e140f845756f627bad07a5bdae"
   },
-  "/home/thiago/masterlight/apps/affiliate/tests/test_services.py": {
-    "mtime": 1787167084.9360023,
-    "ast_hash": "dc5e65cc880c27eef99d879190a50f59",
-    "semantic_hash": "dc5e65cc880c27eef99d879190a50f59"
+  "apps/affiliate/tests/test_services.py": {
+    "mtime": 1789488765.8291016,
+    "seen": 1789491695.2178462,
+    "ast_hash": "9e64cb84250261ae473330508e92b0e5",
+    "semantic_hash": "9e64cb84250261ae473330508e92b0e5"
   },
-  "/home/thiago/masterlight/apps/affiliate/tests/test_views.py": {
-    "mtime": 1787094925.2282398,
-    "ast_hash": "b3fe5b63c23887a4b93005d4cad664a2",
-    "semantic_hash": "b3fe5b63c23887a4b93005d4cad664a2"
+  "apps/affiliate/tests/test_views.py": {
+    "mtime": 1789488765.8306446,
+    "seen": 1789491695.2178462,
+    "ast_hash": "5ad2a1bd7a7f1c8445464e30b9779637",
+    "semantic_hash": "5ad2a1bd7a7f1c8445464e30b9779637"
   },
-  "/home/thiago/masterlight/apps/affiliate/urls.py": {
-    "mtime": 1786371792.970878,
-    "ast_hash": "c9dafb78fea2efd31a0fbacb4cd8f789",
-    "semantic_hash": "c9dafb78fea2efd31a0fbacb4cd8f789"
+  "apps/affiliate/urls.py": {
+    "mtime": 1789488765.8321652,
+    "seen": 1789491695.2178462,
+    "ast_hash": "a7a21c0fd3bbd6e8e61f8b58339ddc47",
+    "semantic_hash": "a7a21c0fd3bbd6e8e61f8b58339ddc47"
   },
-  "/home/thiago/masterlight/apps/affiliate/views.py": {
-    "mtime": 1787093556.7677777,
-    "ast_hash": "6a4e1b2b1e73e8f868311dcd6f14465a",
-    "semantic_hash": "6a4e1b2b1e73e8f868311dcd6f14465a"
+  "apps/affiliate/views/__init__.py": {
+    "mtime": 1789488765.834195,
+    "seen": 1789491695.2178462,
+    "ast_hash": "371f11779930e66ee36f9d7ce0c586df",
+    "semantic_hash": "371f11779930e66ee36f9d7ce0c586df"
   },
-  "/home/thiago/masterlight/apps/checkout/__init__.py": {
-    "mtime": 1785855749.842299,
+  "apps/affiliate/views/base.py": {
+    "mtime": 1789488765.8347094,
+    "seen": 1789491695.2178462,
+    "ast_hash": "b085d8cc464b4ec05b85558320c50bcd",
+    "semantic_hash": "b085d8cc464b4ec05b85558320c50bcd"
+  },
+  "apps/affiliate/views/dashboard.py": {
+    "mtime": 1789488765.836226,
+    "seen": 1789491695.2178462,
+    "ast_hash": "4898983e72315473e113df62665d0483",
+    "semantic_hash": "4898983e72315473e113df62665d0483"
+  },
+  "apps/affiliate/views/landing.py": {
+    "mtime": 1789488765.8377562,
+    "seen": 1789491695.2178462,
+    "ast_hash": "cbc94b651c00a07a5dbdc4cf254bda4c",
+    "semantic_hash": "cbc94b651c00a07a5dbdc4cf254bda4c"
+  },
+  "apps/affiliate/views/payout.py": {
+    "mtime": 1789488765.8389125,
+    "seen": 1789491695.2178462,
+    "ast_hash": "3413c650868c22c3498bf9e9dcded994",
+    "semantic_hash": "3413c650868c22c3498bf9e9dcded994"
+  },
+  "apps/affiliate/views/pix_key.py": {
+    "mtime": 1789488765.8399346,
+    "seen": 1789491695.2178462,
+    "ast_hash": "c11474981919fc4d517a2d796f85e941",
+    "semantic_hash": "c11474981919fc4d517a2d796f85e941"
+  },
+  "apps/checkout/__init__.py": {
+    "mtime": 1789488765.8416626,
+    "seen": 1789491695.2178462,
     "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
-  "/home/thiago/masterlight/apps/checkout/admin.py": {
-    "mtime": 1786041978.1779513,
-    "ast_hash": "49aea1d3f31551e283c1f8f83bc2547c",
-    "semantic_hash": "49aea1d3f31551e283c1f8f83bc2547c"
+  "apps/checkout/admin.py": {
+    "mtime": 1789488765.8432095,
+    "seen": 1789491695.2178462,
+    "ast_hash": "c82d1b88d070a64756cc20f0e304af76",
+    "semantic_hash": "c82d1b88d070a64756cc20f0e304af76"
   },
-  "/home/thiago/masterlight/apps/checkout/apps.py": {
-    "mtime": 1785855779.0700464,
-    "ast_hash": "7f92ea5ae150e22ef9bc4341fc0d2dcb",
-    "semantic_hash": "7f92ea5ae150e22ef9bc4341fc0d2dcb"
+  "apps/checkout/apps.py": {
+    "mtime": 1789488765.844219,
+    "seen": 1789491695.2178462,
+    "ast_hash": "c42d2baf0eca9665947b13338773d27f",
+    "semantic_hash": "c42d2baf0eca9665947b13338773d27f"
   },
-  "/home/thiago/masterlight/apps/checkout/migrations/0001_initial.py": {
-    "mtime": 1785858195.5206475,
-    "ast_hash": "686e4f6610b57712e1e3388018cddc11",
-    "semantic_hash": "686e4f6610b57712e1e3388018cddc11"
+  "apps/checkout/forms.py": {
+    "mtime": 1789488765.8452437,
+    "seen": 1789491695.2178462,
+    "ast_hash": "d7bb2f7a3f39a3dd12076b508e102e51",
+    "semantic_hash": "d7bb2f7a3f39a3dd12076b508e102e51"
   },
-  "/home/thiago/masterlight/apps/checkout/migrations/0002_alter_address_city_alter_address_country_and_more.py": {
-    "mtime": 1786152100.2376413,
-    "ast_hash": "c45b6e1d4a30df356cc70e72a92fe2ab",
-    "semantic_hash": "c45b6e1d4a30df356cc70e72a92fe2ab"
+  "apps/checkout/migrations/0001_initial.py": {
+    "mtime": 1789488765.8467584,
+    "seen": 1789491695.2178462,
+    "ast_hash": "cf048da70cc70e28baef2cda351984bc",
+    "semantic_hash": "cf048da70cc70e28baef2cda351984bc"
   },
-  "/home/thiago/masterlight/apps/checkout/migrations/0003_alter_order_kind.py": {
-    "mtime": 1786234466.8075545,
-    "ast_hash": "6bdbcbca250c78d398f47aecf706f250",
-    "semantic_hash": "6bdbcbca250c78d398f47aecf706f250"
+  "apps/checkout/migrations/0002_alter_address_city_alter_address_country_and_more.py": {
+    "mtime": 1789488765.848274,
+    "seen": 1789491695.2178462,
+    "ast_hash": "8fc650b71648e758809adb4aeb2d7fbe",
+    "semantic_hash": "8fc650b71648e758809adb4aeb2d7fbe"
   },
-  "/home/thiago/masterlight/apps/checkout/migrations/__init__.py": {
-    "mtime": 1785855810.3217714,
+  "apps/checkout/migrations/0003_alter_order_kind.py": {
+    "mtime": 1789488765.8495398,
+    "seen": 1789491695.2178462,
+    "ast_hash": "a769545f07893dc543d9474905f9bec4",
+    "semantic_hash": "a769545f07893dc543d9474905f9bec4"
+  },
+  "apps/checkout/migrations/__init__.py": {
+    "mtime": 1789488765.8495398,
+    "seen": 1789491695.2178462,
     "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
-  "/home/thiago/masterlight/apps/checkout/models.py": {
-    "mtime": 1787144759.9316945,
-    "ast_hash": "38d631736eb48b1f255c261e972ae3ef",
-    "semantic_hash": "38d631736eb48b1f255c261e972ae3ef"
+  "apps/checkout/models.py": {
+    "mtime": 1789488765.8525817,
+    "seen": 1789491695.2178462,
+    "ast_hash": "58ee9b8d27c3868d489c86f2baec0ffa",
+    "semantic_hash": "58ee9b8d27c3868d489c86f2baec0ffa"
   },
-  "/home/thiago/masterlight/apps/checkout/tests/__init__.py": {
-    "mtime": 1786147560.7812247,
+  "apps/checkout/tests/__init__.py": {
+    "mtime": 1789488765.854097,
+    "seen": 1789491695.2178462,
     "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
-  "/home/thiago/masterlight/apps/checkout/tests/test_views.py": {
-    "mtime": 1787096072.5922952,
-    "ast_hash": "685de0c6de0012039c4c8e8f89ea6ff3",
-    "semantic_hash": "685de0c6de0012039c4c8e8f89ea6ff3"
+  "apps/checkout/tests/test_views.py": {
+    "mtime": 1789488765.855126,
+    "seen": 1789491695.2178462,
+    "ast_hash": "26873035899a033ad0d8757f76611faa",
+    "semantic_hash": "26873035899a033ad0d8757f76611faa"
   },
-  "/home/thiago/masterlight/apps/checkout/urls.py": {
-    "mtime": 1785855970.6082935,
-    "ast_hash": "dcd9aa3c8765c280f5c061466cbc0057",
-    "semantic_hash": "dcd9aa3c8765c280f5c061466cbc0057"
+  "apps/checkout/urls.py": {
+    "mtime": 1789488765.855126,
+    "seen": 1789491695.2178462,
+    "ast_hash": "c8fa03f4a791cb12d89294e874931fcf",
+    "semantic_hash": "c8fa03f4a791cb12d89294e874931fcf"
   },
-  "/home/thiago/masterlight/apps/checkout/views.py": {
-    "mtime": 1787166877.3318586,
-    "ast_hash": "6cbff31fb6b108b596895958d4e31948",
-    "semantic_hash": "6cbff31fb6b108b596895958d4e31948"
+  "apps/checkout/views.py": {
+    "mtime": 1789488765.8566425,
+    "seen": 1789491695.2178462,
+    "ast_hash": "a4087b4ebe6f35db6bd7a6da68818825",
+    "semantic_hash": "a4087b4ebe6f35db6bd7a6da68818825"
   },
-  "/home/thiago/masterlight/apps/core/__init__.py": {
-    "mtime": 1785853536.278491,
+  "apps/core/__init__.py": {
+    "mtime": 1789488765.8581624,
+    "seen": 1789491695.2178462,
     "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
-  "/home/thiago/masterlight/apps/core/admin.py": {
-    "mtime": 1786238201.6953669,
-    "ast_hash": "d09c30805b24fc0de35ed849fbdc2ecc",
-    "semantic_hash": "d09c30805b24fc0de35ed849fbdc2ecc"
+  "apps/core/admin.py": {
+    "mtime": 1789488765.8594356,
+    "seen": 1789491695.2178462,
+    "ast_hash": "47a877f386c8a3ac4740960f78333469",
+    "semantic_hash": "47a877f386c8a3ac4740960f78333469"
   },
-  "/home/thiago/masterlight/apps/core/apps.py": {
-    "mtime": 1786989238.5442393,
-    "ast_hash": "2869d10a032a74a4dcb7552ce6288381",
-    "semantic_hash": "2869d10a032a74a4dcb7552ce6288381"
+  "apps/core/apps.py": {
+    "mtime": 1789488765.8609552,
+    "seen": 1789491695.2178462,
+    "ast_hash": "878666b4e80b1d82853813cc4842c28c",
+    "semantic_hash": "878666b4e80b1d82853813cc4842c28c"
   },
-  "/home/thiago/masterlight/apps/core/checks.py": {
-    "mtime": 1786989027.1381996,
-    "ast_hash": "ee637ca7c8a389820e2434022779c96a",
-    "semantic_hash": "ee637ca7c8a389820e2434022779c96a"
+  "apps/core/checks.py": {
+    "mtime": 1789488765.8624704,
+    "seen": 1789491695.2178462,
+    "ast_hash": "90b23f8b475281cd1b101d6127635050",
+    "semantic_hash": "90b23f8b475281cd1b101d6127635050"
   },
-  "/home/thiago/masterlight/apps/core/context_processors.py": {
-    "mtime": 1787170282.5572925,
-    "ast_hash": "1b9afaecb3de55a556ff850a3a4e6e15",
-    "semantic_hash": "1b9afaecb3de55a556ff850a3a4e6e15"
+  "apps/core/context_processors.py": {
+    "mtime": 1789488765.8624704,
+    "seen": 1789491695.2178462,
+    "ast_hash": "deb7ff1ba3892b6ec6072e5b18b0fbad",
+    "semantic_hash": "deb7ff1ba3892b6ec6072e5b18b0fbad"
   },
-  "/home/thiago/masterlight/apps/core/management/__init__.py": {
-    "mtime": 1785860528.782108,
+  "apps/core/management/__init__.py": {
+    "mtime": 1789488765.8649998,
+    "seen": 1789491695.2178462,
     "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
-  "/home/thiago/masterlight/apps/core/management/commands/__init__.py": {
-    "mtime": 1785860528.782108,
+  "apps/core/management/commands/__init__.py": {
+    "mtime": 1789488765.866513,
+    "seen": 1789491695.2178462,
     "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
-  "/home/thiago/masterlight/apps/core/management/commands/bootstrap_social.py": {
-    "mtime": 1786031436.510062,
-    "ast_hash": "07eabaed2fbed4c6c074a6509b34dbc2",
-    "semantic_hash": "07eabaed2fbed4c6c074a6509b34dbc2"
+  "apps/core/management/commands/bootstrap_social.py": {
+    "mtime": 1789488765.8680267,
+    "seen": 1789491695.2178462,
+    "ast_hash": "ebf925b4fa11ca793403062eca46e249",
+    "semantic_hash": "ebf925b4fa11ca793403062eca46e249"
   },
-  "/home/thiago/masterlight/apps/core/migrations/0001_initial.py": {
-    "mtime": 1786152519.0517256,
-    "ast_hash": "a131f34e32b0666b6ecb33083dabcff4",
-    "semantic_hash": "a131f34e32b0666b6ecb33083dabcff4"
+  "apps/core/migrations/0001_initial.py": {
+    "mtime": 1789488765.8690362,
+    "seen": 1789491695.2178462,
+    "ast_hash": "2a3044d84b31327d0185dea65afff359",
+    "semantic_hash": "2a3044d84b31327d0185dea65afff359"
   },
-  "/home/thiago/masterlight/apps/core/migrations/0002_seed_site_settings.py": {
-    "mtime": 1786152526.5576594,
-    "ast_hash": "5b244c3fb96f9a265113836968a56f40",
-    "semantic_hash": "5b244c3fb96f9a265113836968a56f40"
+  "apps/core/migrations/0002_seed_site_settings.py": {
+    "mtime": 1789488765.8704543,
+    "seen": 1789491695.2178462,
+    "ast_hash": "6bc18e3ab325c8fc19c930013342e982",
+    "semantic_hash": "6bc18e3ab325c8fc19c930013342e982"
   },
-  "/home/thiago/masterlight/apps/core/migrations/0003_sitesettings_maintenance_enabled.py": {
-    "mtime": 1786234491.2416945,
-    "ast_hash": "e711c3df3df0eda5a4bff2b27ac9a0ff",
-    "semantic_hash": "e711c3df3df0eda5a4bff2b27ac9a0ff"
+  "apps/core/migrations/0003_sitesettings_maintenance_enabled.py": {
+    "mtime": 1789488765.8719788,
+    "seen": 1789491695.2178462,
+    "ast_hash": "673d6d76084aba172ce9f60f1ddd6a2a",
+    "semantic_hash": "673d6d76084aba172ce9f60f1ddd6a2a"
   },
-  "/home/thiago/masterlight/apps/core/migrations/0004_sitesettings_provider_registration_enabled.py": {
-    "mtime": 1786238207.4932034,
-    "ast_hash": "f6a688197dba60467afb97b153f6adbe",
-    "semantic_hash": "f6a688197dba60467afb97b153f6adbe"
+  "apps/core/migrations/0004_sitesettings_provider_registration_enabled.py": {
+    "mtime": 1789488765.8734949,
+    "seen": 1789491695.2178462,
+    "ast_hash": "8681e5790f8ebf1381ddfa9b17537625",
+    "semantic_hash": "8681e5790f8ebf1381ddfa9b17537625"
   },
-  "/home/thiago/masterlight/apps/core/migrations/__init__.py": {
-    "mtime": 1786152519.0417445,
+  "apps/core/migrations/__init__.py": {
+    "mtime": 1789488765.8745043,
+    "seen": 1789491695.2178462,
     "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
-  "/home/thiago/masterlight/apps/core/mixins.py": {
-    "mtime": 1787076015.1872222,
-    "ast_hash": "0c7ab0f0fb9e17d0b99cc9e8c9a66fdc",
-    "semantic_hash": "0c7ab0f0fb9e17d0b99cc9e8c9a66fdc"
+  "apps/core/mixins.py": {
+    "mtime": 1789488765.8750107,
+    "seen": 1789491695.2178462,
+    "ast_hash": "790c0402f47d7c6900a4df81b9dcea38",
+    "semantic_hash": "790c0402f47d7c6900a4df81b9dcea38"
   },
-  "/home/thiago/masterlight/apps/core/models.py": {
-    "mtime": 1787055287.0830503,
-    "ast_hash": "a435b5466f748f35b60f6ccf864b5de6",
-    "semantic_hash": "a435b5466f748f35b60f6ccf864b5de6"
+  "apps/core/models.py": {
+    "mtime": 1789488765.8765259,
+    "seen": 1789491695.2178462,
+    "ast_hash": "c5025ab250d2439f8a03a18f6af0e58f",
+    "semantic_hash": "c5025ab250d2439f8a03a18f6af0e58f"
   },
-  "/home/thiago/masterlight/apps/core/social_bootstrap.py": {
-    "mtime": 1786986637.884475,
-    "ast_hash": "391efaacbaee9765429341249a7c48fd",
-    "semantic_hash": "391efaacbaee9765429341249a7c48fd"
+  "apps/core/social_bootstrap.py": {
+    "mtime": 1789488765.8780413,
+    "seen": 1789491695.2178462,
+    "ast_hash": "5ffcdb2c11731429b7eb602691f492f1",
+    "semantic_hash": "5ffcdb2c11731429b7eb602691f492f1"
   },
-  "/home/thiago/masterlight/apps/core/tests/__init__.py": {
-    "mtime": 1786382054.2868912,
+  "apps/core/tests/__init__.py": {
+    "mtime": 1789488765.8791878,
+    "seen": 1789491695.2178462,
     "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
-  "/home/thiago/masterlight/apps/core/tests/test_checks.py": {
-    "mtime": 1786988206.8532863,
-    "ast_hash": "7bf66b24eb6f7fb251306840363d119c",
-    "semantic_hash": "7bf66b24eb6f7fb251306840363d119c"
+  "apps/core/tests/test_checks.py": {
+    "mtime": 1789488765.8807068,
+    "seen": 1789491695.2178462,
+    "ast_hash": "6efc58e25757515efcda31bd9c3edd31",
+    "semantic_hash": "6efc58e25757515efcda31bd9c3edd31"
   },
-  "/home/thiago/masterlight/apps/core/tests/test_mixins.py": {
-    "mtime": 1787075679.3312292,
-    "ast_hash": "8955061900411c58d06dbe165b837097",
-    "semantic_hash": "8955061900411c58d06dbe165b837097"
+  "apps/core/tests/test_home.py": {
+    "mtime": 1789488765.8807068,
+    "seen": 1789491695.2178462,
+    "ast_hash": "2dc826951ddcf43fd028c677a1a20aa6",
+    "semantic_hash": "2dc826951ddcf43fd028c677a1a20aa6"
   },
-  "/home/thiago/masterlight/apps/core/tests/test_sections.py": {
-    "mtime": 1787075724.6826842,
-    "ast_hash": "ff8a834cf6cf65cfcb58c78d7cb4016d",
-    "semantic_hash": "ff8a834cf6cf65cfcb58c78d7cb4016d"
+  "apps/core/tests/test_mixins.py": {
+    "mtime": 1789488765.8837347,
+    "seen": 1789491695.2178462,
+    "ast_hash": "560ff8813166b659f8ce4df2453d2bef",
+    "semantic_hash": "560ff8813166b659f8ce4df2453d2bef"
   },
-  "/home/thiago/masterlight/apps/core/tests/test_settings.py": {
-    "mtime": 1786383189.2219949,
-    "ast_hash": "2cdec6e33a9bfe93282f581ef4d21ff4",
-    "semantic_hash": "2cdec6e33a9bfe93282f581ef4d21ff4"
+  "apps/core/tests/test_sections.py": {
+    "mtime": 1789488765.8847654,
+    "seen": 1789491695.2178462,
+    "ast_hash": "688f1338344826edc79856e149ecbd2f",
+    "semantic_hash": "688f1338344826edc79856e149ecbd2f"
   },
-  "/home/thiago/masterlight/apps/core/tests/test_site_settings_save.py": {
-    "mtime": 1786988206.8472955,
-    "ast_hash": "8bf7edeee32ffa53a117bf9e538de455",
-    "semantic_hash": "8bf7edeee32ffa53a117bf9e538de455"
+  "apps/core/tests/test_settings.py": {
+    "mtime": 1789488765.8847654,
+    "seen": 1789491695.2178462,
+    "ast_hash": "b4ad09180d950c2ad26ca06cdd1b06fb",
+    "semantic_hash": "b4ad09180d950c2ad26ca06cdd1b06fb"
   },
-  "/home/thiago/masterlight/apps/core/tests/test_social_bootstrap.py": {
-    "mtime": 1787083399.6436055,
-    "ast_hash": "0cff1954a2e838ed9cadd8a533608967",
-    "semantic_hash": "0cff1954a2e838ed9cadd8a533608967"
+  "apps/core/tests/test_site_settings_save.py": {
+    "mtime": 1789488765.886279,
+    "seen": 1789491695.2178462,
+    "ast_hash": "00b41b8ad2615f9509b8b60ae7d5cecf",
+    "semantic_hash": "00b41b8ad2615f9509b8b60ae7d5cecf"
   },
-  "/home/thiago/masterlight/apps/core/tests/test_utils.py": {
-    "mtime": 1786986637.884475,
-    "ast_hash": "96a622ce25ac0802696d0f3ad8c6f872",
-    "semantic_hash": "96a622ce25ac0802696d0f3ad8c6f872"
+  "apps/core/tests/test_social_bootstrap.py": {
+    "mtime": 1789488765.8878088,
+    "seen": 1789491695.2178462,
+    "ast_hash": "0202f1ace81d3f93a13a623c7b5356b4",
+    "semantic_hash": "0202f1ace81d3f93a13a623c7b5356b4"
   },
-  "/home/thiago/masterlight/apps/core/tests/test_validators.py": {
-    "mtime": 1786987955.1700754,
-    "ast_hash": "4aabbb846cd67bf1737a87e36c939850",
-    "semantic_hash": "4aabbb846cd67bf1737a87e36c939850"
+  "apps/core/tests/test_utils.py": {
+    "mtime": 1789488765.8893268,
+    "seen": 1789491695.2178462,
+    "ast_hash": "5e1be2a0ae1cac1439fe7a8bef521662",
+    "semantic_hash": "5e1be2a0ae1cac1439fe7a8bef521662"
   },
-  "/home/thiago/masterlight/apps/core/tests/test_vercel_settings.py": {
-    "mtime": 1786628035.3603566,
-    "ast_hash": "45bf557e8aebcf0920185b289bd0430a",
-    "semantic_hash": "45bf557e8aebcf0920185b289bd0430a"
+  "apps/core/tests/test_validators.py": {
+    "mtime": 1789488765.8893268,
+    "seen": 1789491695.2178462,
+    "ast_hash": "9e2d33dfb93f936692d977909e9c62de",
+    "semantic_hash": "9e2d33dfb93f936692d977909e9c62de"
   },
-  "/home/thiago/masterlight/apps/core/utils.py": {
-    "mtime": 1786987710.2727695,
-    "ast_hash": "95a7eccab19b9cbc7d306bb2dc2a76b0",
-    "semantic_hash": "95a7eccab19b9cbc7d306bb2dc2a76b0"
+  "apps/core/tests/test_vercel_settings.py": {
+    "mtime": 1789488765.8908443,
+    "seen": 1789491695.2178462,
+    "ast_hash": "7925e5dc43a135498777411cb9994eac",
+    "semantic_hash": "7925e5dc43a135498777411cb9994eac"
   },
-  "/home/thiago/masterlight/apps/core/validators.py": {
-    "mtime": 1787055370.2980065,
-    "ast_hash": "45c5b61249735cf8055eac9be716181c",
-    "semantic_hash": "45c5b61249735cf8055eac9be716181c"
+  "apps/core/utils.py": {
+    "mtime": 1789488765.8924122,
+    "seen": 1789491695.2178462,
+    "ast_hash": "1924c5f015d534cce3a0aab1e10f3952",
+    "semantic_hash": "1924c5f015d534cce3a0aab1e10f3952"
   },
-  "/home/thiago/masterlight/apps/core/views.py": {
-    "mtime": 1786230459.2922893,
-    "ast_hash": "879f3d853d2d242a7105abf0d985dfce",
-    "semantic_hash": "879f3d853d2d242a7105abf0d985dfce"
+  "apps/core/validators.py": {
+    "mtime": 1789488765.8924122,
+    "seen": 1789491695.2178462,
+    "ast_hash": "919361ff2651ec269198986e5a9bc484",
+    "semantic_hash": "919361ff2651ec269198986e5a9bc484"
   },
-  "/home/thiago/masterlight/apps/payments/__init__.py": {
-    "mtime": 1785856178.8142414,
+  "apps/core/views.py": {
+    "mtime": 1789488765.894447,
+    "seen": 1789491695.2178462,
+    "ast_hash": "5711d273e18a49cd41719b4b0536fda6",
+    "semantic_hash": "5711d273e18a49cd41719b4b0536fda6"
+  },
+  "apps/payments/__init__.py": {
+    "mtime": 1789488765.8959775,
+    "seen": 1789491695.2178462,
     "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
-  "/home/thiago/masterlight/apps/payments/admin.py": {
-    "mtime": 1786743023.7370417,
-    "ast_hash": "260aeebaa443a84b0d625e122367e3d0",
-    "semantic_hash": "260aeebaa443a84b0d625e122367e3d0"
+  "apps/payments/admin.py": {
+    "mtime": 1789488765.8975403,
+    "seen": 1789491695.2178462,
+    "ast_hash": "af4194db520dc47b32476299e1e15b90",
+    "semantic_hash": "af4194db520dc47b32476299e1e15b90"
   },
-  "/home/thiago/masterlight/apps/payments/apps.py": {
-    "mtime": 1786739253.934922,
-    "ast_hash": "78675fb636c0be29f11be66480ad4dc2",
-    "semantic_hash": "78675fb636c0be29f11be66480ad4dc2"
+  "apps/payments/apps.py": {
+    "mtime": 1789488765.8988807,
+    "seen": 1789491695.2178462,
+    "ast_hash": "5340e5736f03b9d641e91fd98b628230",
+    "semantic_hash": "5340e5736f03b9d641e91fd98b628230"
   },
-  "/home/thiago/masterlight/apps/payments/checks.py": {
-    "mtime": 1786741196.9741368,
-    "ast_hash": "6b678b2abf76103c7f838c08e8557ea3",
-    "semantic_hash": "6b678b2abf76103c7f838c08e8557ea3"
+  "apps/payments/checks.py": {
+    "mtime": 1789488765.8988807,
+    "seen": 1789491695.2178462,
+    "ast_hash": "2613e50da98e276426857a345244caf7",
+    "semantic_hash": "2613e50da98e276426857a345244caf7"
   },
-  "/home/thiago/masterlight/apps/payments/exceptions.py": {
-    "mtime": 1787079575.880395,
-    "ast_hash": "d802dceeb21132c0c7496c508a764b6d",
-    "semantic_hash": "d802dceeb21132c0c7496c508a764b6d"
+  "apps/payments/exceptions.py": {
+    "mtime": 1789488765.900399,
+    "seen": 1789491695.2178462,
+    "ast_hash": "6bd1bfab3aa83865216a079e44dcdee9",
+    "semantic_hash": "6bd1bfab3aa83865216a079e44dcdee9"
   },
-  "/home/thiago/masterlight/apps/payments/gateways/__init__.py": {
-    "mtime": 1786741740.655289,
-    "ast_hash": "e1e39822b03dcbb8af30b854ffa8357b",
-    "semantic_hash": "e1e39822b03dcbb8af30b854ffa8357b"
+  "apps/payments/gateways/__init__.py": {
+    "mtime": 1789488765.9034624,
+    "seen": 1789491695.2178462,
+    "ast_hash": "f62d0e6039aa30d267840094642bd4b2",
+    "semantic_hash": "f62d0e6039aa30d267840094642bd4b2"
   },
-  "/home/thiago/masterlight/apps/payments/gateways/asaas.py": {
-    "mtime": 1787165350.7424526,
-    "ast_hash": "941c6660934a5afb9452ee691887b980",
-    "semantic_hash": "941c6660934a5afb9452ee691887b980"
+  "apps/payments/gateways/asaas.py": {
+    "mtime": 1789488765.9049816,
+    "seen": 1789491695.2178462,
+    "ast_hash": "9e9bd5eabaaef4d0d2839e8d8155fe35",
+    "semantic_hash": "9e9bd5eabaaef4d0d2839e8d8155fe35"
   },
-  "/home/thiago/masterlight/apps/payments/gateways/asaas_client.py": {
-    "mtime": 1786739237.6511102,
-    "ast_hash": "6cb3fb0dff49c64c3fa6f63f7297ba52",
-    "semantic_hash": "6cb3fb0dff49c64c3fa6f63f7297ba52"
+  "apps/payments/gateways/asaas_client.py": {
+    "mtime": 1789488765.905989,
+    "seen": 1789491695.2178462,
+    "ast_hash": "5d0ccad777863e46e621766a80d7962a",
+    "semantic_hash": "5d0ccad777863e46e621766a80d7962a"
   },
-  "/home/thiago/masterlight/apps/payments/gateways/base.py": {
-    "mtime": 1786743042.1928275,
-    "ast_hash": "32d22fe7115bc5d45e7a9c3ecdc47993",
-    "semantic_hash": "32d22fe7115bc5d45e7a9c3ecdc47993"
+  "apps/payments/gateways/base.py": {
+    "mtime": 1789488765.907504,
+    "seen": 1789491695.2178462,
+    "ast_hash": "cfb3086c1f6425a414114365c20d737b",
+    "semantic_hash": "cfb3086c1f6425a414114365c20d737b"
   },
-  "/home/thiago/masterlight/apps/payments/gateways/base_gateway.py": {
-    "mtime": 1787079306.4471352,
-    "ast_hash": "223df1309e6aa8619fa2e6d553add1d8",
-    "semantic_hash": "223df1309e6aa8619fa2e6d553add1d8"
+  "apps/payments/gateways/base_gateway.py": {
+    "mtime": 1789488765.9086444,
+    "seen": 1789491695.2178462,
+    "ast_hash": "6b1c86a92b066fe4fdc9c00da97a6d0d",
+    "semantic_hash": "6b1c86a92b066fe4fdc9c00da97a6d0d"
   },
-  "/home/thiago/masterlight/apps/payments/gateways/manual.py": {
-    "mtime": 1787079079.4736223,
-    "ast_hash": "dbfdf53267211182725056a32d6cd4c4",
-    "semantic_hash": "dbfdf53267211182725056a32d6cd4c4"
+  "apps/payments/gateways/manual.py": {
+    "mtime": 1789488765.9101634,
+    "seen": 1789491695.2178462,
+    "ast_hash": "5857abde7636221bb02b021f72905b12",
+    "semantic_hash": "5857abde7636221bb02b021f72905b12"
   },
-  "/home/thiago/masterlight/apps/payments/management/__init__.py": {
-    "mtime": 1786385746.9610195,
+  "apps/payments/management/__init__.py": {
+    "mtime": 1789488765.911681,
+    "seen": 1789491695.2178462,
     "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
-  "/home/thiago/masterlight/apps/payments/management/commands/__init__.py": {
-    "mtime": 1786385746.9610195,
+  "apps/payments/management/commands/__init__.py": {
+    "mtime": 1789488765.913196,
+    "seen": 1789491695.2178462,
     "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
-  "/home/thiago/masterlight/apps/payments/management/commands/sync_payments.py": {
-    "mtime": 1786986645.8203862,
-    "ast_hash": "17eb9c9a361d84a4bb803d409e19af27",
-    "semantic_hash": "17eb9c9a361d84a4bb803d409e19af27"
+  "apps/payments/management/commands/sync_payments.py": {
+    "mtime": 1789488765.914713,
+    "seen": 1789491695.2178462,
+    "ast_hash": "68b5f6d014e0334c1be76ec2e7f95b44",
+    "semantic_hash": "68b5f6d014e0334c1be76ec2e7f95b44"
   },
-  "/home/thiago/masterlight/apps/payments/migrations/0001_initial.py": {
-    "mtime": 1785858195.5231686,
-    "ast_hash": "acc2cb1b473904939f60f292e56633e5",
-    "semantic_hash": "acc2cb1b473904939f60f292e56633e5"
+  "apps/payments/migrations/0001_initial.py": {
+    "mtime": 1789488765.91572,
+    "seen": 1789491695.2178462,
+    "ast_hash": "db0cd370250b84233ae8cd6e2e7ed931",
+    "semantic_hash": "db0cd370250b84233ae8cd6e2e7ed931"
   },
-  "/home/thiago/masterlight/apps/payments/migrations/0002_transaction_uniq_payments_provider_external_id.py": {
-    "mtime": 1786741232.488795,
-    "ast_hash": "761137e82a75644c8ac4ca5d86df7866",
-    "semantic_hash": "761137e82a75644c8ac4ca5d86df7866"
+  "apps/payments/migrations/0002_transaction_uniq_payments_provider_external_id.py": {
+    "mtime": 1789488765.9172492,
+    "seen": 1789491695.2178462,
+    "ast_hash": "f8a6e12ecf301cfd4e9ca8f364d90df5",
+    "semantic_hash": "f8a6e12ecf301cfd4e9ca8f364d90df5"
   },
-  "/home/thiago/masterlight/apps/payments/migrations/0003_transaction_kind.py": {
-    "mtime": 1786743037.2248852,
-    "ast_hash": "49f24ca225f48b731909fb4e89f3f68b",
-    "semantic_hash": "49f24ca225f48b731909fb4e89f3f68b"
+  "apps/payments/migrations/0003_transaction_kind.py": {
+    "mtime": 1789488765.919068,
+    "seen": 1789491695.2178462,
+    "ast_hash": "e3fbeccd82048b6e424855f60dde458c",
+    "semantic_hash": "e3fbeccd82048b6e424855f60dde458c"
   },
-  "/home/thiago/masterlight/apps/payments/migrations/__init__.py": {
-    "mtime": 1785856228.3937361,
+  "apps/payments/migrations/__init__.py": {
+    "mtime": 1789488765.920586,
+    "seen": 1789491695.2178462,
     "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
-  "/home/thiago/masterlight/apps/payments/models.py": {
-    "mtime": 1786743002.2132916,
-    "ast_hash": "5ea5f98fa7f08c4cbd9908328f08253e",
-    "semantic_hash": "5ea5f98fa7f08c4cbd9908328f08253e"
+  "apps/payments/models.py": {
+    "mtime": 1789488765.921626,
+    "seen": 1789491695.2178462,
+    "ast_hash": "7593eb1ce6f10136fafaf836b243200c",
+    "semantic_hash": "7593eb1ce6f10136fafaf836b243200c"
   },
-  "/home/thiago/masterlight/apps/payments/services.py": {
-    "mtime": 1787149277.7283905,
-    "ast_hash": "ef0e1613bb12476793ba951a787bf7b1",
-    "semantic_hash": "ef0e1613bb12476793ba951a787bf7b1"
+  "apps/payments/orchestration.py": {
+    "mtime": 1789488765.923138,
+    "seen": 1789491695.2178462,
+    "ast_hash": "6a1054c89507d249cb03d0eb071ac5f2",
+    "semantic_hash": "6a1054c89507d249cb03d0eb071ac5f2"
   },
-  "/home/thiago/masterlight/apps/payments/services/__init__.py": {
-    "mtime": 1787077897.0385916,
-    "ast_hash": "b763255f442c397d7d9b6ca379b4011e",
-    "semantic_hash": "b763255f442c397d7d9b6ca379b4011e"
+  "apps/payments/services/__init__.py": {
+    "mtime": 1789488765.9246545,
+    "seen": 1789491695.2178462,
+    "ast_hash": "86265d0563b22c3adae58549bae0d053",
+    "semantic_hash": "86265d0563b22c3adae58549bae0d053"
   },
-  "/home/thiago/masterlight/apps/payments/services/billing.py": {
-    "mtime": 1787078262.598677,
-    "ast_hash": "0f92a908afa8af333ba4001b5218605a",
-    "semantic_hash": "0f92a908afa8af333ba4001b5218605a"
+  "apps/payments/signals.py": {
+    "mtime": 1789488765.9251597,
+    "seen": 1789491695.2178462,
+    "ast_hash": "62721f6fc6ad09ba20e61d7e30fb4525",
+    "semantic_hash": "62721f6fc6ad09ba20e61d7e30fb4525"
   },
-  "/home/thiago/masterlight/apps/payments/services/charge.py": {
-    "mtime": 1787078386.7453198,
-    "ast_hash": "6ed608600333b99e82c577202c679d8a",
-    "semantic_hash": "6ed608600333b99e82c577202c679d8a"
-  },
-  "/home/thiago/masterlight/apps/payments/services/checkout.py": {
-    "mtime": 1787077897.0305917,
-    "ast_hash": "475da2b22279695197e439dbddb25e70",
-    "semantic_hash": "475da2b22279695197e439dbddb25e70"
-  },
-  "/home/thiago/masterlight/apps/payments/services/order_transition.py": {
-    "mtime": 1787079413.3820639,
-    "ast_hash": "639b9c551d939e6ee52181a08fb20880",
-    "semantic_hash": "639b9c551d939e6ee52181a08fb20880"
-  },
-  "/home/thiago/masterlight/apps/payments/services/payment_link.py": {
-    "mtime": 1787077897.0345917,
-    "ast_hash": "aeb95f918bed88580ee284efeb6f5ea3",
-    "semantic_hash": "aeb95f918bed88580ee284efeb6f5ea3"
-  },
-  "/home/thiago/masterlight/apps/payments/services/subscription.py": {
-    "mtime": 1787077897.0345917,
-    "ast_hash": "e19378fc06eb25cbbd85b84c31b467bc",
-    "semantic_hash": "e19378fc06eb25cbbd85b84c31b467bc"
-  },
-  "/home/thiago/masterlight/apps/payments/services/webhook.py": {
-    "mtime": 1787077897.0345917,
-    "ast_hash": "4eabe4a96ca6fdb486b5a7e059bab26c",
-    "semantic_hash": "4eabe4a96ca6fdb486b5a7e059bab26c"
-  },
-  "/home/thiago/masterlight/apps/payments/signals.py": {
-    "mtime": 1786741124.307533,
-    "ast_hash": "d3eb5cd0c17b7373c4f86c2338d9f296",
-    "semantic_hash": "d3eb5cd0c17b7373c4f86c2338d9f296"
-  },
-  "/home/thiago/masterlight/apps/payments/tests/__init__.py": {
-    "mtime": 1786147560.7812247,
+  "apps/payments/tests/__init__.py": {
+    "mtime": 1789488765.9266741,
+    "seen": 1789491695.2178462,
     "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
-  "/home/thiago/masterlight/apps/payments/tests/test_asaas.py": {
-    "mtime": 1787084936.1348832,
-    "ast_hash": "65013f841dde0ed69838854cc8e3de2d",
-    "semantic_hash": "65013f841dde0ed69838854cc8e3de2d"
+  "apps/payments/tests/test_asaas.py": {
+    "mtime": 1789488765.9281895,
+    "seen": 1789491695.2178462,
+    "ast_hash": "4afacfaf23302c1976807800c5bcf8a7",
+    "semantic_hash": "4afacfaf23302c1976807800c5bcf8a7"
   },
-  "/home/thiago/masterlight/apps/payments/tests/test_config.py": {
-    "mtime": 1786739476.2323601,
-    "ast_hash": "c835f1e61873aed75a07fb681ffd7206",
-    "semantic_hash": "c835f1e61873aed75a07fb681ffd7206"
+  "apps/payments/tests/test_config.py": {
+    "mtime": 1789488765.9299474,
+    "seen": 1789491695.2178462,
+    "ast_hash": "6d88a8da582a9f875c47982e051e4e99",
+    "semantic_hash": "6d88a8da582a9f875c47982e051e4e99"
   },
-  "/home/thiago/masterlight/apps/payments/tests/test_cron.py": {
-    "mtime": 1786987596.3900168,
-    "ast_hash": "8b24e9fba24fb904176479a09e3df919",
-    "semantic_hash": "8b24e9fba24fb904176479a09e3df919"
+  "apps/payments/tests/test_cron.py": {
+    "mtime": 1789488765.9314878,
+    "seen": 1789491695.2178462,
+    "ast_hash": "b663b8120e697c73256ad28efdaa2f50",
+    "semantic_hash": "b663b8120e697c73256ad28efdaa2f50"
   },
-  "/home/thiago/masterlight/apps/payments/tests/test_env_helpers.py": {
-    "mtime": 1786739476.23636,
-    "ast_hash": "40b4999a6615131bd0c7bd1746da7288",
-    "semantic_hash": "40b4999a6615131bd0c7bd1746da7288"
+  "apps/payments/tests/test_env_helpers.py": {
+    "mtime": 1789488765.9314878,
+    "seen": 1789491695.2178462,
+    "ast_hash": "77acbce6ae975cf67e7f2c0908d8f37d",
+    "semantic_hash": "77acbce6ae975cf67e7f2c0908d8f37d"
   },
-  "/home/thiago/masterlight/apps/payments/tests/test_gateway.py": {
-    "mtime": 1786741742.6608853,
-    "ast_hash": "6536bc87c7c3ec9c8f75ae2b23ce89c4",
-    "semantic_hash": "6536bc87c7c3ec9c8f75ae2b23ce89c4"
+  "apps/payments/tests/test_gateway.py": {
+    "mtime": 1789488765.9330113,
+    "seen": 1789491695.2178462,
+    "ast_hash": "fe91d6fabfd721c00b9a028747292070",
+    "semantic_hash": "fe91d6fabfd721c00b9a028747292070"
   },
-  "/home/thiago/masterlight/apps/payments/tests/test_gateway_regressions.py": {
-    "mtime": 1786988196.7794068,
-    "ast_hash": "882141018cee4dc1193bef193dc368b3",
-    "semantic_hash": "882141018cee4dc1193bef193dc368b3"
+  "apps/payments/tests/test_gateway_regressions.py": {
+    "mtime": 1789488765.9345272,
+    "seen": 1789491695.2178462,
+    "ast_hash": "90bfe1539fe644024785556ded6d6181",
+    "semantic_hash": "90bfe1539fe644024785556ded6d6181"
   },
-  "/home/thiago/masterlight/apps/payments/tests/test_integration.py": {
-    "mtime": 1786383189.301994,
-    "ast_hash": "cbbdf41428e24b5ec63710d4b911e200",
-    "semantic_hash": "cbbdf41428e24b5ec63710d4b911e200"
+  "apps/payments/tests/test_integration.py": {
+    "mtime": 1789488765.936046,
+    "seen": 1789491695.2178462,
+    "ast_hash": "512f5d64cee206ce32d3b95a6c0aa316",
+    "semantic_hash": "512f5d64cee206ce32d3b95a6c0aa316"
   },
-  "/home/thiago/masterlight/apps/payments/tests/test_orchestration.py": {
-    "mtime": 1787084077.8482292,
-    "ast_hash": "746c5a492700e9898b8c4882721c58a9",
-    "semantic_hash": "746c5a492700e9898b8c4882721c58a9"
+  "apps/payments/tests/test_orchestration.py": {
+    "mtime": 1789488765.936046,
+    "seen": 1789491695.2178462,
+    "ast_hash": "6dc35c08ee4c94af64da1c0be85c4c33",
+    "semantic_hash": "6dc35c08ee4c94af64da1c0be85c4c33"
   },
-  "/home/thiago/masterlight/apps/payments/tests/test_transitions.py": {
-    "mtime": 1787161466.5818686,
-    "ast_hash": "6d906fc02c563e95d31a863584d81206",
-    "semantic_hash": "6d906fc02c563e95d31a863584d81206"
+  "apps/payments/tests/test_transitions.py": {
+    "mtime": 1789488765.9375906,
+    "seen": 1789491695.2178462,
+    "ast_hash": "5436a751ab269dff1f428737d320b8f1",
+    "semantic_hash": "5436a751ab269dff1f428737d320b8f1"
   },
-  "/home/thiago/masterlight/apps/payments/tests/test_views.py": {
-    "mtime": 1787093824.0372343,
-    "ast_hash": "07b831ac0798fc0a960e08de0281fd2a",
-    "semantic_hash": "07b831ac0798fc0a960e08de0281fd2a"
+  "apps/payments/tests/test_views.py": {
+    "mtime": 1789488765.939112,
+    "seen": 1789491695.2178462,
+    "ast_hash": "d104d0553ee2132ef8f615ee309ba4eb",
+    "semantic_hash": "d104d0553ee2132ef8f615ee309ba4eb"
   },
-  "/home/thiago/masterlight/apps/payments/urls.py": {
-    "mtime": 1786640768.4241111,
-    "ast_hash": "dc29ef4f64f4d68d81400f060e8bee78",
-    "semantic_hash": "dc29ef4f64f4d68d81400f060e8bee78"
+  "apps/payments/urls.py": {
+    "mtime": 1789488765.9406266,
+    "seen": 1789491695.2178462,
+    "ast_hash": "d6dd120f2735be22c14dec0efffc0226",
+    "semantic_hash": "d6dd120f2735be22c14dec0efffc0226"
   },
-  "/home/thiago/masterlight/apps/payments/views.py": {
-    "mtime": 1787144788.8276894,
-    "ast_hash": "a8d72c7e0f32a3e150a1a93df720bb41",
-    "semantic_hash": "a8d72c7e0f32a3e150a1a93df720bb41"
+  "apps/payments/views.py": {
+    "mtime": 1789488765.9421535,
+    "seen": 1789491695.2178462,
+    "ast_hash": "b55cdd6039a8c892042aa2717ffc4128",
+    "semantic_hash": "b55cdd6039a8c892042aa2717ffc4128"
   },
-  "/home/thiago/masterlight/apps/portfolio/__init__.py": {
-    "mtime": 1785854576.4760737,
+  "apps/portfolio/__init__.py": {
+    "mtime": 1789488765.9436693,
+    "seen": 1789491695.2178462,
     "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
-  "/home/thiago/masterlight/apps/portfolio/admin.py": {
-    "mtime": 1786041892.3908987,
-    "ast_hash": "fe644653aadf9ccc83011e6241b6a94a",
-    "semantic_hash": "fe644653aadf9ccc83011e6241b6a94a"
+  "apps/portfolio/admin.py": {
+    "mtime": 1789488765.944697,
+    "seen": 1789491695.2178462,
+    "ast_hash": "60ea84d7d27fb9840168fd4b2a09d188",
+    "semantic_hash": "60ea84d7d27fb9840168fd4b2a09d188"
   },
-  "/home/thiago/masterlight/apps/portfolio/apps.py": {
-    "mtime": 1785854601.9037726,
-    "ast_hash": "71e163e3913d7e0a1d4769a7ba73675c",
-    "semantic_hash": "71e163e3913d7e0a1d4769a7ba73675c"
+  "apps/portfolio/apps.py": {
+    "mtime": 1789488765.944697,
+    "seen": 1789491695.2178462,
+    "ast_hash": "af943782a7db226ffcd37a4faedd110e",
+    "semantic_hash": "af943782a7db226ffcd37a4faedd110e"
   },
-  "/home/thiago/masterlight/apps/portfolio/migrations/0001_initial.py": {
-    "mtime": 1785858195.5117953,
-    "ast_hash": "e11793749b27d6d87771604e436de5fc",
-    "semantic_hash": "e11793749b27d6d87771604e436de5fc"
+  "apps/portfolio/forms.py": {
+    "mtime": 1789488765.9462097,
+    "seen": 1789491695.2178462,
+    "ast_hash": "81f075e3678577322311cc1994655b89",
+    "semantic_hash": "81f075e3678577322311cc1994655b89"
   },
-  "/home/thiago/masterlight/apps/portfolio/migrations/0002_alter_portfolioitem_category_and_more.py": {
-    "mtime": 1786152100.2396603,
-    "ast_hash": "5bd44962aa1704e439930d36be906495",
-    "semantic_hash": "5bd44962aa1704e439930d36be906495"
+  "apps/portfolio/migrations/0001_initial.py": {
+    "mtime": 1789488765.948878,
+    "seen": 1789491695.2178462,
+    "ast_hash": "0f9e690ba819635fb6fbb5e0c9dbe3be",
+    "semantic_hash": "0f9e690ba819635fb6fbb5e0c9dbe3be"
   },
-  "/home/thiago/masterlight/apps/portfolio/migrations/0003_alter_portfolioitem_image.py": {
-    "mtime": 1786628081.0246122,
-    "ast_hash": "80525a23fcc664b450b403894f6a6131",
-    "semantic_hash": "80525a23fcc664b450b403894f6a6131"
+  "apps/portfolio/migrations/0002_alter_portfolioitem_category_and_more.py": {
+    "mtime": 1789488765.9503956,
+    "seen": 1789491695.2178462,
+    "ast_hash": "da594a56979bc6d535f51c21cca821b6",
+    "semantic_hash": "da594a56979bc6d535f51c21cca821b6"
   },
-  "/home/thiago/masterlight/apps/portfolio/migrations/__init__.py": {
-    "mtime": 1785854624.5235035,
+  "apps/portfolio/migrations/0003_alter_portfolioitem_image.py": {
+    "mtime": 1789488765.9519148,
+    "seen": 1789491695.2178462,
+    "ast_hash": "38c3dfab5a41eee4f919b0b3fb87c965",
+    "semantic_hash": "38c3dfab5a41eee4f919b0b3fb87c965"
+  },
+  "apps/portfolio/migrations/__init__.py": {
+    "mtime": 1789488765.9519148,
+    "seen": 1789491695.2178462,
     "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
-  "/home/thiago/masterlight/apps/portfolio/models.py": {
-    "mtime": 1786627911.5657885,
-    "ast_hash": "eff093d896320eabe02741d2fe7e46a2",
-    "semantic_hash": "eff093d896320eabe02741d2fe7e46a2"
+  "apps/portfolio/models.py": {
+    "mtime": 1789488765.9535303,
+    "seen": 1789491695.2178462,
+    "ast_hash": "e68a7791e51ab2cc9bdc445fd34906b3",
+    "semantic_hash": "e68a7791e51ab2cc9bdc445fd34906b3"
   },
-  "/home/thiago/masterlight/apps/portfolio/tests/__init__.py": {
-    "mtime": 1786147560.7812247,
+  "apps/portfolio/tests/__init__.py": {
+    "mtime": 1789488765.9555597,
+    "seen": 1789491695.2178462,
     "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
-  "/home/thiago/masterlight/apps/portfolio/tests/test_views.py": {
-    "mtime": 1787145163.0757372,
-    "ast_hash": "f3e027bb67c05c10a348203be74c29da",
-    "semantic_hash": "f3e027bb67c05c10a348203be74c29da"
+  "apps/portfolio/tests/test_views.py": {
+    "mtime": 1789488765.957073,
+    "seen": 1789491695.2178462,
+    "ast_hash": "1fd579b1f0cbab8ee9a1c5e71114202c",
+    "semantic_hash": "1fd579b1f0cbab8ee9a1c5e71114202c"
   },
-  "/home/thiago/masterlight/apps/portfolio/urls.py": {
-    "mtime": 1785854766.205804,
-    "ast_hash": "2bb841916a23db647ef99a6788cc7e62",
-    "semantic_hash": "2bb841916a23db647ef99a6788cc7e62"
+  "apps/portfolio/urls.py": {
+    "mtime": 1789488765.957073,
+    "seen": 1789491695.2178462,
+    "ast_hash": "41b3caa3afa5b41df9844dfe582c7ddc",
+    "semantic_hash": "41b3caa3afa5b41df9844dfe582c7ddc"
   },
-  "/home/thiago/masterlight/apps/portfolio/views.py": {
-    "mtime": 1787079832.6536856,
-    "ast_hash": "cda415f732dc408b216a8cc9981b774e",
-    "semantic_hash": "cda415f732dc408b216a8cc9981b774e"
+  "apps/portfolio/views.py": {
+    "mtime": 1789488765.9583566,
+    "seen": 1789491695.2178462,
+    "ast_hash": "2212f9f3f717879c3c3dae91399f1768",
+    "semantic_hash": "2212f9f3f717879c3c3dae91399f1768"
   },
-  "/home/thiago/masterlight/apps/services/__init__.py": {
-    "mtime": 1785854934.9382062,
+  "apps/services/__init__.py": {
+    "mtime": 1789488765.959882,
+    "seen": 1789491695.2178462,
     "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
-  "/home/thiago/masterlight/apps/services/admin.py": {
-    "mtime": 1786969279.0384161,
-    "ast_hash": "0227afdae1eb60d688b81781d1b1e27b",
-    "semantic_hash": "0227afdae1eb60d688b81781d1b1e27b"
+  "apps/services/admin.py": {
+    "mtime": 1789488765.9614012,
+    "seen": 1789491695.2178462,
+    "ast_hash": "7df2131890f5e0444597bd8ddc161825",
+    "semantic_hash": "7df2131890f5e0444597bd8ddc161825"
   },
-  "/home/thiago/masterlight/apps/services/apps.py": {
-    "mtime": 1786150665.8023326,
-    "ast_hash": "cc9efeaaad414e445a0491c0f53714f1",
-    "semantic_hash": "cc9efeaaad414e445a0491c0f53714f1"
+  "apps/services/apps.py": {
+    "mtime": 1789488765.962918,
+    "seen": 1789491695.2178462,
+    "ast_hash": "742cda00bc8af484534376e67612f78f",
+    "semantic_hash": "742cda00bc8af484534376e67612f78f"
   },
-  "/home/thiago/masterlight/apps/services/forms.py": {
-    "mtime": 1787056516.9316921,
-    "ast_hash": "39728888b1710258b0ce72399039412c",
-    "semantic_hash": "39728888b1710258b0ce72399039412c"
+  "apps/services/forms.py": {
+    "mtime": 1789488765.962918,
+    "seen": 1789491695.2178462,
+    "ast_hash": "f5fdb4e01454f1497f2d291150949e70",
+    "semantic_hash": "f5fdb4e01454f1497f2d291150949e70"
   },
-  "/home/thiago/masterlight/apps/services/migrations/0001_initial.py": {
-    "mtime": 1785858195.5164204,
-    "ast_hash": "940409aaac792a6b8e87cf1c4d726bd7",
-    "semantic_hash": "940409aaac792a6b8e87cf1c4d726bd7"
+  "apps/services/migrations/0001_initial.py": {
+    "mtime": 1789488765.9659634,
+    "seen": 1789491695.2178462,
+    "ast_hash": "58cd133e26c28c0f621d4e489cb55a8f",
+    "semantic_hash": "58cd133e26c28c0f621d4e489cb55a8f"
   },
-  "/home/thiago/masterlight/apps/services/migrations/0002_service_created_by_servicerequest_order_and_more.py": {
-    "mtime": 1786150582.7747102,
-    "ast_hash": "e78e411f088d401b3ee01b253122a936",
-    "semantic_hash": "e78e411f088d401b3ee01b253122a936"
+  "apps/services/migrations/0002_service_created_by_servicerequest_order_and_more.py": {
+    "mtime": 1789488765.9659634,
+    "seen": 1789491695.2178462,
+    "ast_hash": "ef971543222fe3f3ba1039cb597a2a0f",
+    "semantic_hash": "ef971543222fe3f3ba1039cb597a2a0f"
   },
-  "/home/thiago/masterlight/apps/services/migrations/0003_alter_service_base_price_alter_service_category_and_more.py": {
-    "mtime": 1786152100.243068,
-    "ast_hash": "490c77e2d992d9e9911f994669790e53",
-    "semantic_hash": "490c77e2d992d9e9911f994669790e53"
+  "apps/services/migrations/0003_alter_service_base_price_alter_service_category_and_more.py": {
+    "mtime": 1789488765.9674788,
+    "seen": 1789491695.2178462,
+    "ast_hash": "42ad520a44e6b76783a19d385f55cae6",
+    "semantic_hash": "42ad520a44e6b76783a19d385f55cae6"
   },
-  "/home/thiago/masterlight/apps/services/migrations/0004_maintenanceplan_maintenancevisit.py": {
-    "mtime": 1786234466.8124754,
-    "ast_hash": "f5795e8aabf8a1f5d0767399949fa9d9",
-    "semantic_hash": "f5795e8aabf8a1f5d0767399949fa9d9"
+  "apps/services/migrations/0004_maintenanceplan_maintenancevisit.py": {
+    "mtime": 1789488765.9691255,
+    "seen": 1789491695.2178462,
+    "ast_hash": "096eaec3b127359b266dc7209ecbb2ac",
+    "semantic_hash": "096eaec3b127359b266dc7209ecbb2ac"
   },
-  "/home/thiago/masterlight/apps/services/migrations/0005_alter_service_slug_alter_servicecategory_slug.py": {
-    "mtime": 1786469488.220393,
-    "ast_hash": "d463cde507966b102a9f684f83da791c",
-    "semantic_hash": "d463cde507966b102a9f684f83da791c"
+  "apps/services/migrations/0005_alter_service_slug_alter_servicecategory_slug.py": {
+    "mtime": 1789488765.9706542,
+    "seen": 1789491695.2178462,
+    "ast_hash": "6bcc4add9714cdd0ed37bc7002b601a5",
+    "semantic_hash": "6bcc4add9714cdd0ed37bc7002b601a5"
   },
-  "/home/thiago/masterlight/apps/services/migrations/0006_alter_service_image.py": {
-    "mtime": 1786628081.02573,
-    "ast_hash": "c600024e0123a6908ba4474fccb1e68e",
-    "semantic_hash": "c600024e0123a6908ba4474fccb1e68e"
+  "apps/services/migrations/0006_alter_service_image.py": {
+    "mtime": 1789488765.9716637,
+    "seen": 1789491695.2178462,
+    "ast_hash": "af8771b1ca2705970fe510d3a4f063b5",
+    "semantic_hash": "af8771b1ca2705970fe510d3a4f063b5"
   },
-  "/home/thiago/masterlight/apps/services/migrations/0007_servicerequest_asaas_payment_link_id.py": {
-    "mtime": 1786640410.6781394,
-    "ast_hash": "eb291c3bdd48aa21f69e8004dd5fe018",
-    "semantic_hash": "eb291c3bdd48aa21f69e8004dd5fe018"
+  "apps/services/migrations/0007_servicerequest_asaas_payment_link_id.py": {
+    "mtime": 1789488765.9716637,
+    "seen": 1789491695.2178462,
+    "ast_hash": "457716af4699f6dee26fe74099ecf828",
+    "semantic_hash": "457716af4699f6dee26fe74099ecf828"
   },
-  "/home/thiago/masterlight/apps/services/migrations/0008_maintenanceplantemplate.py": {
-    "mtime": 1786969326.2104104,
-    "ast_hash": "8e9b9a5056456f84fd7792f2a9a8ae5c",
-    "semantic_hash": "8e9b9a5056456f84fd7792f2a9a8ae5c"
+  "apps/services/migrations/0008_maintenanceplantemplate.py": {
+    "mtime": 1789488765.9731886,
+    "seen": 1789491695.2178462,
+    "ast_hash": "b3cee65e81ff34c5e68358100d3f0844",
+    "semantic_hash": "b3cee65e81ff34c5e68358100d3f0844"
   },
-  "/home/thiago/masterlight/apps/services/migrations/0009_seed_maintenance_plan_templates.py": {
-    "mtime": 1786969367.712869,
-    "ast_hash": "f00bee7cc8c9e5014aea38fdcc077b6b",
-    "semantic_hash": "f00bee7cc8c9e5014aea38fdcc077b6b"
+  "apps/services/migrations/0009_seed_maintenance_plan_templates.py": {
+    "mtime": 1789488765.9747038,
+    "seen": 1789491695.2178462,
+    "ast_hash": "809d059ed39c71a9d2d85fcb71f5f6b8",
+    "semantic_hash": "809d059ed39c71a9d2d85fcb71f5f6b8"
   },
-  "/home/thiago/masterlight/apps/services/migrations/0010_maintenanceplantemplate_uniq_services_active_plan_type.py": {
-    "mtime": 1786986546.2574992,
-    "ast_hash": "05e95fffc6349028c572b07bcb686db4",
-    "semantic_hash": "05e95fffc6349028c572b07bcb686db4"
+  "apps/services/migrations/0010_maintenanceplantemplate_uniq_services_active_plan_type.py": {
+    "mtime": 1789488765.9752097,
+    "seen": 1789491695.2178462,
+    "ast_hash": "04eb8a62f174d65057246129102d0436",
+    "semantic_hash": "04eb8a62f174d65057246129102d0436"
   },
-  "/home/thiago/masterlight/apps/services/migrations/0011_add_affiliate_ref_code_to_servicerequest.py": {
-    "mtime": 1787165280.8671827,
-    "ast_hash": "434fcfa0279729aef3cfb392b72fb669",
-    "semantic_hash": "434fcfa0279729aef3cfb392b72fb669"
+  "apps/services/migrations/0011_add_affiliate_ref_code_to_servicerequest.py": {
+    "mtime": 1789488765.976727,
+    "seen": 1789491695.2178462,
+    "ast_hash": "19c058c41755f1de88762a09e7b05af9",
+    "semantic_hash": "19c058c41755f1de88762a09e7b05af9"
   },
-  "/home/thiago/masterlight/apps/services/migrations/__init__.py": {
-    "mtime": 1785854986.1551242,
+  "apps/services/migrations/0012_maintenanceplantemplate_affiliate_commission_rate_and_more.py": {
+    "mtime": 1789488765.9782608,
+    "seen": 1789491695.2178462,
+    "ast_hash": "da6a982122de125e141db6b81241e083",
+    "semantic_hash": "da6a982122de125e141db6b81241e083"
+  },
+  "apps/services/migrations/0013_alter_servicerequest_address.py": {
+    "mtime": 1789488765.9782608,
+    "seen": 1789491695.2178462,
+    "ast_hash": "663b111b389946906651e0da57d7235a",
+    "semantic_hash": "663b111b389946906651e0da57d7235a"
+  },
+  "apps/services/migrations/__init__.py": {
+    "mtime": 1789488765.9796517,
+    "seen": 1789491695.2178462,
     "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
-  "/home/thiago/masterlight/apps/services/models.py": {
-    "mtime": 1787165226.679746,
-    "ast_hash": "7190942faed27aa96524c2d7398fdbdb",
-    "semantic_hash": "7190942faed27aa96524c2d7398fdbdb"
+  "apps/services/models.py": {
+    "mtime": 1789488765.9811835,
+    "seen": 1789491695.2178462,
+    "ast_hash": "3d3a3d46c45b3571e633e4d869ae6fcd",
+    "semantic_hash": "3d3a3d46c45b3571e633e4d869ae6fcd"
   },
-  "/home/thiago/masterlight/apps/services/signals.py": {
-    "mtime": 1786987137.1212182,
-    "ast_hash": "2ddcb8ef635d8e0efee8c23ef788802a",
-    "semantic_hash": "2ddcb8ef635d8e0efee8c23ef788802a"
+  "apps/services/signals.py": {
+    "mtime": 1789488765.9827046,
+    "seen": 1789491695.2178462,
+    "ast_hash": "a88d83abbfd4c06f6357961bff32e19d",
+    "semantic_hash": "a88d83abbfd4c06f6357961bff32e19d"
   },
-  "/home/thiago/masterlight/apps/services/tests/__init__.py": {
-    "mtime": 1786382054.2868912,
+  "apps/services/tests/__init__.py": {
+    "mtime": 1789488765.984249,
+    "seen": 1789491695.2178462,
     "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
-  "/home/thiago/masterlight/apps/services/tests/test_flow.py": {
-    "mtime": 1786988634.0813456,
-    "ast_hash": "104e900b28e3742f3664c4001d3db23a",
-    "semantic_hash": "104e900b28e3742f3664c4001d3db23a"
+  "apps/services/tests/test_flow.py": {
+    "mtime": 1789488765.984249,
+    "seen": 1789491695.2178462,
+    "ast_hash": "8e2ee347b9022d023c97c63f9dac6516",
+    "semantic_hash": "8e2ee347b9022d023c97c63f9dac6516"
   },
-  "/home/thiago/masterlight/apps/services/tests/test_forms.py": {
-    "mtime": 1786628114.1279285,
-    "ast_hash": "8567ea0d2cacb8547635c3a5954b5690",
-    "semantic_hash": "8567ea0d2cacb8547635c3a5954b5690"
+  "apps/services/tests/test_forms.py": {
+    "mtime": 1789488765.9857733,
+    "seen": 1789491695.2178462,
+    "ast_hash": "3f8d7ccdae0340a5a8070d537d091c45",
+    "semantic_hash": "3f8d7ccdae0340a5a8070d537d091c45"
   },
-  "/home/thiago/masterlight/apps/services/tests/test_idempotency.py": {
-    "mtime": 1786989633.8123143,
-    "ast_hash": "41e0387b8701cf956f545439928a929f",
-    "semantic_hash": "41e0387b8701cf956f545439928a929f"
+  "apps/services/tests/test_idempotency.py": {
+    "mtime": 1789488765.9872916,
+    "seen": 1789491695.2178462,
+    "ast_hash": "497b724fda88d0ba3140d2a6f18ecc2b",
+    "semantic_hash": "497b724fda88d0ba3140d2a6f18ecc2b"
   },
-  "/home/thiago/masterlight/apps/services/tests/test_maintenance.py": {
-    "mtime": 1786988674.0581186,
-    "ast_hash": "a5bc6b5e8f040923ff722b78c7ffdd97",
-    "semantic_hash": "a5bc6b5e8f040923ff722b78c7ffdd97"
+  "apps/services/tests/test_maintenance.py": {
+    "mtime": 1789488765.988827,
+    "seen": 1789491695.2178462,
+    "ast_hash": "a9a874fdc77ae54ca6955eaa8b0640e2",
+    "semantic_hash": "a9a874fdc77ae54ca6955eaa8b0640e2"
   },
-  "/home/thiago/masterlight/apps/services/tests/test_views.py": {
-    "mtime": 1787145258.7447603,
-    "ast_hash": "e2f263fe7beb18c3838f2efea6769ec8",
-    "semantic_hash": "e2f263fe7beb18c3838f2efea6769ec8"
+  "apps/services/tests/test_views.py": {
+    "mtime": 1789488765.9903414,
+    "seen": 1789491695.2178462,
+    "ast_hash": "990be5884537ad5ef9fa3cc1f9555189",
+    "semantic_hash": "990be5884537ad5ef9fa3cc1f9555189"
   },
-  "/home/thiago/masterlight/apps/services/urls.py": {
-    "mtime": 1786390182.2901907,
-    "ast_hash": "5df6de10bd6e6d2f2b29dd0e52645a87",
-    "semantic_hash": "5df6de10bd6e6d2f2b29dd0e52645a87"
+  "apps/services/urls.py": {
+    "mtime": 1789488765.9918604,
+    "seen": 1789491695.2178462,
+    "ast_hash": "171de90b2b098418a88904cd0c8fbfc5",
+    "semantic_hash": "171de90b2b098418a88904cd0c8fbfc5"
   },
-  "/home/thiago/masterlight/apps/services/views.py": {
-    "mtime": 1787167110.6178608,
-    "ast_hash": "bdc5f854f7504496dabc71d464f0a71d",
-    "semantic_hash": "bdc5f854f7504496dabc71d464f0a71d"
+  "apps/services/views.py": {
+    "mtime": 1789488765.9918604,
+    "seen": 1789491695.2178462,
+    "ast_hash": "851835e1d6ed86ac364e88c885dad205",
+    "semantic_hash": "851835e1d6ed86ac364e88c885dad205"
   },
-  "/home/thiago/masterlight/apps/shop/__init__.py": {
-    "mtime": 1785855332.8332407,
+  "apps/shop/__init__.py": {
+    "mtime": 1789488765.9943893,
+    "seen": 1789491695.2178462,
     "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
-  "/home/thiago/masterlight/apps/shop/admin.py": {
-    "mtime": 1786469477.9205241,
-    "ast_hash": "4fc72c01e16dc062d43447d6fa0fda3f",
-    "semantic_hash": "4fc72c01e16dc062d43447d6fa0fda3f"
+  "apps/shop/admin.py": {
+    "mtime": 1789488765.9943893,
+    "seen": 1789491695.2178462,
+    "ast_hash": "913ae1a567bab014c2b70d24f617c0d0",
+    "semantic_hash": "913ae1a567bab014c2b70d24f617c0d0"
   },
-  "/home/thiago/masterlight/apps/shop/apps.py": {
-    "mtime": 1785855366.521063,
-    "ast_hash": "a051c1464e68d485b8be8d991e6291f4",
-    "semantic_hash": "a051c1464e68d485b8be8d991e6291f4"
+  "apps/shop/apps.py": {
+    "mtime": 1789488765.9967747,
+    "seen": 1789491695.2178462,
+    "ast_hash": "80e70f91177ece3805bb3880612c19f3",
+    "semantic_hash": "80e70f91177ece3805bb3880612c19f3"
   },
-  "/home/thiago/masterlight/apps/shop/migrations/0001_initial.py": {
-    "mtime": 1785858195.5043714,
-    "ast_hash": "6a3aeb65e5c174aabc348d5dee0c39a0",
-    "semantic_hash": "6a3aeb65e5c174aabc348d5dee0c39a0"
+  "apps/shop/forms.py": {
+    "mtime": 1789488765.9973009,
+    "seen": 1789491695.2178462,
+    "ast_hash": "afc6d109aa39cded6cf2e114ebe39474",
+    "semantic_hash": "afc6d109aa39cded6cf2e114ebe39474"
   },
-  "/home/thiago/masterlight/apps/shop/migrations/0002_alter_category_slug_alter_product_slug.py": {
-    "mtime": 1786469488.2226708,
-    "ast_hash": "4f9bb745ff32796e9a412f32b87e9255",
-    "semantic_hash": "4f9bb745ff32796e9a412f32b87e9255"
+  "apps/shop/migrations/0001_initial.py": {
+    "mtime": 1789488765.9988718,
+    "seen": 1789491695.2178462,
+    "ast_hash": "c41169e0c4dfe13805f2d8250ebee283",
+    "semantic_hash": "c41169e0c4dfe13805f2d8250ebee283"
   },
-  "/home/thiago/masterlight/apps/shop/migrations/0003_alter_productimage_image.py": {
-    "mtime": 1786628081.0266871,
-    "ast_hash": "1bad74dad49eefe39d9e5bde871cb701",
-    "semantic_hash": "1bad74dad49eefe39d9e5bde871cb701"
+  "apps/shop/migrations/0002_alter_category_slug_alter_product_slug.py": {
+    "mtime": 1789488766.0004053,
+    "seen": 1789491695.2178462,
+    "ast_hash": "7d43f03848f540ee9db6cbe8814a12bd",
+    "semantic_hash": "7d43f03848f540ee9db6cbe8814a12bd"
   },
-  "/home/thiago/masterlight/apps/shop/migrations/__init__.py": {
-    "mtime": 1785855398.212884,
+  "apps/shop/migrations/0003_alter_productimage_image.py": {
+    "mtime": 1789488766.0019317,
+    "seen": 1789491695.2178462,
+    "ast_hash": "520d162fa6f976e98e5940b5a5de2253",
+    "semantic_hash": "520d162fa6f976e98e5940b5a5de2253"
+  },
+  "apps/shop/migrations/0004_product_affiliate_commission_rate.py": {
+    "mtime": 1789488766.0034535,
+    "seen": 1789491695.2178462,
+    "ast_hash": "7d00ccea9d9f8723b986e1293b9442cf",
+    "semantic_hash": "7d00ccea9d9f8723b986e1293b9442cf"
+  },
+  "apps/shop/migrations/__init__.py": {
+    "mtime": 1789488766.0044634,
+    "seen": 1789491695.2178462,
     "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
-  "/home/thiago/masterlight/apps/shop/models.py": {
-    "mtime": 1786627920.4576864,
-    "ast_hash": "37fcfbe46076b686975bd6058080b6cd",
-    "semantic_hash": "37fcfbe46076b686975bd6058080b6cd"
+  "apps/shop/models.py": {
+    "mtime": 1789488766.0063796,
+    "seen": 1789491695.2178462,
+    "ast_hash": "a5c369065ae6e3f4d84909521760b424",
+    "semantic_hash": "a5c369065ae6e3f4d84909521760b424"
   },
-  "/home/thiago/masterlight/apps/shop/tests/__init__.py": {
-    "mtime": 1786382054.3148909,
+  "apps/shop/tests/__init__.py": {
+    "mtime": 1789488766.0078995,
+    "seen": 1789491695.2178462,
     "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
-  "/home/thiago/masterlight/apps/shop/tests/test_shop_views.py": {
-    "mtime": 1787145357.1776857,
-    "ast_hash": "bd7e9210699a5b9efcc7d2818ce3426e",
-    "semantic_hash": "bd7e9210699a5b9efcc7d2818ce3426e"
+  "apps/shop/tests/test_shop_views.py": {
+    "mtime": 1789488766.0091186,
+    "seen": 1789491695.2178462,
+    "ast_hash": "274903a005356ecc0210b76edddf22c8",
+    "semantic_hash": "274903a005356ecc0210b76edddf22c8"
   },
-  "/home/thiago/masterlight/apps/shop/urls.py": {
-    "mtime": 1786028728.9159758,
-    "ast_hash": "a5d6321d54a5c8d2caf9130259aaa1af",
-    "semantic_hash": "a5d6321d54a5c8d2caf9130259aaa1af"
+  "apps/shop/urls.py": {
+    "mtime": 1789488766.0091186,
+    "seen": 1789491695.2178462,
+    "ast_hash": "b52dc96c6dcad7b5b6557fb935961948",
+    "semantic_hash": "b52dc96c6dcad7b5b6557fb935961948"
   },
-  "/home/thiago/masterlight/apps/shop/views.py": {
-    "mtime": 1787144647.7927535,
-    "ast_hash": "fad209f4867cd3c0a8ac5ec2e38f7a7d",
-    "semantic_hash": "fad209f4867cd3c0a8ac5ec2e38f7a7d"
+  "apps/shop/views.py": {
+    "mtime": 1789488766.010635,
+    "seen": 1789491695.2178462,
+    "ast_hash": "9ceb504d4b3c762441544c63486e1174",
+    "semantic_hash": "9ceb504d4b3c762441544c63486e1174"
   },
-  "/home/thiago/masterlight/apps/tests/__init__.py": {
-    "mtime": 1786379322.862075,
+  "apps/tests/__init__.py": {
+    "mtime": 1789488766.012154,
+    "seen": 1789491695.2178462,
     "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
-  "/home/thiago/masterlight/apps/tests/helpers.py": {
-    "mtime": 1787149227.5076404,
-    "ast_hash": "b814e1b7d9bbf61da3a345b3c96ff926",
-    "semantic_hash": "b814e1b7d9bbf61da3a345b3c96ff926"
+  "apps/tests/helpers.py": {
+    "mtime": 1789488766.0141804,
+    "seen": 1789491695.2178462,
+    "ast_hash": "d7380e9d2b81b100afb9f31bb2531ebb",
+    "semantic_hash": "d7380e9d2b81b100afb9f31bb2531ebb"
   },
-  "/home/thiago/masterlight/apps/tests/integration/__init__.py": {
-    "mtime": 1787146779.671483,
-    "ast_hash": "7a7af420e373ece37e0a59b2f0487954",
-    "semantic_hash": "7a7af420e373ece37e0a59b2f0487954"
+  "apps/tests/integration/__init__.py": {
+    "mtime": 1789488766.014714,
+    "seen": 1789491695.2178462,
+    "ast_hash": "f2af539265046f3f70431b57f99a504b",
+    "semantic_hash": "f2af539265046f3f70431b57f99a504b"
   },
-  "/home/thiago/masterlight/apps/tests/integration/test_affiliate_referral.py": {
-    "mtime": 1787160952.582095,
-    "ast_hash": "a256b473b6f751206952317266902c8d",
-    "semantic_hash": "a256b473b6f751206952317266902c8d"
+  "apps/tests/integration/test_affiliate_referral.py": {
+    "mtime": 1789488766.0162418,
+    "seen": 1789491695.2178462,
+    "ast_hash": "afc6b358574a0e613c2e9312d3d73e8c",
+    "semantic_hash": "afc6b358574a0e613c2e9312d3d73e8c"
   },
-  "/home/thiago/masterlight/apps/tests/integration/test_service_request.py": {
-    "mtime": 1787150139.4698107,
-    "ast_hash": "21e11a368e3f37a6fd73e8814aed98ce",
-    "semantic_hash": "21e11a368e3f37a6fd73e8814aed98ce"
+  "apps/tests/integration/test_service_request.py": {
+    "mtime": 1789488766.0193026,
+    "seen": 1789491695.2178462,
+    "ast_hash": "afde8ad9a454de38011cfc2aec162953",
+    "semantic_hash": "afde8ad9a454de38011cfc2aec162953"
   },
-  "/home/thiago/masterlight/apps/tests/integration/test_shop_checkout.py": {
-    "mtime": 1787149721.6268532,
-    "ast_hash": "3f0b1fedfe635b653fe17b93af10db98",
-    "semantic_hash": "3f0b1fedfe635b653fe17b93af10db98"
+  "apps/tests/integration/test_shop_checkout.py": {
+    "mtime": 1789488766.0193026,
+    "seen": 1789491695.2178462,
+    "ast_hash": "537e753446d1ecb930d300f7d7783f75",
+    "semantic_hash": "537e753446d1ecb930d300f7d7783f75"
   },
-  "/home/thiago/masterlight/apps/tests/integration/test_social_login.py": {
-    "mtime": 1787161929.1612937,
-    "ast_hash": "78b860866e2039047baaab90326a2d71",
-    "semantic_hash": "78b860866e2039047baaab90326a2d71"
+  "apps/tests/integration/test_social_login.py": {
+    "mtime": 1789488766.0208316,
+    "seen": 1789491695.2178462,
+    "ast_hash": "3f30f5bf7fcd95e21b8fa1ec894f348f",
+    "semantic_hash": "3f30f5bf7fcd95e21b8fa1ec894f348f"
   },
-  "/home/thiago/masterlight/apps/tests/integration/test_subscription.py": {
-    "mtime": 1787151625.505854,
-    "ast_hash": "edbf4ecfeb1db2653375f88c2d78b32f",
-    "semantic_hash": "edbf4ecfeb1db2653375f88c2d78b32f"
+  "apps/tests/integration/test_subscription.py": {
+    "mtime": 1789488766.0223515,
+    "seen": 1789491695.2178462,
+    "ast_hash": "911ed0196fb43909a1e289f6ac574fbf",
+    "semantic_hash": "911ed0196fb43909a1e289f6ac574fbf"
   },
-  "/home/thiago/masterlight/build.py": {
-    "mtime": 1786740310.115958,
-    "ast_hash": "62c15da2a037f00799a36ea2eb2ac596",
-    "semantic_hash": "62c15da2a037f00799a36ea2eb2ac596"
+  "build.py": {
+    "mtime": 1789488766.023877,
+    "seen": 1789491695.2178462,
+    "ast_hash": "b9bb1b5bf7832313644f0f2196494fd9",
+    "semantic_hash": "b9bb1b5bf7832313644f0f2196494fd9"
   },
-  "/home/thiago/masterlight/config/__init__.py": {
-    "mtime": 1785853258.43574,
+  "config/__init__.py": {
+    "mtime": 1789488766.0249243,
+    "seen": 1789491695.2178462,
     "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
-  "/home/thiago/masterlight/config/asgi.py": {
-    "mtime": 1785853236.271781,
-    "ast_hash": "ba1135cd9a88bd683074bc13ef009036",
-    "semantic_hash": "ba1135cd9a88bd683074bc13ef009036"
+  "config/asgi.py": {
+    "mtime": 1789488766.0264404,
+    "seen": 1789491695.2178462,
+    "ast_hash": "de1e8d5bf31b4d964932f573e25cad8a",
+    "semantic_hash": "de1e8d5bf31b4d964932f573e25cad8a"
   },
-  "/home/thiago/masterlight/config/settings/__init__.py": {
-    "mtime": 1785853271.93571,
+  "config/settings/__init__.py": {
+    "mtime": 1789488766.0279553,
+    "seen": 1789491695.2178462,
     "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
-  "/home/thiago/masterlight/config/settings/base.py": {
-    "mtime": 1787161102.216911,
-    "ast_hash": "565ee24d98b17fa17dca21b3fcd336a1",
-    "semantic_hash": "565ee24d98b17fa17dca21b3fcd336a1"
+  "config/settings/base.py": {
+    "mtime": 1789488766.0293422,
+    "seen": 1789491695.2178462,
+    "ast_hash": "91b93812701b88eae9092745d02c70f7",
+    "semantic_hash": "91b93812701b88eae9092745d02c70f7"
   },
-  "/home/thiago/masterlight/config/settings/dev.py": {
-    "mtime": 1786230459.2453482,
-    "ast_hash": "c4fc7ae9d5492ff1d5cdd7e4c84d5d35",
-    "semantic_hash": "c4fc7ae9d5492ff1d5cdd7e4c84d5d35"
+  "config/settings/dev.py": {
+    "mtime": 1789488766.0293422,
+    "seen": 1789491695.2178462,
+    "ast_hash": "fe24f43c03f7d8bb95951cccae6eae8d",
+    "semantic_hash": "fe24f43c03f7d8bb95951cccae6eae8d"
   },
-  "/home/thiago/masterlight/config/settings/env_helpers.py": {
-    "mtime": 1786739476.2323601,
-    "ast_hash": "3ec3cf5a241fe4c3b212d933c9109634",
-    "semantic_hash": "3ec3cf5a241fe4c3b212d933c9109634"
+  "config/settings/env_helpers.py": {
+    "mtime": 1789488766.0308764,
+    "seen": 1789491695.2178462,
+    "ast_hash": "32a0e21662a6191ac9bdd441d4190b3d",
+    "semantic_hash": "32a0e21662a6191ac9bdd441d4190b3d"
   },
-  "/home/thiago/masterlight/config/settings/production.py": {
-    "mtime": 1786992074.2416453,
-    "ast_hash": "672e6a125c70271018b4e4f839fa6a7a",
-    "semantic_hash": "672e6a125c70271018b4e4f839fa6a7a"
+  "config/settings/production.py": {
+    "mtime": 1789488766.0323977,
+    "seen": 1789491695.2178462,
+    "ast_hash": "2d460296c5be4e4df96d425b75933c28",
+    "semantic_hash": "2d460296c5be4e4df96d425b75933c28"
   },
-  "/home/thiago/masterlight/config/settings/test.py": {
-    "mtime": 1787159598.3123367,
-    "ast_hash": "7d8f32934b04bd3305a60d32dcf5fddb",
-    "semantic_hash": "7d8f32934b04bd3305a60d32dcf5fddb"
+  "config/settings/test.py": {
+    "mtime": 1789488766.0342593,
+    "seen": 1789491695.2178462,
+    "ast_hash": "77a712e3daf86ef7c155ee17baa222f3",
+    "semantic_hash": "77a712e3daf86ef7c155ee17baa222f3"
   },
-  "/home/thiago/masterlight/config/settings/vercel.py": {
-    "mtime": 1787068981.4850442,
-    "ast_hash": "2351640c656a225ab1b79624c2f195ff",
-    "semantic_hash": "2351640c656a225ab1b79624c2f195ff"
+  "config/settings/vercel.py": {
+    "mtime": 1789488766.0354426,
+    "seen": 1789491695.2178462,
+    "ast_hash": "3c7d8dfa3879eddf72c736b1be1587c4",
+    "semantic_hash": "3c7d8dfa3879eddf72c736b1be1587c4"
   },
-  "/home/thiago/masterlight/config/urls.py": {
-    "mtime": 1787064163.1952958,
-    "ast_hash": "5126f2e272ec93730cdcaa2d237e6fdc",
-    "semantic_hash": "5126f2e272ec93730cdcaa2d237e6fdc"
+  "config/urls.py": {
+    "mtime": 1789488766.0354426,
+    "seen": 1789491695.2178462,
+    "ast_hash": "2f6cb0e3e8b5be41a8e5968b236fdc5e",
+    "semantic_hash": "2f6cb0e3e8b5be41a8e5968b236fdc5e"
   },
-  "/home/thiago/masterlight/config/wsgi.py": {
-    "mtime": 1787069627.3777857,
-    "ast_hash": "bdaf9c6501970eb3d14ec9e1cb459036",
-    "semantic_hash": "bdaf9c6501970eb3d14ec9e1cb459036"
+  "config/wsgi.py": {
+    "mtime": 1789488766.0369625,
+    "seen": 1789491695.2178462,
+    "ast_hash": "134020d6e1506763725b84627bba7e80",
+    "semantic_hash": "134020d6e1506763725b84627bba7e80"
   },
-  "/home/thiago/masterlight/deploy/migrate_to_vercel.sh": {
-    "mtime": 1786986637.9444742,
-    "ast_hash": "fbe1b39af2573d5a9f20f094571df599",
-    "semantic_hash": "fbe1b39af2573d5a9f20f094571df599"
+  "deploy/migrate_to_vercel.sh": {
+    "mtime": 1789488766.038485,
+    "seen": 1789491695.2178462,
+    "ast_hash": "15df37fd95cff2dadf4bd7808c0984e4",
+    "semantic_hash": "15df37fd95cff2dadf4bd7808c0984e4"
   },
-  "/home/thiago/masterlight/manage.py": {
-    "mtime": 1786986637.9498606,
-    "ast_hash": "19131af5e078451cc8bcef39a3adbbaf",
-    "semantic_hash": "19131af5e078451cc8bcef39a3adbbaf"
+  "manage.py": {
+    "mtime": 1789488766.501893,
+    "seen": 1789491695.2178462,
+    "ast_hash": "909643e24e803701059ea6624f6c6f26",
+    "semantic_hash": "909643e24e803701059ea6624f6c6f26"
   },
-  "/home/thiago/masterlight/static/js/main.js": {
-    "mtime": 1787170655.3816607,
-    "ast_hash": "66e8acd53759a66390f73592de7c74a2",
-    "semantic_hash": "66e8acd53759a66390f73592de7c74a2"
+  "pyproject.toml": {
+    "mtime": 1789488766.5024178,
+    "seen": 1789491695.2178462,
+    "ast_hash": "e6b84764afeeefb3f0a3d3c8151efcfb",
+    "semantic_hash": "e6b84764afeeefb3f0a3d3c8151efcfb"
   },
-  "/home/thiago/masterlight/static/vendor/bootstrap/bootstrap.bundle.min.js": {
-    "mtime": 1786892647.6155965,
-    "ast_hash": "90c4b26d3df2873954e05029afca8793",
-    "semantic_hash": "90c4b26d3df2873954e05029afca8793"
+  "static/js/main.js": {
+    "mtime": 1789488766.5322492,
+    "seen": 1789491695.2178462,
+    "ast_hash": "a229543f368b9b06847a5506c98bb3f0",
+    "semantic_hash": "a229543f368b9b06847a5506c98bb3f0"
   },
-  "/home/thiago/masterlight/templates/__init__.py": {
-    "mtime": 1786986637.968474,
+  "templates/__init__.py": {
+    "mtime": 1789488766.5481,
+    "seen": 1789491695.2178462,
     "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
-  "/home/thiago/masterlight/templates/partials/__init__.py": {
-    "mtime": 1786986637.968474,
+  "templates/partials/__init__.py": {
+    "mtime": 1789488766.6169913,
+    "seen": 1789491695.2178462,
     "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
-  "/home/thiago/masterlight/vercel.json": {
-    "mtime": 1786632949.507374,
-    "ast_hash": "16318551997da64a81750aab6cf7fc65",
-    "semantic_hash": "16318551997da64a81750aab6cf7fc65"
+  "tests/e2e/conftest.py": {
+    "mtime": 1789488766.6845825,
+    "seen": 1789491695.2178462,
+    "ast_hash": "b663679110bb843d99eb77f7c55125e0",
+    "semantic_hash": "b663679110bb843d99eb77f7c55125e0"
   },
-  "/home/thiago/masterlight/.github/workflows/ci.yml": {
-    "mtime": 1786994145.1732962,
-    "ast_hash": "ebfe1232d38e6d341393fbf70682e67d",
-    "semantic_hash": "ebfe1232d38e6d341393fbf70682e67d"
+  "tests/e2e/test_checkout_flow.py": {
+    "mtime": 1789488766.6861062,
+    "seen": 1789491695.2178462,
+    "ast_hash": "1f2bf43563ff9573b7de2fc3db38bbd4",
+    "semantic_hash": "1f2bf43563ff9573b7de2fc3db38bbd4"
   },
-  "/home/thiago/masterlight/.pre-commit-config.yaml": {
-    "mtime": 1787055213.355976,
-    "ast_hash": "bb62a80e8ac6ac9275442af86f4715c7",
-    "semantic_hash": "bb62a80e8ac6ac9275442af86f4715c7"
+  "vercel.json": {
+    "mtime": 1789488766.6861062,
+    "seen": 1789491695.2178462,
+    "ast_hash": "88fe6fd2918afce4dbbf75fd834b9266",
+    "semantic_hash": "88fe6fd2918afce4dbbf75fd834b9266"
   },
-  "/home/thiago/masterlight/README.md": {
-    "mtime": 1787172519.4920883,
-    "ast_hash": "9b29dcaf795e29f4d71384f9fe87e59d",
-    "semantic_hash": "9b29dcaf795e29f4d71384f9fe87e59d"
+  ".github/workflows/ci.yml": {
+    "mtime": 1789488765.7657132,
+    "seen": 1789491695.2178462,
+    "ast_hash": "cf46cb3d1e0daaa64602fdbf08697f52",
+    "semantic_hash": "cf46cb3d1e0daaa64602fdbf08697f52"
   },
-  "/home/thiago/masterlight/requirements.txt": {
-    "mtime": 1786993070.1376085,
-    "ast_hash": "0bf901db875879bc779ed592b47f2835",
-    "semantic_hash": "0bf901db875879bc779ed592b47f2835"
+  ".pre-commit-config.yaml": {
+    "mtime": 1789488765.7672374,
+    "seen": 1789491695.2178462,
+    "ast_hash": "3230b53314ccf53ac5384c8e4fb80774",
+    "semantic_hash": "3230b53314ccf53ac5384c8e4fb80774"
   },
-  "/home/thiago/masterlight/templates/account/email/email_confirmation_message.html": {
-    "mtime": 1787173601.0888507,
-    "ast_hash": "1300b5a44d410e8aa85bbae4095856e9",
-    "semantic_hash": "1300b5a44d410e8aa85bbae4095856e9"
+  "README.md": {
+    "mtime": 1789488765.7718227,
+    "seen": 1789491695.2178462,
+    "ast_hash": "a51aba4fe7084b876de918373adf0699",
+    "semantic_hash": "a51aba4fe7084b876de918373adf0699"
   },
-  "/home/thiago/masterlight/templates/account/email/email_confirmation_message.txt": {
-    "mtime": 1787173608.8470676,
-    "ast_hash": "e6d39ba09299f2f69de337dbcd67fdde",
-    "semantic_hash": "e6d39ba09299f2f69de337dbcd67fdde"
+  "requirements.txt": {
+    "mtime": 1789488766.5102682,
+    "seen": 1789491695.2178462,
+    "ast_hash": "6f730f2a748a8552c5b978f857d9ad54",
+    "semantic_hash": "6f730f2a748a8552c5b978f857d9ad54"
   },
-  "/home/thiago/masterlight/templates/account/email/email_confirmation_signup_message.html": {
-    "mtime": 1787173324.5541697,
+  "templates/account/email/email_confirmation_message.html": {
+    "mtime": 1789488766.55114,
+    "seen": 1789491695.2178462,
+    "ast_hash": "44dd1610ba83e60fb0ccde1ff13d89aa",
+    "semantic_hash": "44dd1610ba83e60fb0ccde1ff13d89aa"
+  },
+  "templates/account/email/email_confirmation_message.txt": {
+    "mtime": 1789488766.553188,
+    "seen": 1789491695.2178462,
+    "ast_hash": "ee96a2c8a686ac5a7aaf15484b057fad",
+    "semantic_hash": "ee96a2c8a686ac5a7aaf15484b057fad"
+  },
+  "templates/account/email/email_confirmation_signup_message.html": {
+    "mtime": 1789488766.565071,
+    "seen": 1789491695.2178462,
     "ast_hash": "3c5ce9906bad0896c65832e45663f092",
     "semantic_hash": "3c5ce9906bad0896c65832e45663f092"
   },
-  "/home/thiago/masterlight/templates/account/email/email_confirmation_signup_message.txt": {
-    "mtime": 1787173366.705967,
+  "templates/account/email/email_confirmation_signup_message.txt": {
+    "mtime": 1789488766.5666215,
+    "seen": 1789491695.2178462,
     "ast_hash": "3090e6be6d702929e4105991206a5bd4",
     "semantic_hash": "3090e6be6d702929e4105991206a5bd4"
   },
-  "/home/thiago/masterlight/templates/account/email/email_confirmation_signup_subject.txt": {
-    "mtime": 1787173386.9657245,
+  "templates/account/email/email_confirmation_signup_subject.txt": {
+    "mtime": 1789488766.5666215,
+    "seen": 1789491695.2178462,
     "ast_hash": "9d98f095b2d048e2d5f92c96060f162a",
     "semantic_hash": "9d98f095b2d048e2d5f92c96060f162a"
   },
-  "/home/thiago/masterlight/templates/account/email/email_confirmation_subject.txt": {
-    "mtime": 1787173320.740249,
+  "templates/account/email/email_confirmation_subject.txt": {
+    "mtime": 1789488766.568159,
+    "seen": 1789491695.2178462,
     "ast_hash": "9d98f095b2d048e2d5f92c96060f162a",
     "semantic_hash": "9d98f095b2d048e2d5f92c96060f162a"
   },
-  "/home/thiago/masterlight/templates/account/email_confirm.html": {
-    "mtime": 1787173278.983017,
-    "ast_hash": "67f5a545c7b0aad1d22bb1631442f6cb",
-    "semantic_hash": "67f5a545c7b0aad1d22bb1631442f6cb"
+  "templates/account/email_confirm.html": {
+    "mtime": 1789488766.5768075,
+    "seen": 1789491695.2178462,
+    "ast_hash": "afe1da4786a43d8fa6efd5498fb8d98f",
+    "semantic_hash": "afe1da4786a43d8fa6efd5498fb8d98f"
   },
-  "/home/thiago/masterlight/templates/account/login.html": {
-    "mtime": 1787171245.231114,
-    "ast_hash": "b46176c51adf623fe8d5e3a8534d66fd",
-    "semantic_hash": "b46176c51adf623fe8d5e3a8534d66fd"
+  "templates/account/login.html": {
+    "mtime": 1789488766.5783312,
+    "seen": 1789491695.2178462,
+    "ast_hash": "c1ad30dc224a3043ed198f8f38a1448b",
+    "semantic_hash": "c1ad30dc224a3043ed198f8f38a1448b"
   },
-  "/home/thiago/masterlight/templates/account/logout.html": {
-    "mtime": 1786748853.6037786,
-    "ast_hash": "2f4110bee289594c8a4b9f6017b3df72",
-    "semantic_hash": "2f4110bee289594c8a4b9f6017b3df72"
+  "templates/account/logout.html": {
+    "mtime": 1789488766.5845237,
+    "seen": 1789491695.2178462,
+    "ast_hash": "bc447f01317d313a65391ecd3b329919",
+    "semantic_hash": "bc447f01317d313a65391ecd3b329919"
   },
-  "/home/thiago/masterlight/templates/account/signup.html": {
-    "mtime": 1787171258.7419999,
-    "ast_hash": "138e479c620054d3bd1f7cd5fead6946",
-    "semantic_hash": "138e479c620054d3bd1f7cd5fead6946"
+  "templates/account/signup.html": {
+    "mtime": 1789488766.5855553,
+    "seen": 1789491695.2178462,
+    "ast_hash": "d27e5185c5751dc8090893588b205746",
+    "semantic_hash": "d27e5185c5751dc8090893588b205746"
   },
-  "/home/thiago/masterlight/templates/accounts/me.html": {
-    "mtime": 1787171291.9826772,
-    "ast_hash": "7e555616dac2bec950622671adff625b",
-    "semantic_hash": "7e555616dac2bec950622671adff625b"
+  "templates/accounts/me.html": {
+    "mtime": 1789488766.5916915,
+    "seen": 1789491695.2178462,
+    "ast_hash": "7d2356c3df2731701378c200d6dfe50f",
+    "semantic_hash": "7d2356c3df2731701378c200d6dfe50f"
   },
-  "/home/thiago/masterlight/templates/accounts/me_edit.html": {
-    "mtime": 1787171302.8024485,
-    "ast_hash": "aa5c7be5b1cb91e9e3b9205c79fdda48",
-    "semantic_hash": "aa5c7be5b1cb91e9e3b9205c79fdda48"
+  "templates/accounts/me_edit.html": {
+    "mtime": 1789488766.5942254,
+    "seen": 1789491695.2178462,
+    "ast_hash": "9a661d7e96cb902c61454b80ab5e5179",
+    "semantic_hash": "9a661d7e96cb902c61454b80ab5e5179"
   },
-  "/home/thiago/masterlight/templates/accounts/profile.html": {
-    "mtime": 1786987626.4696877,
-    "ast_hash": "75e0b4ca4e6d2921f14fe89ae3956621",
-    "semantic_hash": "75e0b4ca4e6d2921f14fe89ae3956621"
+  "templates/accounts/profile.html": {
+    "mtime": 1789488766.5942254,
+    "seen": 1789491695.2178462,
+    "ast_hash": "1c077af4ea551ddc6cb469fe2ee8474b",
+    "semantic_hash": "1c077af4ea551ddc6cb469fe2ee8474b"
   },
-  "/home/thiago/masterlight/templates/accounts/social_signup_complete.html": {
-    "mtime": 1787061317.6516962,
-    "ast_hash": "31c568bc05c416262a1d616ac6994b3a",
-    "semantic_hash": "31c568bc05c416262a1d616ac6994b3a"
+  "templates/accounts/social_signup_complete.html": {
+    "mtime": 1789488766.6000164,
+    "seen": 1789491695.2178462,
+    "ast_hash": "064646566b73f5b7a65ebd69181cd602",
+    "semantic_hash": "064646566b73f5b7a65ebd69181cd602"
   },
-  "/home/thiago/masterlight/templates/affiliate/dashboard.html": {
-    "mtime": 1787171225.0913458,
-    "ast_hash": "f1c9dc94e87781cad18d7b3e363a54ec",
-    "semantic_hash": "f1c9dc94e87781cad18d7b3e363a54ec"
+  "templates/affiliate/dashboard.html": {
+    "mtime": 1789488766.6015334,
+    "seen": 1789491695.2178462,
+    "ast_hash": "82f94d9e3bf5e61feab719b59fb8af62",
+    "semantic_hash": "82f94d9e3bf5e61feab719b59fb8af62"
   },
-  "/home/thiago/masterlight/templates/affiliate/landing.html": {
-    "mtime": 1787171205.7118483,
-    "ast_hash": "a4316bb91259b814146e1401449c9436",
-    "semantic_hash": "a4316bb91259b814146e1401449c9436"
+  "templates/affiliate/landing.html": {
+    "mtime": 1789488766.6030507,
+    "seen": 1789491695.2178462,
+    "ast_hash": "0b7e3597ead158402ff2591176a727df",
+    "semantic_hash": "0b7e3597ead158402ff2591176a727df"
   },
-  "/home/thiago/masterlight/templates/base.html": {
-    "mtime": 1787173234.6795473,
-    "ast_hash": "0f1e97c4f61243db8c83534391f680d1",
-    "semantic_hash": "0f1e97c4f61243db8c83534391f680d1"
+  "templates/affiliate/partials/_payout_table.html": {
+    "mtime": 1789488766.6045673,
+    "seen": 1789491695.2178462,
+    "ast_hash": "87c9c80f44ccc114385dbd6c0e37508f",
+    "semantic_hash": "87c9c80f44ccc114385dbd6c0e37508f"
   },
-  "/home/thiago/masterlight/templates/checkout/address_form.html": {
-    "mtime": 1786748903.8334005,
-    "ast_hash": "e6e5e370982495627191cb6d045c63ca",
-    "semantic_hash": "e6e5e370982495627191cb6d045c63ca"
+  "templates/affiliate/partials/_referral_table.html": {
+    "mtime": 1789488766.606086,
+    "seen": 1789491695.2178462,
+    "ast_hash": "1ac9977e9c802c17dac604dbc9da62b6",
+    "semantic_hash": "1ac9977e9c802c17dac604dbc9da62b6"
   },
-  "/home/thiago/masterlight/templates/checkout/cart.html": {
-    "mtime": 1787171037.5414846,
-    "ast_hash": "4b9142b3c591362da66a5731a17b73f9",
-    "semantic_hash": "4b9142b3c591362da66a5731a17b73f9"
+  "templates/affiliate/partials/_stats.html": {
+    "mtime": 1789488766.607623,
+    "seen": 1789491695.2178462,
+    "ast_hash": "ef4117ab0cc0663a89bb8cb2988a8f90",
+    "semantic_hash": "ef4117ab0cc0663a89bb8cb2988a8f90"
   },
-  "/home/thiago/masterlight/templates/checkout/checkout.html": {
-    "mtime": 1787171106.504703,
-    "ast_hash": "de35ef36c3b8fb71a0a5c69591f2e05f",
-    "semantic_hash": "de35ef36c3b8fb71a0a5c69591f2e05f"
+  "templates/base.html": {
+    "mtime": 1789488766.6103766,
+    "seen": 1789491695.2178462,
+    "ast_hash": "ca40adab04787bb24ebb3d1df45bd89d",
+    "semantic_hash": "ca40adab04787bb24ebb3d1df45bd89d"
   },
-  "/home/thiago/masterlight/templates/home.html": {
-    "mtime": 1787170695.2212412,
-    "ast_hash": "8fc788d298c5eda165287c1cbdb6fc8f",
-    "semantic_hash": "8fc788d298c5eda165287c1cbdb6fc8f"
+  "templates/checkout/address_form.html": {
+    "mtime": 1789488766.6118946,
+    "seen": 1789491695.2178462,
+    "ast_hash": "3d33d60f5f199669a3166dd91fa94930",
+    "semantic_hash": "3d33d60f5f199669a3166dd91fa94930"
   },
-  "/home/thiago/masterlight/templates/partials/footer.html": {
-    "mtime": 1787170641.5505643,
-    "ast_hash": "54b23960d934d856b6c310bb84e3140e",
-    "semantic_hash": "54b23960d934d856b6c310bb84e3140e"
+  "templates/checkout/cart.html": {
+    "mtime": 1789488766.6134186,
+    "seen": 1789491695.2178462,
+    "ast_hash": "9334ca0f76a3149b04c2c662ee3ccc11",
+    "semantic_hash": "9334ca0f76a3149b04c2c662ee3ccc11"
   },
-  "/home/thiago/masterlight/templates/partials/messages.html": {
-    "mtime": 1786747903.9010434,
-    "ast_hash": "c031abe6899e04050613b995ea6537da",
-    "semantic_hash": "c031abe6899e04050613b995ea6537da"
+  "templates/checkout/checkout.html": {
+    "mtime": 1789488766.6144621,
+    "seen": 1789491695.2178462,
+    "ast_hash": "408fdb95d74a6f53a34c17e8fd4a6150",
+    "semantic_hash": "408fdb95d74a6f53a34c17e8fd4a6150"
   },
-  "/home/thiago/masterlight/templates/partials/navbar.html": {
-    "mtime": 1787170594.3262942,
-    "ast_hash": "418ef22d0a730a78b9fec5faa60f2c2d",
-    "semantic_hash": "418ef22d0a730a78b9fec5faa60f2c2d"
+  "templates/home.html": {
+    "mtime": 1789488766.6154742,
+    "seen": 1789491695.2178462,
+    "ast_hash": "a827784c413222f644ca2f0a9bcb79d8",
+    "semantic_hash": "a827784c413222f644ca2f0a9bcb79d8"
   },
-  "/home/thiago/masterlight/templates/partials/pagination.html": {
-    "mtime": 1786747909.2878447,
-    "ast_hash": "4e0dd9b2ae42595f720b456c6127e8ca",
-    "semantic_hash": "4e0dd9b2ae42595f720b456c6127e8ca"
+  "templates/partials/auth/_auth_panel.html": {
+    "mtime": 1789488766.6186178,
+    "seen": 1789491695.2178462,
+    "ast_hash": "8926fce88b95c6b08e383e4afe76699e",
+    "semantic_hash": "8926fce88b95c6b08e383e4afe76699e"
   },
-  "/home/thiago/masterlight/templates/payments/_status_poll.html": {
-    "mtime": 1786748994.7935479,
-    "ast_hash": "53cefaf0224c4255f8b5e62f02112981",
-    "semantic_hash": "53cefaf0224c4255f8b5e62f02112981"
+  "templates/partials/auth/_social_buttons.html": {
+    "mtime": 1789488766.6198492,
+    "seen": 1789491695.2178462,
+    "ast_hash": "2c19d2c75d74a0269a3e2f692cd22022",
+    "semantic_hash": "2c19d2c75d74a0269a3e2f692cd22022"
   },
-  "/home/thiago/masterlight/templates/payments/boleto_confirm.html": {
-    "mtime": 1787171341.5819988,
-    "ast_hash": "aa07aa169317809d07c83b7331c555d0",
-    "semantic_hash": "aa07aa169317809d07c83b7331c555d0"
+  "templates/partials/forms/_checkbox.html": {
+    "mtime": 1789488766.6228917,
+    "seen": 1789491695.2178462,
+    "ast_hash": "a20ef692f36c2811304f7e4eb89fe69b",
+    "semantic_hash": "a20ef692f36c2811304f7e4eb89fe69b"
   },
-  "/home/thiago/masterlight/templates/payments/card_confirm.html": {
-    "mtime": 1787171356.1960485,
-    "ast_hash": "58f1d316c714de6bd34513a1a4ff26fa",
-    "semantic_hash": "58f1d316c714de6bd34513a1a4ff26fa"
+  "templates/partials/forms/_field.html": {
+    "mtime": 1789488766.6228917,
+    "seen": 1789491695.2178462,
+    "ast_hash": "8e6476352a2e378ffc4f203d2b0b8cf4",
+    "semantic_hash": "8e6476352a2e378ffc4f203d2b0b8cf4"
   },
-  "/home/thiago/masterlight/templates/payments/checkout_callback.html": {
-    "mtime": 1787171385.8374841,
-    "ast_hash": "f6277822eb5ac64a89dadfa08be3bd9c",
-    "semantic_hash": "f6277822eb5ac64a89dadfa08be3bd9c"
+  "templates/partials/forms/_radio.html": {
+    "mtime": 1789488766.6244082,
+    "seen": 1789491695.2178462,
+    "ast_hash": "dff8bdcb098143719f667c781793a9d0",
+    "semantic_hash": "dff8bdcb098143719f667c781793a9d0"
   },
-  "/home/thiago/masterlight/templates/payments/manual_confirm.html": {
-    "mtime": 1787171373.8656235,
-    "ast_hash": "7fb84f8e39de529f8c2aebedb6a6f376",
-    "semantic_hash": "7fb84f8e39de529f8c2aebedb6a6f376"
+  "templates/partials/forms/_select.html": {
+    "mtime": 1789488766.6259294,
+    "seen": 1789491695.2178462,
+    "ast_hash": "65442e0a68716a430904fe0196c80656",
+    "semantic_hash": "65442e0a68716a430904fe0196c80656"
   },
-  "/home/thiago/masterlight/templates/payments/pix_confirm.html": {
-    "mtime": 1787171319.250258,
-    "ast_hash": "dc1fcf3d2de63cde89b81ef1011cfd7b",
-    "semantic_hash": "dc1fcf3d2de63cde89b81ef1011cfd7b"
+  "templates/partials/forms/_submit.html": {
+    "mtime": 1789488766.6274474,
+    "seen": 1789491695.2178462,
+    "ast_hash": "e4371d3f7f9bbad83ef61b4bfeeb4416",
+    "semantic_hash": "e4371d3f7f9bbad83ef61b4bfeeb4416"
   },
-  "/home/thiago/masterlight/templates/portfolio/detail.html": {
-    "mtime": 1787171183.5876067,
-    "ast_hash": "dda89260930a88b0319c299b309b50a8",
-    "semantic_hash": "dda89260930a88b0319c299b309b50a8"
+  "templates/partials/layout/footer.html": {
+    "mtime": 1789488766.6289673,
+    "seen": 1789491695.2178462,
+    "ast_hash": "1b2622fb9bf913791c058901ae78a239",
+    "semantic_hash": "1b2622fb9bf913791c058901ae78a239"
   },
-  "/home/thiago/masterlight/templates/portfolio/form.html": {
-    "mtime": 1786749121.5003731,
-    "ast_hash": "21cd4d65ebc069e97c03a4820c504bc4",
-    "semantic_hash": "21cd4d65ebc069e97c03a4820c504bc4"
+  "templates/partials/layout/messages.html": {
+    "mtime": 1789488766.6304984,
+    "seen": 1789491695.2178462,
+    "ast_hash": "08defc811a626e6c091619b518c8b2f2",
+    "semantic_hash": "08defc811a626e6c091619b518c8b2f2"
   },
-  "/home/thiago/masterlight/templates/portfolio/list.html": {
-    "mtime": 1787171155.2201474,
-    "ast_hash": "3b8d07fff4a8011660bcea4ec899c9b0",
-    "semantic_hash": "3b8d07fff4a8011660bcea4ec899c9b0"
+  "templates/partials/layout/navbar.html": {
+    "mtime": 1789488766.6320152,
+    "seen": 1789491695.2178462,
+    "ast_hash": "3e6320b49600623f27fef00f46c6870f",
+    "semantic_hash": "3e6320b49600623f27fef00f46c6870f"
   },
-  "/home/thiago/masterlight/templates/services/detail.html": {
-    "mtime": 1787170833.4557533,
-    "ast_hash": "9708030056ba4a2ed6648bd22670ef77",
-    "semantic_hash": "9708030056ba4a2ed6648bd22670ef77"
+  "templates/partials/layout/pagination.html": {
+    "mtime": 1789488766.6330533,
+    "seen": 1789491695.2178462,
+    "ast_hash": "2751eaab3eb51fae9c23139ca2a83248",
+    "semantic_hash": "2751eaab3eb51fae9c23139ca2a83248"
   },
-  "/home/thiago/masterlight/templates/services/list.html": {
-    "mtime": 1787170779.7363372,
-    "ast_hash": "ba817230338bc02724db87c9d22cfa3a",
-    "semantic_hash": "ba817230338bc02724db87c9d22cfa3a"
+  "templates/partials/ui/_avatar.html": {
+    "mtime": 1789488766.6345713,
+    "seen": 1789491695.2178462,
+    "ast_hash": "9d6f2abf993c071ae7a2414dfd7bbbf8",
+    "semantic_hash": "9d6f2abf993c071ae7a2414dfd7bbbf8"
   },
-  "/home/thiago/masterlight/templates/services/my_requests.html": {
-    "mtime": 1787170848.4056199,
-    "ast_hash": "ccb76c085a4bf97ed6305917d06e07bb",
-    "semantic_hash": "ccb76c085a4bf97ed6305917d06e07bb"
+  "templates/partials/ui/_breadcrumb.html": {
+    "mtime": 1789488766.6360903,
+    "seen": 1789491695.2178462,
+    "ast_hash": "9bac924449ebb5abc2e2f4fc63ac3211",
+    "semantic_hash": "9bac924449ebb5abc2e2f4fc63ac3211"
   },
-  "/home/thiago/masterlight/templates/services/my_services.html": {
-    "mtime": 1787170861.0846286,
-    "ast_hash": "b2adc05d5a7e5c65741cff472c72db87",
-    "semantic_hash": "b2adc05d5a7e5c65741cff472c72db87"
+  "templates/partials/ui/_card_featured.html": {
+    "mtime": 1789488766.6376114,
+    "seen": 1789491695.2178462,
+    "ast_hash": "4c17fe1e29f2642d39b3afe8147ac3c1",
+    "semantic_hash": "4c17fe1e29f2642d39b3afe8147ac3c1"
   },
-  "/home/thiago/masterlight/templates/services/plan_form.html": {
-    "mtime": 1787170941.2829094,
-    "ast_hash": "f34a2450a51900f8fa0c0702da1b6997",
-    "semantic_hash": "f34a2450a51900f8fa0c0702da1b6997"
+  "templates/partials/ui/_card_product.html": {
+    "mtime": 1789488766.6391356,
+    "seen": 1789491695.2178462,
+    "ast_hash": "07a4441bd960597f3e4136a4d42ec4ae",
+    "semantic_hash": "07a4441bd960597f3e4136a4d42ec4ae"
   },
-  "/home/thiago/masterlight/templates/services/plan_list.html": {
-    "mtime": 1787170918.0028224,
-    "ast_hash": "a9770644c9889678f4b4893e95b929f7",
-    "semantic_hash": "a9770644c9889678f4b4893e95b929f7"
+  "templates/partials/ui/_chip.html": {
+    "mtime": 1789488766.6406622,
+    "seen": 1789491695.2178462,
+    "ast_hash": "0fe0ee9cd08d34f8c45fd32512f787a2",
+    "semantic_hash": "0fe0ee9cd08d34f8c45fd32512f787a2"
   },
-  "/home/thiago/masterlight/templates/services/provider_requests.html": {
-    "mtime": 1787170883.583203,
-    "ast_hash": "71e66c2f506d44e60bbe94fc726516e3",
-    "semantic_hash": "71e66c2f506d44e60bbe94fc726516e3"
+  "templates/partials/ui/_empty_state.html": {
+    "mtime": 1789488766.6406622,
+    "seen": 1789491695.2178462,
+    "ast_hash": "fa3c3623d148ffc016b0a319ef231dc9",
+    "semantic_hash": "fa3c3623d148ffc016b0a319ef231dc9"
   },
-  "/home/thiago/masterlight/templates/services/quote_form.html": {
-    "mtime": 1786748869.8044984,
-    "ast_hash": "bdd0c72a915bdeb3a671fb1a1ded7c5e",
-    "semantic_hash": "bdd0c72a915bdeb3a671fb1a1ded7c5e"
+  "templates/partials/ui/_gallery_thumbs.html": {
+    "mtime": 1789488766.642176,
+    "seen": 1789491695.2178462,
+    "ast_hash": "7c053bfca1515e243cf435f687583ed6",
+    "semantic_hash": "7c053bfca1515e243cf435f687583ed6"
   },
-  "/home/thiago/masterlight/templates/services/request_approve.html": {
-    "mtime": 1787170811.923988,
-    "ast_hash": "2465e550265c8dbd7bc5a4faaa781532",
-    "semantic_hash": "2465e550265c8dbd7bc5a4faaa781532"
+  "templates/partials/ui/_page_header.html": {
+    "mtime": 1789488766.6436944,
+    "seen": 1789491695.2178462,
+    "ast_hash": "a57e431fd6d3625042f8f1fa6a0f0c40",
+    "semantic_hash": "a57e431fd6d3625042f8f1fa6a0f0c40"
   },
-  "/home/thiago/masterlight/templates/services/request_form.html": {
-    "mtime": 1786748854.2499304,
-    "ast_hash": "00ee27ac536fc57244fad6c458804c38",
-    "semantic_hash": "00ee27ac536fc57244fad6c458804c38"
+  "templates/partials/ui/_section_head.html": {
+    "mtime": 1789488766.644202,
+    "seen": 1789491695.2178462,
+    "ast_hash": "a06032e353e8bf8e1d65c6721f93d137",
+    "semantic_hash": "a06032e353e8bf8e1d65c6721f93d137"
   },
-  "/home/thiago/masterlight/templates/services/service_confirm_delete.html": {
-    "mtime": 1786749073.4381516,
-    "ast_hash": "9c6a3d7a9182b8870e05eccb7bbb514b",
-    "semantic_hash": "9c6a3d7a9182b8870e05eccb7bbb514b"
+  "templates/partials/ui/_stat_card.html": {
+    "mtime": 1789488766.646072,
+    "seen": 1789491695.2178462,
+    "ast_hash": "9cd50411818c3f75eef99deab44763b8",
+    "semantic_hash": "9cd50411818c3f75eef99deab44763b8"
   },
-  "/home/thiago/masterlight/templates/services/service_form.html": {
-    "mtime": 1786748846.4860134,
-    "ast_hash": "4af02d912c48888c061f57b0bc71a269",
-    "semantic_hash": "4af02d912c48888c061f57b0bc71a269"
+  "templates/partials/ui/_stepper.html": {
+    "mtime": 1789488766.646072,
+    "seen": 1789491695.2178462,
+    "ast_hash": "be962a5aad9d248ffd51586dafcf3c97",
+    "semantic_hash": "be962a5aad9d248ffd51586dafcf3c97"
   },
-  "/home/thiago/masterlight/templates/services/visits.html": {
-    "mtime": 1787170967.0120935,
-    "ast_hash": "4e715f81ef5f186e68ad230fab15c876",
-    "semantic_hash": "4e715f81ef5f186e68ad230fab15c876"
+  "templates/partials/ui/_trust_row.html": {
+    "mtime": 1789488766.647588,
+    "seen": 1789491695.2178462,
+    "ast_hash": "7956a4953db9506db96cb90ff5c51aa0",
+    "semantic_hash": "7956a4953db9506db96cb90ff5c51aa0"
   },
-  "/home/thiago/masterlight/templates/shop/detail.html": {
-    "mtime": 1787171020.6096754,
-    "ast_hash": "fba9f6f3f8b943e9aca374a88ac3f309",
-    "semantic_hash": "fba9f6f3f8b943e9aca374a88ac3f309"
+  "templates/payments/_status_poll.html": {
+    "mtime": 1789488766.6491082,
+    "seen": 1789491695.2178462,
+    "ast_hash": "f14978c2ebfab153838454624796c883",
+    "semantic_hash": "f14978c2ebfab153838454624796c883"
   },
-  "/home/thiago/masterlight/templates/shop/list.html": {
-    "mtime": 1787171010.1137936,
-    "ast_hash": "87dce7b1584f0ec1a296145b1adfd8da",
-    "semantic_hash": "87dce7b1584f0ec1a296145b1adfd8da"
+  "templates/payments/card_confirm.html": {
+    "mtime": 1789488766.6506243,
+    "seen": 1789491695.2178462,
+    "ast_hash": "afee0fbffd0c291a05568977668d4f40",
+    "semantic_hash": "afee0fbffd0c291a05568977668d4f40"
   },
-  "/home/thiago/masterlight/templates/socialaccount/login.html": {
-    "mtime": 1787171405.4372559,
-    "ast_hash": "7239821af56b273cdf43e24956090d48",
-    "semantic_hash": "7239821af56b273cdf43e24956090d48"
+  "templates/payments/checkout_callback.html": {
+    "mtime": 1789488766.6521401,
+    "seen": 1789491695.2178462,
+    "ast_hash": "dfc92411f0d7f890c14c7dde397b4a3b",
+    "semantic_hash": "dfc92411f0d7f890c14c7dde397b4a3b"
   },
-  "/home/thiago/masterlight/templates/socialaccount/snippets/provider_list.html": {
-    "mtime": 1786986637.9964738,
-    "ast_hash": "102224e23aaa2d6d9b30fbf259e521f3",
-    "semantic_hash": "102224e23aaa2d6d9b30fbf259e521f3"
+  "templates/payments/manual_confirm.html": {
+    "mtime": 1789488766.653653,
+    "seen": 1789491695.2178462,
+    "ast_hash": "e47395561834440e1dfe8ef6ba929a13",
+    "semantic_hash": "e47395561834440e1dfe8ef6ba929a13"
   },
-  "/home/thiago/masterlight/static/img/favicon.svg": {
-    "mtime": 1786800563.0967708,
-    "ast_hash": "76ca273ccfd7d8d97815882ff78c7d42",
-    "semantic_hash": "76ca273ccfd7d8d97815882ff78c7d42"
+  "templates/payments/pix_confirm.html": {
+    "mtime": 1789488766.6547143,
+    "seen": 1789491695.2178462,
+    "ast_hash": "1245677bbbf2f5040fc1650a2cf3e80c",
+    "semantic_hash": "1245677bbbf2f5040fc1650a2cf3e80c"
   },
-  "/home/thiago/masterlight/static/img/logo.svg": {
-    "mtime": 1786800563.1047707,
-    "ast_hash": "687d5db4355be80086509cb62df287b5",
-    "semantic_hash": "687d5db4355be80086509cb62df287b5"
+  "templates/portfolio/detail.html": {
+    "mtime": 1789488766.6567454,
+    "seen": 1789491695.2178462,
+    "ast_hash": "b7772fffbc034eb6027f10c625390cae",
+    "semantic_hash": "b7772fffbc034eb6027f10c625390cae"
   },
-  "/home/thiago/masterlight/static/img/social/google.svg": {
-    "mtime": 1787061375.2723033,
-    "ast_hash": "084c2e497b0b247de60d60946e9cc5bb",
-    "semantic_hash": "084c2e497b0b247de60d60946e9cc5bb"
+  "templates/portfolio/form.html": {
+    "mtime": 1789488766.657754,
+    "seen": 1789491695.2178462,
+    "ast_hash": "f6c01e3d279b107475f39b7a365e3469",
+    "semantic_hash": "f6c01e3d279b107475f39b7a365e3469"
+  },
+  "templates/portfolio/list.html": {
+    "mtime": 1789488766.6593032,
+    "seen": 1789491695.2178462,
+    "ast_hash": "369b51d42cdbf8da0987dc62e7ca3f67",
+    "semantic_hash": "369b51d42cdbf8da0987dc62e7ca3f67"
+  },
+  "templates/services/detail.html": {
+    "mtime": 1789488766.6603127,
+    "seen": 1789491695.2178462,
+    "ast_hash": "103bd33296f798128d2dc0a757eb2b10",
+    "semantic_hash": "103bd33296f798128d2dc0a757eb2b10"
+  },
+  "templates/services/list.html": {
+    "mtime": 1789488766.6618533,
+    "seen": 1789491695.2178462,
+    "ast_hash": "8b85b2020b32af1cc9ba94535332133b",
+    "semantic_hash": "8b85b2020b32af1cc9ba94535332133b"
+  },
+  "templates/services/my_requests.html": {
+    "mtime": 1789488766.6633718,
+    "seen": 1789491695.2178462,
+    "ast_hash": "cb734579a83a54ae354b346a7a6934e8",
+    "semantic_hash": "cb734579a83a54ae354b346a7a6934e8"
+  },
+  "templates/services/my_services.html": {
+    "mtime": 1789488766.664379,
+    "seen": 1789491695.2178462,
+    "ast_hash": "40a93412accbf1c6e274c2320593cfc0",
+    "semantic_hash": "40a93412accbf1c6e274c2320593cfc0"
+  },
+  "templates/services/plan_form.html": {
+    "mtime": 1789488766.6663818,
+    "seen": 1789491695.2178462,
+    "ast_hash": "736e96382716a6441850f02825c10837",
+    "semantic_hash": "736e96382716a6441850f02825c10837"
+  },
+  "templates/services/plan_list.html": {
+    "mtime": 1789488766.667908,
+    "seen": 1789491695.2178462,
+    "ast_hash": "2473bab8bb70b3619fa1ee7d7ddc5c7f",
+    "semantic_hash": "2473bab8bb70b3619fa1ee7d7ddc5c7f"
+  },
+  "templates/services/provider_requests.html": {
+    "mtime": 1789488766.6689184,
+    "seen": 1789491695.2178462,
+    "ast_hash": "fc0b60b6cb1d1b1078dafdf7dcdefb26",
+    "semantic_hash": "fc0b60b6cb1d1b1078dafdf7dcdefb26"
+  },
+  "templates/services/quote_form.html": {
+    "mtime": 1789488766.6694248,
+    "seen": 1789491695.2178462,
+    "ast_hash": "cf4c84961aaf5a5f76913195f44abec8",
+    "semantic_hash": "cf4c84961aaf5a5f76913195f44abec8"
+  },
+  "templates/services/request_approve.html": {
+    "mtime": 1789488766.6709454,
+    "seen": 1789491695.2178462,
+    "ast_hash": "c6d2104d6db6a5f7881d69d4c49e3a3d",
+    "semantic_hash": "c6d2104d6db6a5f7881d69d4c49e3a3d"
+  },
+  "templates/services/request_form.html": {
+    "mtime": 1789488766.6719549,
+    "seen": 1789491695.2178462,
+    "ast_hash": "bcc22b2eaa3ae84f9635c2b660040d66",
+    "semantic_hash": "bcc22b2eaa3ae84f9635c2b660040d66"
+  },
+  "templates/services/service_confirm_delete.html": {
+    "mtime": 1789488766.6719549,
+    "seen": 1789491695.2178462,
+    "ast_hash": "bdf3928cb98531d664e4301bd7860d3c",
+    "semantic_hash": "bdf3928cb98531d664e4301bd7860d3c"
+  },
+  "templates/services/service_form.html": {
+    "mtime": 1789488766.6743996,
+    "seen": 1789491695.2178462,
+    "ast_hash": "04fe3b15ebb163a3e6211d0abcad3ff0",
+    "semantic_hash": "04fe3b15ebb163a3e6211d0abcad3ff0"
+  },
+  "templates/services/visits.html": {
+    "mtime": 1789488766.6749234,
+    "seen": 1789491695.2178462,
+    "ast_hash": "0c696dff80b5547ce738e0dfc4eda300",
+    "semantic_hash": "0c696dff80b5547ce738e0dfc4eda300"
+  },
+  "templates/shop/detail.html": {
+    "mtime": 1789488766.6764495,
+    "seen": 1789491695.2178462,
+    "ast_hash": "be40fa638bda26f0ca19a1d3f2c642cb",
+    "semantic_hash": "be40fa638bda26f0ca19a1d3f2c642cb"
+  },
+  "templates/shop/list.html": {
+    "mtime": 1789488766.6779895,
+    "seen": 1789491695.2178462,
+    "ast_hash": "b30ae1bc6b4fd66ed312d6c2df885870",
+    "semantic_hash": "b30ae1bc6b4fd66ed312d6c2df885870"
+  },
+  "templates/socialaccount/login.html": {
+    "mtime": 1789488766.6795146,
+    "seen": 1789491695.2178462,
+    "ast_hash": "3a112c7170bd90467b6d79cf867498c7",
+    "semantic_hash": "3a112c7170bd90467b6d79cf867498c7"
+  },
+  "templates/socialaccount/snippets/provider_list.html": {
+    "mtime": 1789488766.6810353,
+    "seen": 1789491695.2178462,
+    "ast_hash": "6bc222d94fb691814b6a5603166571ad",
+    "semantic_hash": "6bc222d94fb691814b6a5603166571ad"
+  },
+  "static/img/favicon.svg": {
+    "mtime": 1789488766.5249436,
+    "seen": 1789491695.2178462,
+    "ast_hash": "dafaa905795a997554813f8b2a251318",
+    "semantic_hash": "dafaa905795a997554813f8b2a251318"
+  },
+  "static/img/logo.svg": {
+    "mtime": 1789488766.5264614,
+    "seen": 1789491695.2178462,
+    "ast_hash": "3f57a6f0967d4e1ac9f2a7e34a3fdcba",
+    "semantic_hash": "3f57a6f0967d4e1ac9f2a7e34a3fdcba"
+  },
+  "static/img/social/google.svg": {
+    "mtime": 1789488766.530701,
+    "seen": 1789491695.2178462,
+    "ast_hash": "4526675028f2ce5bdf19ee25cc8a311d",
+    "semantic_hash": "4526675028f2ce5bdf19ee25cc8a311d"
   }
 }

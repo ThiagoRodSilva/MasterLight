@@ -82,9 +82,6 @@
     {% if user.is_cliente and SERVICES_ENABLED %}
     <a href="{% url 'services-my-requests' %}" class="inline-flex items-center gap-2 px-6 py-3 border-2 border-brand-500 text-brand-700 rounded-xl font-semibold hover:bg-brand-100 hover:text-brand-900 transition-all"><i class="bi bi-list-check"></i> Minhas solicitações</a>
     {% endif %}
-    {% if user.is_cliente and STORE_ENABLED %}
-    <a href="{% url 'checkout-cart' %}" class="inline-flex items-center gap-2 px-6 py-3 border-2 border-brand-500 text-brand-700 rounded-xl font-semibold hover:bg-brand-100 hover:text-brand-900 transition-all"><i class="bi bi-cart"></i> Carrinho</a>
-    {% endif %}
   </div>
 
   <h2 class="text-2xl font-bold text-[var(--text-strong)] mb-6 reveal">Meus pedidos</h2>

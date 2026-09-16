@@ -16,16 +16,6 @@ class PaymentValidationError(PaymentGatewayError):
     pass
 
 
-class InsufficientStockError(PaymentGatewayError):
-    """Erro quando estoque é insuficiente para completar o pedido."""
-
-    def __init__(self, message: str, product_id: str = "", requested_qty: int = 0, available_qty: int = 0):
-        super().__init__(message)
-        self.product_id = product_id
-        self.requested_qty = requested_qty
-        self.available_qty = available_qty
-
-
 class TransactionNotFoundError(PaymentGatewayError):
     """Erro quando transação não é encontrada no banco local."""
 
@@ -62,7 +52,7 @@ class ProfileIncompleteError(PaymentGatewayError):
 
 
 class SectionDisabledError(PaymentGatewayError):
-    """Erro quando seção (loja/serviços/afiliados) está desabilitada no SiteSettings."""
+    """Erro quando seção (serviços/afiliados) está desabilitada no SiteSettings."""
 
     def __init__(self, message: str, section: str = ""):
         super().__init__(message)

@@ -14,13 +14,8 @@
         <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight mb-6">{{ BRAND_NAME }}</h1>
         <p class="text-xl text-brand-100 mb-8 max-w-xl">{{ BRAND_TAGLINE }}</p>
         <div class="flex flex-wrap gap-4 mb-10">
-          {% if STORE_ENABLED %}
-          <a href="{% url 'shop-list' %}" class="px-8 py-4 bg-gradient-to-r from-dark-500 to-dark-600 text-white rounded-xl text-lg font-semibold hover:from-dark-600 hover:to-dark-700 transition-all shadow-lg hover:shadow-xl">
-            Ver produtos
-          </a>
-          {% endif %}
           {% if SERVICES_ENABLED %}
-          <a href="{% url 'services-list' %}" class="px-8 py-4 bg-white/20 backdrop-blur-sm text-brand-900 rounded-xl text-lg font-semibold hover:bg-white/30 transition-all border border-white/30">
+          <a href="{% url 'services-list' %}" class="px-8 py-4 bg-gradient-to-r from-dark-500 to-dark-600 text-white rounded-xl text-lg font-semibold hover:from-dark-600 hover:to-dark-700 transition-all shadow-lg hover:shadow-xl">
             Pedir um serviço
           </a>
           {% endif %}
@@ -55,7 +50,7 @@
               {% include "partials/ui/_avatar.html" with size_class="avatar-sm" icon="bi bi-patch-check" %}
               <div>
                 <h6 class="font-semibold text-white mb-1">Garantia em cada serviço</h6>
-                <p class="text-brand-100 text-sm">Tranquilidade em cada compra e serviço realizado.</p>
+                <p class="text-brand-100 text-sm">Tranquilidade em cada serviço realizado.</p>
               </div>
             </li>
           </ul>
@@ -70,9 +65,6 @@
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     {% include "partials/ui/_section_head.html" with eyebrow="Soluções" title="O que a Master Ligth oferece" description="Escolha a melhor opção para o seu projeto" %}
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10">
-      {% if STORE_ENABLED %}
-      {% include "partials/ui/_card_featured.html" with title="Loja e produtos" description="Compre produtos com pagamento via Pix — rápido e seguro." url="shop-list" icon_class="bi bi-box-seam" delay_class="reveal reveal-delay-1" %}
-      {% endif %}
       {% if SERVICES_ENABLED %}
       {% include "partials/ui/_card_featured.html" with title="Prestadores" description="Publique seu portfólio e receba pedidos de orçamento." url="portfolio-list" icon_class="bi bi-wrench-adjustable" delay_class="reveal reveal-delay-2" %}
       {% endif %}
@@ -82,24 +74,6 @@
     </div>
   </div>
 </section>
-
-<!-- Produtos em destaque -->
-{% if products %}
-<section class="bg-[var(--surface-page)] py-20 lg:py-28">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    {% include "partials/ui/_section_head.html" with eyebrow="Destaques da loja" title="Produtos em destaque" %}
-    <div class="flex justify-between items-end mb-8 flex-wrap gap-4">
-      <div></div>
-      <a href="{% url 'shop-list' %}" class="px-6 py-3 border-2 border-brand-500 text-brand-700 rounded-xl font-semibold hover:bg-brand-100 hover:text-brand-900 transition-all">Ver todos</a>
-    </div>
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-      {% for p in products %}
-      {% include "partials/ui/_card_product.html" with product=p url_name="shop-detail" col_class="reveal" delay_class="" %}
-      {% endfor %}
-    </div>
-  </div>
-</section>
-{% endif %}
 
 <!-- Portfólio -->
 {% if portfolio %}
@@ -139,7 +113,7 @@
       <div class="text-center reveal reveal-delay-1">
         {% include "partials/ui/_avatar.html" with size_class="avatar-xl" icon="bi bi-search" custom_class="mx-auto mb-4" %}
         <h5 class="text-xl font-bold text-[var(--text-strong)] mt-4">1. Explore</h5>
-        <p class="text-[var(--color-muted)] mt-2">Navegue pela loja, conheça os prestadores e veja os planos de manutenção.</p>
+        <p class="text-[var(--color-muted)] mt-2">Navegue pelos serviços, conheça os prestadores e veja os planos de manutenção.</p>
       </div>
       <div class="text-center reveal reveal-delay-2">
         {% include "partials/ui/_avatar.html" with size_class="avatar-xl" icon="bi bi-clipboard-check" custom_class="mx-auto mb-4" %}

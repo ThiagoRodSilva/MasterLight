@@ -14,17 +14,10 @@ def _resolve_commission_rate(order_item) -> Decimal:
     """Resolve a taxa de comissão para um item do pedido.
 
     Prioridade:
-    1. Product.affiliate_commission_rate
-    2. Service.affiliate_commission_rate
-    3. MaintenancePlanTemplate.affiliate_commission_rate
-    4. AffiliateProfile.commission_rate (fallback global)
+    1. Service.affiliate_commission_rate
+    2. MaintenancePlanTemplate.affiliate_commission_rate
+    3. AffiliateProfile.commission_rate (fallback global)
     """
-    # Product (OrderItem.product)
-    if order_item.product_id:
-        rate = getattr(order_item.product, "affiliate_commission_rate", None)
-        if rate is not None:
-            return rate
-
     # Service (OrderItem.service)
     if order_item.service_id:
         rate = getattr(order_item.service, "affiliate_commission_rate", None)

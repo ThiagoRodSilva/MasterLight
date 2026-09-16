@@ -1,73 +1,99 @@
 # AGENTS.md
 
-Django 5 "MasterLight" (codename PlataformaVendas) — empresa de **Elétrica** (serviços + loja + afiliados). Ignore `venv/` (Python 3.13; CI/Docker usa 3.12). Marca: amarelo `#FFC107` / preto `#111` / branco.
+MasterLight — Django 5.0.7 / Python 3.12 / PostgreSQL (Supabase) platform for electric services, shop, affiliates, and maintenance subscriptions. Brand: yellow `#FFC107` / black `#111` / white. Venv: `.venv` (3.12).
 
-## Commands
-- Use o venv explicitamente (`python`/`ruff`/`coverage` não estão no PATH do shell): `.venv/bin/python`, `venv/bin/ruff`, `venv/bin/coverage`.
-- Dev server: `python manage.py runserver` (defaults para `config.settings.dev`, setado no `manage.py`).
-- Tests: `python manage.py test --parallel` (runner nativo Django, TestCase; o settings `test` força SQLite em memória — isolado do banco de dev). Cobertura: `DJANGO_SETTINGS_MODULE=config.settings.test venv/bin/coverage run manage.py test apps && venv/bin/coverage report --fail-under=70` (config lida de `pyproject.toml`). Helpers compartilhados em `apps/tests/helpers.py`: `make_user`/`make_product`/`make_category`/`make_affiliate` + `create_order()` + mock `FakeAsaasApi` via `AsaasMockMixin` (classe) ou `mock_asaas()` (context manager). Testes por app em `apps/**/tests/`.
-- Lint: `venv/bin/ruff check .` (line-length 100). Ordem do CI: `ruff check .` → `makemigrations --check --dry-run` → `manage.py check` → `coverage run manage.py test apps` + `coverage report --fail-under=70`.
-- Primeira execução: `cp .env.example .env`; env vars lidas por django-environ em `config/settings/base.py`.
-- Social login (allauth Google/Facebook/Apple): `venv/bin/python manage.py bootstrap_social` sincroniza `Site` + `SocialApp` a partir do `.env`. Necessário porque sem confirmação de email (`ACCOUNT_EMAIL_VERIFICATION="none"`) o signup social loga direto e o app ainda precisa estar registrado.
+## Quick Commands
 
-## Branding & estáticos (não óbvio)
-- **Nenhum CDN**: Bootstrap 5.3.3 é self-hosted em `static/vendor/bootstrap/`; CSS da marca em `static/css/styles.css`; logos em `static/img/{logo,favicon}.svg`. `base.html` faz `{% load static %}` + bloco `:root` inline injetando a paleta de `{{ BRAND_PALETTE }}`.
-- Nome, tagline e paleta vivem em `apps/core/context_processors.py` (`branding()`: `BRAND_NAME=MasterLight`, `BRAND_TAGLINE`, `BRAND_PALETTE`) — mudar identidade é em 2 lugares: context processor + `--brand-*` de `static/css/styles.css`.
-- Classes do tema: `.btn-brand`/`.btn-outline-brand`, `.bg-brand`, `.auth-panel` (480px), `.form-panel--narrow/--medium`, `.qty-input`, `.qr-img`, `.stat-card--brand`, `.toast-stack`, `.card-hover`. Prefira-as a estilos inline novos.
-- **Cores de texto sempre via tokens/utilitários, nunca hex fixo em template.** `text-muted-brand` ↔ `text-muted` são equivalentes (token `--color-muted`). Para texto da cor de superfície use `.text-strong` (token `--text-strong`) em vez do `text-dark` do Bootstrap. Texto de marca: `text-brand-darker`/`text-brand-dark` sobre tints de marca; `text-brand` (amarelo puro) só sobre fundos neutros. **Não há dark mode** (tema único claro). O hero é sempre amarelo — texto/botões/inputs nele usam escuro fixo (`.hero .btn-brand-ghost`/`.hero .form-control` em `styles.css`); texto sobre amarelo sólido é sempre preto (`text-brand-contrast`, guarda `.bg-brand { color: var(--brand-dark) }`). Links são tonais (`a { color: var(--text-strong) }`, hover `--brand-700`). Meta de contraste: WCAG AA (corpo ≥4.5:1, ícones ≥3:1).
-- Partials incluídos NÃO herdam o `{% load static %}` do `base.html` — adicione o load em cada partial que use `{% static %}`.
+```bash
+# Activate venv (Windows)
+.venv\Scripts\activate
+# Activate venv (Linux/macOS)
+source .venv/bin/activate
+
+# Dev server (defaults to config.settings.dev via manage.py)
+python manage.py runserver
+
+# Tests — unit tests (Django TestCase, SQLite in-memory, offline)
+manage.py test apps
+coverage run manage.py test apps
+coverage report --fail-under=70
+
+# E2E tests (requires live server at localhost:8000)
+pytest tests/e2e/
+
+# Lint
+ruff check .
+ruff format --check .
+
+# Migrations check
+python manage.py makemigrations --check --dry-run
+
+# Django system checks
+python manage.py check
+
+# After pulling: sync site/social config for allauth
+python manage.py bootstrap_social
+```
+
+**manage.py auto-selects `config.settings.test`** when args include `test` or `coverage` — no env var needed for unit tests.
+
+## CI Order (GitHub Actions, branch `Master`)
+
+```
+ruff check .
+→ manage.py makemigrations --check --dry-run (env: DJANGO_SECRET_KEY=ci-secret)
+→ manage.py check (DJANGO_SETTINGS_MODULE=config.settings.dev)
+→ manage.py check (DJANGO_SETTINGS_MODULE=config.settings.vercel)
+→ coverage run manage.py test apps
+→ coverage report --fail-under=70
+```
 
 ## Architecture
-- Settings split: `config/settings/{base,dev,prod}.py`. Envs de domínio em `base.py`.
-- **Seções públicas ligadas/desligadas por flag no DB**: `SiteSettings` (singleton, pk=1, editável no Admin) controla `store_enabled`/`services_enabled`/`affiliates_enabled`/`maintenance_enabled`/`provider_registration_enabled` → quando off, a view devolve 404 (visto em `apps/shop/tests` e `apps/core/tests/test_sections.py`). `provider_registration_enabled` também some com a opção "Prestador (aprovado pelo admin)" do signup (`apps/accounts/forms.py`). Se uma rota pública aparecer 404 "do nada", cheque `SiteSettings` primeiro — não é env var.
-- Custom user: `apps.accounts.CustomUser`, `USERNAME_FIELD = "email"`. **Roles comparadas como strings cruas** (`"prestador"`, `"afiliado"`, `"cliente"`, `"admin"`) via mixins em `apps/core/mixins.py` — não os membros do enum.
-- `apps.core.models.BaseModel`: UUID `id`, `created_at`/`updated_at`, `is_active`. Todos os modelos de domínio herdam → **PKs UUID, `<uuid:pk>` em URLs**. Filtre `is_active=True` em querysets de leitura/listagem.
-- `Cart` em `apps/checkout` é **classe Python por sessão, não um model** — manter assim.
-- Dinheiro é `Decimal`; floats do `Cart` são propositais, só para display.
-- URL names são manualmente prefixados (ex.: `checkout-*`, `services-*`), sem namespaces `app_name`. Use `reverse_lazy("...")` com esses nomes.
-- **Todos os templates vivem em `templates/` na raiz do projeto** (subpasta por app: `templates/<app>/`; `base.html` + `partials/` na raiz). Não existe `templates/` dentro dos apps — o `DIRS` de settings aponta para a raiz e `APP_DIRS` segue `True` (templates do allauth). Forms com crispy-forms bootstrap5.
 
-## Pagamentos, signals & afiliados
-- Abstração de gateway: `PaymentGateway` em `apps/payments/services.py` com `charge`/`refund`/`webhook`/`subscribe`/`tokenize_credit_card` + dataclass `ChargeResult`. **Para adicionar provider**: subclassifique, registre no `_REGISTRY`, set `PAYMENT_PROVIDER` no env. Registrados: `"manual"` (dev, default) e `"asaas"` (Pix/cartão real).
-- `AsaasGateway` usa `requests` (`/api/v3`), valida webhook pelo header `asaas-access-token` contra `ASAAS_WEBHOOK_TOKEN` (o header legado `x-webhook-token` também é aceito) e guarda o id Asaas em `Transaction.external_id`; `CustomUser.asaas_customer_id` cacheia o customer. Em dev, sem `ASAAS_API_KEY`, use `PAYMENT_PROVIDER=manual`. **Chaves do Asaas começam com `$` e o django-environ trataria `$x` como proxy de outra env var — por isso `ASAAS_API_KEY` é lida crua via `os.getenv` em `config/settings/env_helpers.py` (`asaas_api_key()`), sem passar pelo proxy**; a chave crua `$aact_...` funciona em todos os ambientes (Vercel incluída) e a forma escapada legada `\$aact_...` também é aceita. Um system check (`apps/payments/checks.py`, id `payments.E001`) falha no `manage.py check` se `PAYMENT_PROVIDER=asaas` estiver ativo sem chave. Eventos de webhook desconhecidos são ignorados (200, sem transição) para não interromper a fila do Asaas. `PAYMENT_*` sem transação local (cobrança desconhecida, evento de teste) também respondem **200** em vez de 404 — antes o `ValueError("Transação não encontrada.")` gerava 404 e o Asaas marcava a entrega como falha; um `PAYMENT_*` redundante de checkout DETACHED é resolvido por `payment.externalReference` (= order.pk, setado no `create_checkout`) via `_resolve_checkout_payment_transaction`, idempotente com `CHECKOUT_PAID`. O 404 do `WebhookView` (mensagem "não encontrada") vale apenas para o gateway manual.
-- `charge_order(order, billing_type="PIX")` repassa o billing apenas ao Asaas; `CheckoutView.post` lê `payment_method` do form. O Asaas aceita `PIX`, `CREDIT_CARD`, `BOLETO`, `DEBIT_CARD`, `UNDEFINED` e `TRANSFER` (gateway); a UI expõe só Pix, Cartão e Boleto (`CARD_ENABLED`/`BOLETO_ENABLED` no context processor). Boleto guarda `bankSlip` no `raw_payload` e redireciona para `payments-boleto-confirm` (`BoletoConfirmationView`); a aprovação de orçamento (`ServiceRequestApproveView`) também permite escolher a forma no template `request_approve.html`.
-- **Checkout hosted (Asaas)**: com `PAYMENT_PROVIDER=asaas` o fluxo padrão de loja/orçamento/assinatura usa `create_checkout()` (`POST /checkouts`) e **redireciona para a página do Asaas** (flag `CHECKOUT_HOSTED` no context processor). `AsaasGateway.create_checkout()` monta items/customerData/callback a partir da `Order`, grava `Transaction.external_id` = id do checkout e cria a sessão (DETACHED/RECURRENT — `chargeTypes`; RECURRENT exige `subscription.cycle`). Confirmação via webhook `CHECKOUT_PAID`/`CHECKOUT_EXPIRED`/`CHECKOUT_CANCELED` (payload tem `checkout`, não `payment`); `_link_checkout_subscription` captura o id da assinatura gerada (via `GET /checkouts/{id}`) para as renovações. Eventos `SUBSCRIPTION_*` (payload com `subscription`, sem `payment`/`checkout`) respondem 200 sem transição; `SUBSCRIPTION_CREATED` vincula o plano via `subscription.checkoutSession` (= id do checkout = `Transaction.external_id`), dispensando o `GET` em muitos casos. Callback de retorno: `payments-checkout-callback/<order_pk>/<outcome>`. `sync_payments` **ignora** transações de checkout (`raw_payload` contém `"checkout"`) — reconciliação é só por webhook.
-- Link de pagamento avulso: `AsaasGateway.create_payment_link()` → `POST /paymentLinks` (sem customer; tela hospedada do Asaas, aberta em nova aba). Exposto para orçamentos via `ServiceRequestPayLinkView` (`services-request-paylink`, botão em `request_approve.html` com `PAYLINK_ENABLED` no context processor); a view grava o id em `ServiceRequest.asaas_payment_link_id`. No webhook com `payment.paymentLink`, o gateway **reconcilia** (cria `Order(kind=SERVICE)`+`OrderItem`+`Transaction` e aprova a solicitação quando paga) — idempotente por `payment.id`.
-- Business logic só em `services.py` (os `services.py` de `apps/payments` e `apps/affiliate`). Views são wrappers; services levantam `ValueError` para erros de domínio e usam `transaction.atomic()`.
-- Signals: payments imports em `PaymentsConfig.ready()`; **signals de `accounts` são ligados em `apps/core/apps.py`, não `accounts/apps.py`** — mantenha imports de signals no `apps.py` para evitar imports circulares. `Transaction` `post_save` (quando `status == "paid"`) chama `approve_referral` em `apps/affiliate/services.py`. `complete_service_request_on_paid` (post_save `Order`) é importado em `ServicesConfig.ready()` e marca a `ServiceRequest` como approved quando a `Order` vira `PAID`.
-- Fluxo afiliado: `?ref=CODE` cookie (`AffiliateReferralMiddleware`) → `Referral` no checkout → approved na transação paga. Landing pública em `/afiliados/` (`affiliate-landing`); dashboard em `/afiliados/painel/` (`affiliate-dashboard`). Cookie `ref` = `AFFILIATE_COOKIE_NAME`. O afiliado cadastra a chave Pix no painel (`AffiliateProfile.pix_key`, form no dashboard) e o saque é bloqueado sem ela.
-- Workaround de import circular: `django.apps.get_model("shop", "Product")` em `apps/checkout/views.py`.
+- **Settings split**: `config/settings/{base, dev, production, test, vercel}.py`
+  - `manage.py` defaults to `dev`, or `test` when running tests
+  - `wsgi.py` defaults to `vercel`, falls back to `production`
+- **All models inherit `apps.core.models.BaseModel`** — UUID PK, `created_at`/`updated_at`, `is_active`. Public querysets always filter `is_active=True`.
+- **`Cart` (apps/checkout) is a Python class per session, not a database model.** Keep it that way.
+- **`CustomUser` uses `USERNAME_FIELD="email"`** — roles are compared as raw strings (`"prestador"`, `"afiliado"`, `"cliente"`, `"admin"`) via `RoleRequiredMixin` subclasses in `apps/core/mixins.py`, not enum members.
+- **Business logic lives in `services.py` per app.** Views are thin wrappers; services raise `ValueError` for domain errors and use `transaction.atomic()`.
+- **Gateway abstraction**: `PaymentGateway` base in `apps/payments/gateways/base.py`; providers registered in `_REGISTRY`, selected by `PAYMENT_PROVIDER` env var. Providers: `"manual"` (dev) and `"asaas"` (real: Pix / card only — boleto was removed).
+- **URLs use manual name prefixes** (`checkout-*`, `services-*`, `shop-*`) — no `app_name` namespaces. Use `reverse()` / `reverse_lazy()` with those names.
+- **Templates live entirely at root `templates/`** (subdirectories per app: `templates/<app>/`, `templates/partials/`). No templates inside apps.
+- **Static files**: Tailwind CSS via CDN (dev) in `base.html`; Bootstrap Icons self-hosted at `static/vendor/bootstrap-icons/`; custom CSS in `static/css/{styles.css, tokens.css}`; fonts Inter self-hosted.
+- **No media upload** — images are `URLField` with `validate_image_url` validation. `SERVE_MEDIA=False` on Vercel (ephemeral filesystem).
 
-## Services (fluxo)
-- Catálogo público `services-list`/`services-detail` (só `is_active=True`); cliente solicita orçamento em `services-request` escolhendo **um prestador** (`ServiceRequest.prestador`, setado pelo provider via self-service).
-- Prestador self-service: `ServiceCreateView` (ProviderRequiredMixin) adiciona o user a `Service.providers` ao criar. Owner gerencia em `services-my` (create/update/delete com `OwnerRequiredMixin` + `created_by`).
-- Providers veem solicitações em `services-provider-requests` e enviam orçamento (`ServiceQuoteView`, só `pending` → `quoted`).
-- Cliente aprova em `services-request-approve` (`request_approve.html`): cria `Order(kind=SERVICE)` + `OrderItem(service=..., unit_price=final_price)`, roda `recompute_total()` e chama `charge_order(order, billing_type=payment_method)` (Pix/cartão/boleto). A `ServiceRequest` vira `approved` pelo signal quando o pagamento confirma. Cancelamento em `services-request-cancel`.
-- `ServiceRequest.order` é OneToOne com `checkout.Order`; `Service.created_by` e `ServiceRequest.prestador` (FK `CustomUser`, `SET_NULL`). Mock Asaas compartilhado mora no conftest raiz.
+## Key Gotchas
 
-## Assinatura de manutenção (fluxo)
-- **Catálogo de planos vive no banco**: `MaintenancePlanTemplate` (`name`, `plan_type` mensal/trimestral/anual, `value` preço, `description`, `ordering`; `is_active` do `BaseModel`) — CRUD completo no admin (`MaintenancePlanTemplateAdmin`, com `list_editable` de value/ordering/is_active). A página pública `services-plan-list` (`/servicos/planos/`, flag `SiteSettings.maintenance_enabled`) lista só templates `is_active=True`; o preço exibido e o cobrado vêm do template (não há mais `MAINTENANCE_PLAN_PRICES` — o seed vive em `apps/services/migrations/0009_seed_maintenance_plan_templates.py`).
-- Cliente assina em `services-plan-subscribe` (`MaintenancePlanCreateView`, `ClienteRequiredMixin`): cria `Order(kind=SUBSCRIPTION, subscription=True)` + `OrderItem(name=template.name, unit_price=template.value)`, roda `recompute_total()` e chama `subscribe_plan(plan, "PIX")` (`apps/payments/services.py`). `MaintenancePlanForm.clean` rejeita `plan_type` sem template ativo (`ValidationError`).
-- Gateway: `subscribe()` no `PaymentGateway` (novo método, além de `charge`/`refund`/`webhook`); `ManualGateway.subscribe()` cria a `Transaction` PENDING e redireciona para `payments-manual-confirm`; `AsaasGateway.subscribe()` cria a subscription `/api/v3/subscriptions` (ciclo `MONTHLY/QUARTERLY/YEARLY` pelo `plan_type`), salva o id em `plan.asaas_subscription_id` e aponta o webhook para o **id do primeiro payment** (`Transaction.external_id`).
-- Signal `schedule_first_maintenance_visit` (post_save `Transaction`, importado em `ServicesConfig.ready()`): quando a `Transaction` vira `paid`, agenda a 1ª `MaintenanceVisit` (na data do `next_due_date`, se não houver visita nessa data) e avança `next_due_date` em `plan.cycle_days()` (30/90/365).
-- `MaintenancePlan` (assinatura por cliente: `plan_type`, `value`, `next_due_date`, `order` 1:1 `checkout.Order`, `client`, `prestador`, `asaas_subscription_id`; `cycle_days()` retorna o intervalo em dias). `MaintenanceVisit` (`plan`, `scheduled_at`, `completed_at` null, `notes`; `is_pending` = sem `completed_at`). Admin de `MaintenancePlan` tem `MaintenanceVisitInline`, `autocomplete_fields` (client/prestador) e `asaas_subscription_id` readonly. Dashboard do prestador: `services-visits` (lista) + `services-visit-complete` (seta `completed_at`).
+- **`ASAAS_API_KEY` starts with `$`** — django-environ treats `$x` as a variable reference, so the key is read raw via `os.getenv` in `config/settings/env_helpers.py` (`asaas_api_key()`). A system check (`payments.E001`) fails if `PAYMENT_PROVIDER=asaas` without a key.
+- **SiteSettings section flags** (`store_enabled`, `services_enabled`, `affiliates_enabled`, `maintenance_enabled`, `provider_registration_enabled`) are in the DB (`SiteSettings`, singleton pk=1). When off, the view returns 404. If a public route appears broken, check the Admin's SiteSettings first.
+- **Slugs are random and auto-generated** (`RandomSlugMixin` + `random_slug()` hex) — `Product.slug`, `Category.slug`, `Service.slug`, `ServiceCategory.slug` are `editable=False`, never user-provided, and preserved on update.
+- **Boleto support was removed** (commit `97400c8`). Only Pix and card are supported via Asaas gateway.
+- **`tests/e2e/` uses pytest-playwright** and requires a live dev server — separate from the unit test suite in `apps/**/tests/`.
+- **Signals**: `accounts` signals connect in `apps/accounts/apps.py` (post_save for profile creation); `payments` and `affiliate` signals are imported in their respective `apps.py` `ready()` methods.
 
-## Conventions
-- Comentários, `verbose_name`, mensagens e templates são **pt-BR** — escreva em português.
-- `select_related`/`prefetch_related` em listas/detalhe; `paginate_by` 12 em listas públicas (shop/services/portfolio) e 20 no dashboard de afiliado + listas do provider.
-- Role mixins: `OwnerRequiredMixin`, `ProviderRequiredMixin` (prestador/admin), `AffiliateRequiredMixin`, `ClienteRequiredMixin`.
-- Admin: registro completo com `list_display`, `list_filter`, inlines — sem `admin.site.register` pelado.
-- Slugs de `Product`/`Category`/`Service`/`ServiceCategory` são **aleatórios e auto-gerados**: `RandomSlugMixin` + `random_slug()` (hex) em `apps/core/models.py`, campos com `editable=False`, `save()` só preenche quando vazio (update preserva). Não existe `prepopulated_fields` de slug e não há campo slug em `ServiceForm`.
+## Payment Flows
 
-## Deploy
-- Prod legado = Hostinger via Passenger, MySQL por `DATABASE_URL` (PyMySQL drop-in, sem build tools). **Novo padrão**: Supabase em todos os ambientes (ver Deploy Vercel).
+- **Checkout hosted (default with Asaas)**: `create_checkout()` redirects to Asaas payment page. Webhook `CHECKOUT_PAID`/`CHECKOUT_EXPIRED` confirms/expires; `_link_checkout_subscription` captures subscription ID for renewals.
+- **Payment link**: `create_payment_link()` opens Asaas hosted page in new tab; webhook `payment.paymentLink` reconciles (creates Order + Transaction, approves ServiceRequest).
+- **Webhook validation**: Asaas uses `asaas-access-token` header (legacy `x-webhook-token` also accepted). Unknown events return 200 (not 404) to avoid blocking the Asaas queue.
+- **`sync_payments` command** ignores checkout transactions (reconciliation is webhook-only).
 
-## Deploy Vercel (serverless)
-- Runtime **Python 3.12** pinned em `.python-version` (Vercel lê de lá; paridade com CI/Docker — venv local é 3.13).
-- Entrypoint WSGI `config/wsgi.py` (detectado pelo `manage.py`); settings `config.settings.vercel` via env `DJANGO_SETTINGS_MODULE` (obrigatória no projeto Vercel — sem ela cai em prod.py Hostinger).
-- `vercel.json`: `maxDuration=60` + `excludeFiles` para a function `config/wsgi.py`; cron `0 * * * *` em `/pagamentos/reconciliar` (autenticado por `Authorization: Bearer <CRON_SECRET>`).
-- Build command em `pyproject.toml` (`[tool.vercel.scripts] build = "python build.py"`): roda `migrate` + `bootstrap_social` em todo deploy (idempotentes). Vercel roda `collectstatic` sozinho e serve estático do CDN.
-- **Media** = não há upload: imagens (produtos/serviços/portfólio/avatar) são **links** via `URLField` com `validate_image_url` (`apps/core/validators.py`) — sem bucket R2, sem `django-storages`. `SERVE_MEDIA=False` na Vercel (filesystem efêmero/read-only).
-- **Banco** = Supabase Postgres em todos os ambientes (dev, prod, Vercel) via `DATABASE_URL` em **session mode (porta 5432)** do Supavisor — necessário p/ suportar `migrate` e prepared statements no build. Transaction mode (porta 6543) só p/ serverless high-scale (exigiria `migrate` via 5432 e `DISABLE_SERVER_SIDE_CURSORS`, já setado em `base.py` quando ENGINE é postgres). `psycopg[binary]` em requirements (PyMySQL fica só p/ fallback MySQL legado).
-- Migração única: `deploy/migrate_to_vercel.sh` (dumpdata/loaddata MySQL→Postgres).
-- Testes de settings Vercel: `apps/core/tests/test_vercel_settings.py`; CI valida `manage.py check` com `config.settings.vercel`.
+## Test Helpers (`apps/tests/helpers.py`)
+
+- `make_user(role=, email=, cpf=, telefone=, address=)` — creates user with valid CPF/phone
+- `make_product(...)`, `make_category(...)`, `make_affiliate(user=)`
+- `create_order(user=, with_referral=, product=, qty=)` — minimal Order + OrderItem + Transaction (manual provider)
+- `FakeAsaasApi` — full mock of Asaas v3 API
+- `AsaasMockMixin` — TestCase mixin that installs `FakeAsaasApi` in `self.asaas`
+- `mock_asaas()` — context manager version
+- `FakeResponse` — lightweight mock HTTP response
+
+## Deploy (Vercel)
+
+- Runtime: Python 3.12 pinned in `.python-version`; WSGI entrypoint `config/wsgi.py`
+- Build command (`build.py`): `check` → `migrate` → `bootstrap_social` (all idempotent)
+- Cron: `0 * * * *` on `/pagamentos/reconciliar`, auth via `Authorization: Bearer <CRON_SECRET>`
+- DB: Supabase Postgres, session mode (port 5432) — required for `migrate` and prepared statements
+- `DJANGO_SETTINGS_MODULE=config.settings.vercel` must be set in the Vercel project env
+- Migration from MySQL (legacy Hostinger): `deploy/migrate_to_vercel.sh` (dumpdata/loaddata)

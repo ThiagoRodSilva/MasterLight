@@ -15,7 +15,6 @@ urlpatterns = [
     path("social/completar-cadastro/", SocialSignupCompleteView.as_view(), name="social_signup_complete"),
     path("portfolio/", include("apps.portfolio.urls")),
     path("servicos/", include("apps.services.urls")),
-    path("loja/", include("apps.shop.urls")),
     path("afiliados/", include("apps.affiliate.urls")),
     path("carrinho/", include("apps.checkout.urls")),
     path("pagamentos/", include("apps.payments.urls")),

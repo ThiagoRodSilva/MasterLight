@@ -15,10 +15,10 @@ class SectionEnabledMixin:
     """Bloqueia a view (404) quando a seção está desabilitada no Admin.
 
     Defina `section_flag` no subtipo:
-        SectionEnabledMixin.section_flag = "store_enabled"
+        SectionEnabledMixin.section_flag = "services_enabled"
     """
 
-    section_flag: ClassVar[str] = "store_enabled"
+    section_flag: ClassVar[str] = "services_enabled"
 
     def dispatch(self, request: Any, *args: Any, **kwargs: Any) -> Any:
         if not getattr(SiteSettings.load(), self.section_flag, True):

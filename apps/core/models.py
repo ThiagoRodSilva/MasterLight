@@ -46,13 +46,12 @@ class RandomSlugMixin(models.Model):
 class SiteSettings(models.Model):
     """Configuração global do site (linha única, editável no Admin).
 
-    Controla a disponibilidade pública de cada seção: loja, serviços e
+    Controla a disponibilidade pública de cada seção: serviços, manutenção e
     programa de afiliados. É uma configuração, não um dado de domínio,
     por isso não herda `BaseModel` e usa `pk=1` fixa (singleton).
     """
 
     id = models.PositiveSmallIntegerField(primary_key=True, default=1, editable=False)
-    store_enabled = models.BooleanField(default=True, verbose_name="loja habilitada")
     services_enabled = models.BooleanField(default=True, verbose_name="serviços habilitados")
     affiliates_enabled = models.BooleanField(
         default=True, verbose_name="programa de afiliados habilitado"
@@ -70,7 +69,6 @@ class SiteSettings(models.Model):
         verbose_name_plural = "Configurações do site"
 
     _FLAGS: ClassVar[tuple[str, ...]] = (
-        "store_enabled",
         "services_enabled",
         "affiliates_enabled",
         "maintenance_enabled",

@@ -12,7 +12,6 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('services', '0001_initial'),
-        ('shop', '0001_initial'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
@@ -65,9 +64,7 @@ class Migration(migrations.Migration):
                 ('qty', models.PositiveIntegerField(default=1)),
                 ('unit_price', models.DecimalField(decimal_places=2, default=0, max_digits=12)),
                 ('order', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='items', to='checkout.order')),
-                ('product', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, to='shop.product')),
                 ('service', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, to='services.service')),
-                ('variant', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='shop.productvariant')),
             ],
             options={
                 'abstract': False,

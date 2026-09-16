@@ -171,13 +171,13 @@ def create_payment_link(
 
 
 def mark_order_paid(tx) -> None:
-    """Marca a Order como PAGO e baixa o estoque quando a transacao vira PAGA.
+    """Marca a Order como PAGO quando a transacao vira PAGA.
 
     Responsabilidade unica do dominio de pagamentos (C1): o signal de
     `post_save` em `apps/payments/signals.py` chama esta funcao, e a comissao
     de afiliado e tratada em `approve_referral` (somente comissao). Idempotente:
     so age na transicao para PAGO. Bloqueia transicoes indevidas: se o pedido
-    ja estiver PAID ou REFUNDED, nao re-baixa estoque nem ressuscita reembolsado.
+    ja estiver PAID ou REFUNDED, nao ressuscita reembolsado.
     """
     from django.db import transaction as db_transaction
 
@@ -192,16 +192,15 @@ def mark_order_paid(tx) -> None:
             return
         locked_order.status = Order.Status.PAID
         locked_order.save(update_fields=["status", "updated_at"])
-        locked_order.decrement_stock()
 
 
 def reverse_order_refund(tx) -> None:
     """Reverte um pedido pago quando a transacao vira REEMBOLSADA (C2).
 
-    Seta a Order para REFUNDED, repoe o estoque e estorna a comissao ja
-    creditada do afiliado (sem deixar saldo negativo), devolvendo o referral
-    para PENDING para permitir re-credito num eventual repagamento. Idempotente:
-    so age quando a Order ainda esta PAGO.
+    Seta a Order para REFUNDED e estorna a comissao ja creditada do afiliado
+    (sem deixar saldo negativo), devolvendo o referral para PENDING para
+    permitir re-credito num eventual repagamento. Idempotente: so age quando
+    a Order ainda esta PAGO.
     """
     from decimal import Decimal
 
@@ -219,7 +218,6 @@ def reverse_order_refund(tx) -> None:
             return
         locked_order.status = Order.Status.REFUNDED
         locked_order.save(update_fields=["status", "updated_at"])
-        locked_order.restore_stock()
 
         referral = locked_order.referrals.select_for_update().filter(
             status=Referral.Status.APPROVED

@@ -10,7 +10,6 @@ class SiteSettingsAdmin(admin.ModelAdmin):
     """Painel de configuração do site (singleton)."""
 
     list_display = (
-        "store_enabled",
         "services_enabled",
         "affiliates_enabled",
         "maintenance_enabled",

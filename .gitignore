@@ -188,3 +188,4 @@ deploy/.env.prod
 
 # Folders
 .planning/
+.opencode/
