@@ -16,6 +16,11 @@ html {
   scroll-behavior: smooth;
 }
 
+html,
+body {
+  overflow-x: hidden;
+}
+
 body {
   font-family: var(--font-family-base);
   font-size: var(--font-size-base);

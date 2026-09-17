@@ -193,10 +193,22 @@
   background-color: var(--color-bg-primary);
 }
 
+/* ---------- Container global ---------- */
+.container {
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: 0 var(--space-5);
+}
+
 .main-wrapper {
   max-width: var(--content-max-width);
   margin: 0 auto;
-  padding: var(--space-6);
+  padding: var(--space-8) var(--space-5);
+}
+
+/* Ritmo vertical entre seções */
+.main-wrapper section + section {
+  margin-top: var(--space-16);
 }
 
 /* ---------- Header mobile ---------- */
