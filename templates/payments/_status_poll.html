@@ -15,11 +15,11 @@
             return;
           }
           if (data.paid) {
-            panel.innerHTML = '<div class="alert alert-success d-flex align-items-center gap-2"><i class="bi bi-check2-circle fs-5"></i>Pagamento confirmado! Seu pedido foi atualizado.</div>';
+            panel.innerHTML = '<div class="alert alert-success flex items-center gap-2"><i class="bi bi-check2-circle"></i>Pagamento confirmado! Seu pedido foi atualizado.</div>';
             return;
           }
           if (data.canceled) {
-            panel.innerHTML = '<div class="alert alert-danger d-flex align-items-center gap-2"><i class="bi bi-x-circle fs-5"></i>Seu pedido foi cancelado. Entre em contato com o atendimento se precisar de ajuda.</div>';
+            panel.innerHTML = '<div class="alert alert-danger flex items-center gap-2"><i class="bi bi-x-circle"></i>Seu pedido foi cancelado. Entre em contato com o atendimento se precisar de ajuda.</div>';
             return;
           }
           if (tries < 60) { timer = setTimeout(check, 4000); }

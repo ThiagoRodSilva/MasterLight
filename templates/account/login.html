@@ -1,25 +1,27 @@
 {% extends "base.html" %}
 {% load crispy_forms_tags static socialaccount %}
 {% block content %}
-<div class="max-w-md mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
-  <div class="bg-[var(--surface-card)] shadow-xl rounded-2xl border-l-4 border-brand-500 p-6 p-md-8 reveal">
-    <h1 class="text-2xl font-bold text-[var(--text-strong)] mb-6 text-center reveal">Entrar</h1>
+<div class="auth-wrap">
+<div class="card auth-panel reveal">
+  <div class="card-body">
+    <h1 class="card-title text-center mb-4 reveal">Entrar</h1>
     {% get_providers as providers %}
     {% if providers and PROVIDER_REGISTRATION_ENABLED %}
-    <div class="flex flex-col gap-3 mb-6 reveal reveal-delay-1">
+    <div class="mb-4 reveal reveal-delay-1">
       {% for p in providers %}
-        <a href="{% provider_login_url p.id %}" class="inline-flex items-center justify-center gap-3 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 hover:border-gray-400 transition-all">
+        <a href="{% provider_login_url p.id %}" class="btn btn-outline btn-block mb-4">
           <img src="{% static 'img/social/google.svg' %}" alt="Google" width="20" height="20">
           <span>Continuar com {{ p.name }}</span>
         </a>
       {% endfor %}
     </div>
-    <hr class="my-6 reveal reveal-delay-2">
+    <hr class="mt-6 mb-6 reveal reveal-delay-2">
     {% endif %}
     <form method="post" data-loading>{% csrf_token %}{{ form|crispy }}
-      <button type="submit" class="w-full px-8 py-4 bg-gradient-to-r from-dark-500 to-dark-600 text-white rounded-xl text-lg font-semibold hover:from-dark-600 hover:to-dark-700 transition-all reveal reveal-delay-3">Entrar com email</button>
+      <button type="submit" class="btn btn-primary btn-lg btn-block reveal reveal-delay-3">Entrar com email</button>
     </form>
-    <p class="mt-4 text-center text-sm text-[var(--color-muted)] reveal reveal-delay-4">Sem conta? <a href="{% url 'account_signup' %}" class="font-semibold text-brand-600 hover:text-brand-700">Cadastre-se</a></p>
+    <p class="mt-4 text-center text-muted reveal reveal-delay-4">Sem conta? <a href="{% url 'account_signup' %}">Cadastre-se</a></p>
   </div>
+</div>
 </div>
 {% endblock %}

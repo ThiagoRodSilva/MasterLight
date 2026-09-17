@@ -1,39 +1,39 @@
 {% load static %}
-<div class="overflow-x-auto reveal reveal-delay-4">
-  <table class="w-full">
+<div class="table-wrapper reveal reveal-delay-4">
+  <table class="table">
     <thead>
-      <tr class="border-b border-gray-200">
-        <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Pedido</th>
-        <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
-        <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Comissão</th>
-        <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Data</th>
+      <tr>
+        <th>Pedido</th>
+        <th>Status</th>
+        <th>Comissão</th>
+        <th>Data</th>
       </tr>
     </thead>
-    <tbody class="divide-y divide-gray-100">
+    <tbody>
       {% for r in referrals %}
-      <tr class="hover:bg-gray-50">
-        <td class="px-4 py-3 text-sm text-gray-900">{{ r.order|default:"-" }}</td>
-        <td class="px-4 py-3">
+      <tr>
+        <td>{{ r.order|default:"-" }}</td>
+        <td>
           {% if r.status == "approved" %}
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">{{ r.get_status_display }}</span>
+            <span class="badge badge-success">{{ r.get_status_display }}</span>
           {% elif r.status == "pending" %}
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">{{ r.get_status_display }}</span>
+            <span class="badge">{{ r.get_status_display }}</span>
           {% elif r.status == "rejected" %}
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">{{ r.get_status_display }}</span>
+            <span class="badge badge-danger">{{ r.get_status_display }}</span>
           {% else %}
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">{{ r.get_status_display }}</span>
+            <span class="badge badge-secondary">{{ r.get_status_display }}</span>
           {% endif %}
         </td>
-        <td class="px-4 py-3 text-sm font-semibold text-gray-900">R$ {{ r.commission_amount|floatformat:2 }}</td>
-        <td class="px-4 py-3 text-sm text-gray-500">{{ r.created_at|date:"d/m/Y" }}</td>
+        <td><strong>R$ {{ r.commission_amount|floatformat:2 }}</strong></td>
+        <td>{{ r.created_at|date:"d/m/Y" }}</td>
       </tr>
       {% empty %}
       <tr>
-        <td colspan="4" class="text-center py-10">
-          <div class="empty-state m-0">
-            <i class="bi bi-person-dash empty-state__icon"></i>
-            <h4 class="empty-title">Nenhuma indicação ainda</h4>
-            <p class="text-gray-500 mb-0">Suas indicações aparecerão aqui quando houver vendas através do seu link.</p>
+        <td colspan="4">
+          <div class="empty-state">
+            <i class="bi bi-person-dash"></i>
+            <h4>Nenhuma indicação ainda</h4>
+            <p>Suas indicações aparecerão aqui quando houver vendas através do seu link.</p>
           </div>
         </td>
       </tr>

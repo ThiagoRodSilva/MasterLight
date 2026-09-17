@@ -1,36 +1,34 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
-  {% include "partials/ui/_breadcrumb.html" with parent_url="services-list" parent_name="Serviços" current=service.name %}
-  <div class="grid lg:grid-cols-2 gap-8 lg:gap-12">
-    <div class="reveal">
-      <div class="aspect-square bg-[var(--surface-page-alt)] rounded-2xl overflow-hidden">
-        {% if service.image %}
-        <img src="{{ service.image }}" alt="{{ service.name }}" class="w-full h-full object-cover">
-        {% else %}
-        <div class="w-full h-full flex items-center justify-center text-[var(--color-muted)]">
-          <i class="bi bi-tools text-6xl"></i>
-        </div>
-        {% endif %}
-      </div>
-    </div>
-    <div class="reveal reveal-delay-1">
-      <h1 class="text-3xl lg:text-4xl font-bold text-[var(--text-strong)] mb-2">{{ service.name }}</h1>
-      <p class="text-[var(--color-muted)] mb-4">{{ service.category|default:"Geral" }}</p>
-      <div class="prose prose-gray max-w-none mb-6">{{ service.description|linebreaks }}</div>
-      <h3 class="text-2xl font-bold text-brand-600 mb-4">A partir de R$ {{ service.base_price|floatformat:2 }}</h3>
-      {% if service.providers.count > 0 %}
-      <p class="text-[var(--color-muted)] mb-6 flex items-center gap-1"><i class="bi bi-person-badge"></i><strong>{{ service.providers.count }}</strong> profissionais disponíveis</p>
+{% include "partials/ui/_breadcrumb.html" with parent_url="services-list" parent_name="Serviços" current=service.name %}
+<div class="card-grid card-grid-2">
+  <div class="reveal">
+    <div class="card-image">
+      {% if service.image %}
+      <img src="{{ service.image }}" alt="{{ service.name }}" class="w-full">
       {% else %}
-      <p class="text-[var(--color-muted)] mb-6">Ainda sem profissional disponível.</p>
-      {% endif %}
-      <div class="mt-6">
-        <a href="{% url 'services-request' service.slug %}" class="inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-dark-500 to-dark-600 text-white rounded-xl text-lg font-semibold hover:from-dark-600 hover:to-dark-700 transition-all shadow-lg hover:shadow-xl {% if service.providers.count == 0 %}opacity-50 cursor-not-allowed{% endif %}" data-loading>
-          <i class="bi bi-wrench-adjustable"></i> Pedir orçamento
-        </a>
+      <div class="empty-state">
+        <i class="bi bi-tools"></i>
       </div>
-      {% include "partials/ui/_trust_row.html" with items='[{"icon": "bi bi-patch-check", "text": "Garantia no serviço"}, {"icon": "bi bi-clock", "text": "Visita agendada"}, {"icon": "bi bi-shield-check", "text": "Profissionais verificados"}]' %}
+      {% endif %}
     </div>
+  </div>
+  <div class="reveal reveal-delay-1">
+    <h1 class="section-title mb-4">{{ service.name }}</h1>
+    <p class="text-muted mb-4">{{ service.category|default:"Geral" }}</p>
+    <div class="text-secondary mb-6">{{ service.description|linebreaks }}</div>
+    <h3 class="price mb-4">A partir de R$ {{ service.base_price|floatformat:2 }}</h3>
+    {% if service.providers.count > 0 %}
+    <p class="text-muted mb-6"><i class="bi bi-person-badge"></i> <strong>{{ service.providers.count }}</strong> profissionais disponíveis</p>
+    {% else %}
+    <p class="text-muted mb-6">Ainda sem profissional disponível.</p>
+    {% endif %}
+    <div class="mt-6">
+      <a href="{% url 'services-request' service.slug %}" class="btn btn-primary btn-lg" data-loading>
+        <i class="bi bi-wrench-adjustable"></i> Pedir orçamento
+      </a>
+    </div>
+    {% include "partials/ui/_trust_row.html" with items='[{"icon": "bi bi-patch-check", "text": "Garantia no serviço"}, {"icon": "bi bi-clock", "text": "Visita agendada"}, {"icon": "bi bi-shield-check", "text": "Profissionais verificados"}]' %}
   </div>
 </div>
 {% endblock %}

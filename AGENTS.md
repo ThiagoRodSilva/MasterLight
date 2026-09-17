@@ -59,7 +59,7 @@ ruff check .
 - **Gateway abstraction**: `PaymentGateway` base in `apps/payments/gateways/base.py`; providers registered in `_REGISTRY`, selected by `PAYMENT_PROVIDER` env var. Providers: `"manual"` (dev) and `"asaas"` (real: Pix / card only — boleto was removed).
 - **URLs use manual name prefixes** (`checkout-*`, `services-*`) — no `app_name` namespaces. Use `reverse()` / `reverse_lazy()` with those names.
 - **Templates live entirely at root `templates/`** (subdirectories per app: `templates/<app>/`, `templates/partials/`). No templates inside apps.
-- **Static files**: Tailwind CSS via CDN (dev) in `base.html`; Bootstrap Icons self-hosted at `static/vendor/bootstrap-icons/`; custom CSS in `static/css/{styles.css, tokens.css}`; fonts Inter self-hosted.
+- **Static files**: CSS puro, sem Tailwind. Design tokens em `static/css/variables.css` (dark `#121212` + accent `#FFC107`, inclui `@font-face` da Inter), reset em `base.css`, sidebar de 250px (drawer mobile) em `layout.css`, componentes em `components.css`, específicos de projeto (auth-panel, stat-card, chips, avatares) em `styles.css`. Bootstrap Icons self-hosted em `static/vendor/bootstrap-icons/`; fontes Inter self-hosted. Navegação: `templates/partials/layout/sidebar.html` (substitui a antiga navbar top, removida).
 - **No media upload** — images are `URLField` with `validate_image_url` validation. `SERVE_MEDIA=False` on Vercel (ephemeral filesystem).
 
 ## Key Gotchas

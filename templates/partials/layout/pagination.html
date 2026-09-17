@@ -1,17 +1,17 @@
 {% if is_paginated %}
-<nav aria-label="Paginação" class="flex items-center justify-center gap-2 mt-6">
+<nav aria-label="Paginação" class="pagination">
   {% if page_obj.has_previous %}
-  <a href="?page={{ page_obj.previous_page_number }}" class="px-4 py-2 border border-[var(--border-soft)] rounded-lg text-[var(--text-strong)] hover:bg-[var(--surface-page-alt)] transition-colors">Anterior</a>
+  <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-secondary btn-sm">Anterior</a>
   {% else %}
-  <span class="px-4 py-2 border border-gray-300 rounded-lg text-[var(--color-muted)] cursor-not-allowed">Anterior</span>
+  <span class="btn btn-secondary btn-sm" aria-disabled="true" style="opacity: 0.5;">Anterior</span>
   {% endif %}
 
-  <span class="px-4 py-2 text-[var(--color-muted)]">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+  <span class="text-muted">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
 
   {% if page_obj.has_next %}
-  <a href="?page={{ page_obj.next_page_number }}" class="px-4 py-2 border border-[var(--border-soft)] rounded-lg text-[var(--text-strong)] hover:bg-[var(--surface-page-alt)] transition-colors">Próxima</a>
+  <a href="?page={{ page_obj.next_page_number }}" class="btn btn-secondary btn-sm">Próxima</a>
   {% else %}
-  <span class="px-4 py-2 border border-gray-300 rounded-lg text-[var(--color-muted)] cursor-not-allowed">Próxima</span>
+  <span class="btn btn-secondary btn-sm" aria-disabled="true" style="opacity: 0.5;">Próxima</span>
   {% endif %}
 </nav>
 {% endif %}

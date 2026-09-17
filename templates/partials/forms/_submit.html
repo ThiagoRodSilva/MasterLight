@@ -1,6 +1,6 @@
 {% load static %}
 <button type="submit"
-        class="inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-dark-500 to-dark-600 text-white rounded-xl text-lg font-semibold hover:from-dark-600 hover:to-dark-700 transition-all shadow-lg hover:shadow-xl w-full sm:w-auto {% if loading_attr %}data-loading{% endif %} {% if disabled %}opacity-50 cursor-not-allowed{% endif %} {{ extra_class|default:'' }}">
+        class="btn btn-primary btn-lg btn-block {{ extra_class|default:'' }}" {% if loading_attr %}data-loading{% endif %} {% if disabled %}disabled{% endif %}>
   {% if icon %}<i class="{{ icon }}"></i>{% endif %}
   {{ text }}
 </button>

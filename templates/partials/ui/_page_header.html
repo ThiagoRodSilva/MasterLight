@@ -1,12 +1,8 @@
 {% load static %}
-<section class="bg-[var(--surface-page-alt)] py-10 px-4 sm:px-6 lg:px-8">
-  <div class="max-w-7xl mx-auto">
-    <div class="flex flex-wrap items-end justify-between gap-4">
-      <div class="reveal">
-        <span class="inline-block text-sm font-semibold uppercase tracking-wider text-brand-700 mb-2">{{ eyebrow|default:"" }}</span>
-        <h1 class="text-3xl font-bold text-[var(--text-strong)] mb-2">{{ title }}</h1>
-        <p class="text-[var(--color-muted)]">{{ count }} {% if count == 1 %}item{% else %}itens{% endif %} disponíveis</p>
-      </div>
-    </div>
+<section class="section-header">
+  <div class="reveal">
+    <span class="eyebrow text-accent">{{ eyebrow|default:"" }}</span>
+    <h1 class="section-title">{{ title }}</h1>
+    <p class="section-subtitle">{{ count }} {% if count == 1 %}item{% else %}itens{% endif %} disponíveis</p>
   </div>
 </section>

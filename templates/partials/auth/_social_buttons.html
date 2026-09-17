@@ -1,8 +1,8 @@
 {% load static socialaccount %}
-<div class="flex flex-col gap-3 mb-3">
+<div class="mb-4">
   {% get_providers as providers %}
   {% for provider in providers %}
-  <a href="{% provider_login_url provider.id %}" class="inline-flex items-center justify-center gap-3 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 hover:border-gray-400 transition-all">
+  <a href="{% provider_login_url provider.id %}" class="btn btn-outline btn-block mb-4">
     {% if provider.id == 'google' %}
     <img src="{% static 'img/social/google.svg' %}" alt="Google" width="20" height="20">
     {% elif provider.id == 'facebook' %}
@@ -16,4 +16,4 @@
   </a>
   {% endfor %}
 </div>
-{% if divider %}<hr class="my-6">{% endif %}
+{% if divider %}<hr class="mt-6 mb-6">{% endif %}

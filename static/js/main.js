@@ -14,11 +14,15 @@ function showToast(message, type = 'info') {
   const container = document.querySelector('.toast-container');
   if (!container) return;
 
-  const bgColors = {
-    success: 'bg-green-500',
-    danger: 'bg-red-500',
-    warning: 'bg-yellow-500',
-    info: 'bg-blue-500',
+function showToast(message, type = 'info') {
+  const container = document.querySelector('.toast-container');
+  if (!container) return;
+
+  const toastClasses = {
+    success: 'toast-success',
+    danger: 'toast-danger',
+    warning: 'toast-warning',
+    info: 'toast-info',
   };
 
   const icons = {
@@ -29,13 +33,13 @@ function showToast(message, type = 'info') {
   };
 
   const toast = document.createElement('div');
-  toast.className = `flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg ${bgColors[type] || bgColors.info} text-white min-w-[300px] max-w-md animate-slide-in`;
+  toast.className = `toast ${toastClasses[type] || toastClasses.info}`;
   toast.setAttribute('role', 'alert');
   toast.innerHTML = `
-    <i class="bi ${icons[type] || icons.info} text-xl flex-shrink-0"></i>
-    <div class="flex-1 text-sm">${message}</div>
-    <button type="button" class="text-white/70 hover:text-white toast-close" aria-label="Fechar">
-      <i class="bi bi-x-lg"></i>
+    <i class="bi ${icons[type] || icons.info}" aria-hidden="true"></i>
+    <div class="toast-message">${message}</div>
+    <button type="button" class="toast-close" aria-label="Fechar">
+      <i class="bi bi-x-lg" aria-hidden="true"></i>
     </button>
   `;
 
@@ -56,7 +60,7 @@ function initLoadingState() {
     const btn = form.querySelector('button[type="submit"]');
     if (!btn || btn.disabled) return;
     btn.disabled = true;
-    btn.classList.add('opacity-75', 'cursor-not-allowed');
+    btn.classList.add('is-loading');
     btn.setAttribute('aria-busy', 'true');
   });
 }
@@ -71,17 +75,13 @@ function initRevealObserver() {
   const observer = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
       if (entry.isIntersecting) {
-        entry.target.classList.add('opacity-100', 'translate-y-0');
-        entry.target.classList.remove('opacity-0', 'translate-y-8');
+        entry.target.classList.add('reveal-visible');
         observer.unobserve(entry.target);
       }
     });
   }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
 
-  $$('.reveal').forEach((el) => {
-    el.classList.add('opacity-0', 'translate-y-8', 'transition-all', 'duration-600', 'ease-out');
-    observer.observe(el);
-  });
+  $$('.reveal').forEach((el) => observer.observe(el));
 }
 
 // ============================================================
@@ -110,8 +110,8 @@ function initGallery() {
     thumb.addEventListener('click', () => {
       coverImg.src = thumb.dataset.galleryImg;
       coverImg.alt = thumb.dataset.galleryAlt || coverImg.alt;
-      $$('.gallery-thumb__item').forEach((t) => t.classList.remove('ring-2', 'ring-brand-500'));
-      thumb.classList.add('ring-2', 'ring-brand-500');
+      $$('.gallery-thumb__item').forEach((t) => t.classList.remove('gallery-thumb-active'));
+      thumb.classList.add('gallery-thumb-active');
     });
   });
 }
@@ -129,12 +129,10 @@ function initCopyToClipboard() {
       navigator.clipboard?.writeText(target.value).then(() => {
         const original = btn.innerHTML;
         btn.innerHTML = '<i class="bi bi-check-lg"></i>';
-        btn.classList.add('bg-green-500', 'text-white', 'border-green-500');
-        btn.classList.remove('border-dark-500', 'text-dark-500');
+        btn.classList.add('btn-copied');
         setTimeout(() => {
           btn.innerHTML = original;
-          btn.classList.remove('bg-green-500', 'text-white', 'border-green-500');
-          btn.classList.add('border-dark-500', 'text-dark-500');
+          btn.classList.remove('btn-copied');
         }, 2000);
       });
     });
@@ -149,12 +147,10 @@ function initCopyToClipboard() {
       navigator.clipboard?.writeText(refLink.value).then(() => {
         const original = copyBtn.innerHTML;
         copyBtn.innerHTML = '<i class="bi bi-check-lg"></i>';
-        copyBtn.classList.add('bg-green-500', 'text-white', 'border-green-500');
-        copyBtn.classList.remove('border-dark-500', 'text-dark-500');
+        copyBtn.classList.add('btn-copied');
         setTimeout(() => {
           copyBtn.innerHTML = original;
-          copyBtn.classList.remove('bg-green-500', 'text-white', 'border-green-500');
-          copyBtn.classList.add('border-dark-500', 'text-dark-500');
+          copyBtn.classList.remove('btn-copied');
         }, 2000);
       });
     });
@@ -175,7 +171,7 @@ function initPaylinkForm() {
     if (!btn) return;
     btn.disabled = true;
     const original = btn.innerHTML;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Gerando...';
+    btn.innerHTML = '<span class="spinner"></span> Gerando...';
 
     const csrfToken = form.querySelector('[name=csrfmiddlewaretoken]')?.value;
     fetch(form.action, {
@@ -247,7 +243,7 @@ function initConfirmationModal() {
     if (!actionUrl) return;
 
     confirmBtn.disabled = true;
-    confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Confirmando...';
+    confirmBtn.innerHTML = '<span class="spinner"></span> Confirmando...';
 
     const formData = new FormData();
     formData.append('csrfmiddlewaretoken', csrf);

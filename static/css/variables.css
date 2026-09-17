@@ -1,0 +1,104 @@
+/* ===================================
+   MASTERLIGHT - DESIGN TOKENS
+   Dark Mode + Brand #FFC107
+   =================================== */
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("../fonts/Inter/InterVariable.woff2") format("woff2-variations");
+}
+
+:root {
+  /* Colors */
+  --color-bg-primary: #121212;
+  --color-bg-secondary: #1e1e1e;
+  --color-bg-tertiary: #2a2a2a;
+
+  --color-accent: #ffc107;
+  --color-accent-hover: #ffca28;
+  --color-accent-dark: #e6a800;
+
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #b0b0b0;
+  --color-text-muted: #757575;
+
+  --color-border: #333333;
+  --color-border-focus: #ffc107;
+
+  /* Semantic */
+  --color-success: #4caf50;
+  --color-danger: #f44336;
+  --color-info: #2196f3;
+  --color-warning: var(--color-accent);
+
+  /* Typography */
+  --font-family-base: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --font-size-xs: 0.75rem; /* 12px */
+  --font-size-sm: 0.875rem; /* 14px */
+  --font-size-base: 1rem; /* 16px */
+  --font-size-lg: 1.125rem; /* 18px */
+  --font-size-xl: 1.25rem; /* 20px */
+  --font-size-2xl: 1.5rem; /* 24px */
+  --font-size-3xl: 1.875rem; /* 30px */
+  --font-size-4xl: 2.25rem; /* 36px */
+
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+
+  /* Spacing (base 4px) */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+
+  /* Border radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* Shadows (flat design: none) */
+  --shadow-none: none;
+
+  /* Layout */
+  --sidebar-width: 250px;
+  --sidebar-width-mobile: 280px;
+  --content-max-width: 1400px;
+  --mobile-header-height: 60px;
+
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-base: 0.3s ease;
+  --transition-slow: 0.5s ease;
+
+  /* Z-index */
+  --z-content: 1;
+  --z-sidebar: 100;
+  --z-overlay: 99;
+  --z-modal: 101;
+}
+
+/* Respeita usuários com movimento reduzido */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --transition-fast: 0s;
+    --transition-base: 0s;
+    --transition-slow: 0s;
+  }
+}

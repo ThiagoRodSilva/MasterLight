@@ -1,62 +1,60 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
-  <div class="flex flex-col sm:flex-row justify-between items-center mb-8 flex-wrap gap-4 reveal">
-    <h1 class="text-2xl font-bold text-[var(--text-strong)] mb-0">Solicitações recebidas</h1>
-    <a href="{% url 'services-my' %}" class="inline-flex items-center gap-2 px-6 py-3 border-2 border-brand-500 text-brand-700 rounded-xl font-semibold hover:bg-brand-100 hover:text-brand-900 transition-all"><i class="bi bi-tools"></i> Meus serviços</a>
-  </div>
-  <div class="bg-[var(--surface-card)] shadow-lg rounded-2xl border-l-4 border-brand-500 overflow-hidden reveal reveal-delay-1">
-    <div class="overflow-x-auto">
-      <table class="w-full">
-        <thead>
-          <tr class="border-b border-[var(--border-soft)]">
-            <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)]">Serviço</th>
-            <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)]">Cliente</th>
-            <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)]">Status</th>
-            <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)]">Orçamento</th>
-            <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)]">Criado em</th>
-            <th class="text-right px-4 py-3 text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)]">Ações</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-[var(--border-soft)]">
-          {% for r in requests %}
-          <tr class="hover:bg-[var(--surface-page-alt)]">
-            <td class="px-4 py-4 text-sm text-[var(--text-strong)]">{{ r.service.name }}</td>
-            <td class="px-4 py-4 text-sm text-[var(--text-strong)]">{{ r.cliente.email }}</td>
-            <td class="px-4 py-4">
-              {% if r.status == 'pending' %}
-              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">{{ r.get_status_display }}</span>
-              {% elif r.status == 'quoted' %}
-              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">{{ r.get_status_display }}</span>
-              {% elif r.status == 'approved' %}
-              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">{{ r.get_status_display }}</span>
-              {% else %}
-              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">{{ r.get_status_display }}</span>
-              {% endif %}
-            </td>
-            <td class="px-4 py-4 text-sm text-[var(--text-strong)]">{% if r.final_price %}R$ {{ r.final_price|floatformat:2 }}{% else %}<span class="text-[var(--color-muted)]">—</span>{% endif %}</td>
-            <td class="px-4 py-4 text-sm text-[var(--color-muted)]">{{ r.created_at|date:"d/m/Y H:i" }}</td>
-            <td class="px-4 py-4 text-right">
-              {% if r.status == "pending" %}
-              <a href="{% url 'services-request-quote' r.pk %}" class="inline-flex items-center gap-1 px-4 py-2 bg-gradient-to-r from-dark-500 to-dark-600 text-white rounded-xl text-sm font-semibold hover:from-dark-600 hover:to-dark-700 transition-all"><i class="bi bi-cash-coin"></i> Enviar orçamento</a>
-              {% endif %}
-            </td>
-          </tr>
-          {% empty %}
-          <tr>
-            <td colspan="6" class="text-center py-10">
-              <div class="empty-state m-0">
-                <i class="bi bi-clipboard-check empty-state__icon"></i>
-                <p class="empty-title mb-0">Nenhuma solicitação recebida.</p>
-              </div>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  {% include "partials/layout/pagination.html" %}
+<div class="section-header">
+  <h1 class="section-title">Solicitações recebidas</h1>
+  <a href="{% url 'services-my' %}" class="btn btn-outline"><i class="bi bi-tools"></i> Meus serviços</a>
 </div>
+<div class="card">
+  <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Serviço</th>
+          <th>Cliente</th>
+          <th>Status</th>
+          <th>Orçamento</th>
+          <th>Criado em</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in requests %}
+        <tr>
+          <td>{{ r.service.name }}</td>
+          <td>{{ r.cliente.email }}</td>
+          <td>
+            {% if r.status == 'pending' %}
+            <span class="badge badge-secondary">{{ r.get_status_display }}</span>
+            {% elif r.status == 'quoted' %}
+            <span class="badge">{{ r.get_status_display }}</span>
+            {% elif r.status == 'approved' %}
+            <span class="badge badge-success">{{ r.get_status_display }}</span>
+            {% else %}
+            <span class="badge badge-secondary">{{ r.get_status_display }}</span>
+            {% endif %}
+          </td>
+          <td>{% if r.final_price %}R$ {{ r.final_price|floatformat:2 }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+          <td>{{ r.created_at|date:"d/m/Y H:i" }}</td>
+          <td>
+            {% if r.status == "pending" %}
+            <a href="{% url 'services-request-quote' r.pk %}" class="btn btn-primary btn-sm"><i class="bi bi-cash-coin"></i> Enviar orçamento</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6">
+            <div class="empty-state">
+              <i class="bi bi-clipboard-check"></i>
+              <p>Nenhuma solicitação recebida.</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% include "partials/layout/pagination.html" %}
 {% endblock %}

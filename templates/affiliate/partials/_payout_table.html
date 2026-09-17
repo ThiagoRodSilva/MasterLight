@@ -1,53 +1,53 @@
 {% load static %}
-<h2 class="mt-8 mb-4 reveal reveal-delay-5 flex items-center gap-2"><i class="bi bi-wallet2"></i> Saques</h4>
+<h2 class="section-title mt-6 mb-4 reveal reveal-delay-5"><i class="bi bi-wallet2"></i> Saques</h2>
 
 <div class="mb-4 reveal reveal-delay-4">
   <form method="post" action="{% url 'affiliate-payout' %}">{% csrf_token %}
     {% if profile.balance and profile.balance > 0 %}
-    <button type="submit" class="px-6 py-3 bg-gradient-to-r from-dark-500 to-dark-600 text-white rounded-xl font-semibold hover:from-dark-600 hover:to-dark-700 transition-all flex items-center gap-2" data-loading>
+    <button type="submit" class="btn btn-primary" data-loading>
       <i class="bi bi-cash-stack"></i> Solicitar saque (R$ {{ profile.balance|floatformat:2 }})
     </button>
     {% else %}
-    <button type="submit" disabled class="px-6 py-3 border-2 border-gray-300 text-gray-500 rounded-xl font-semibold cursor-not-allowed flex items-center gap-2">
+    <button type="submit" disabled class="btn btn-outline">
       <i class="bi bi-x-circle"></i> Saldo insuficiente
     </button>
     {% endif %}
   </form>
 </div>
 
-<div class="overflow-x-auto reveal reveal-delay-5">
-  <table class="w-full">
+<div class="table-wrapper reveal reveal-delay-5">
+  <table class="table">
     <thead>
-      <tr class="border-b border-gray-200">
-        <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Valor</th>
-        <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
-        <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Pago em</th>
+      <tr>
+        <th>Valor</th>
+        <th>Status</th>
+        <th>Pago em</th>
       </tr>
     </thead>
-    <tbody class="divide-y divide-gray-100">
+    <tbody>
       {% for p in payouts %}
-      <tr class="hover:bg-gray-50">
-        <td class="px-4 py-3 text-sm font-semibold text-gray-900">R$ {{ p.amount|floatformat:2 }}</td>
-        <td class="px-4 py-3">
+      <tr>
+        <td><strong>R$ {{ p.amount|floatformat:2 }}</strong></td>
+        <td>
           {% if p.status == "paid" %}
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">{{ p.get_status_display }}</span>
+            <span class="badge badge-success">{{ p.get_status_display }}</span>
           {% elif p.status == "pending" %}
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">{{ p.get_status_display }}</span>
+            <span class="badge">{{ p.get_status_display }}</span>
           {% elif p.status == "rejected" %}
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">{{ p.get_status_display }}</span>
+            <span class="badge badge-danger">{{ p.get_status_display }}</span>
           {% else %}
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">{{ p.get_status_display }}</span>
+            <span class="badge badge-secondary">{{ p.get_status_display }}</span>
           {% endif %}
         </td>
-        <td class="px-4 py-3 text-sm text-gray-500">{{ p.paid_at|date:"d/m/Y"|default:"-" }}</td>
+        <td>{{ p.paid_at|date:"d/m/Y"|default:"-" }}</td>
       </tr>
       {% empty %}
       <tr>
-        <td colspan="3" class="text-center py-10">
-          <div class="empty-state m-0">
-            <i class="bi bi-cash-coin empty-state__icon"></i>
-            <h4 class="empty-title">Nenhuma solicitação ainda</h4>
-            <p class="text-gray-500 mb-0">Solicitações de saque aparecerão aqui.</p>
+        <td colspan="3">
+          <div class="empty-state">
+            <i class="bi bi-cash-coin"></i>
+            <h4>Nenhuma solicitação ainda</h4>
+            <p>Solicitações de saque aparecerão aqui.</p>
           </div>
         </td>
       </tr>

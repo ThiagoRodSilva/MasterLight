@@ -2,134 +2,124 @@
 {% load static %}
 {% block content %}
 <!-- Hero Section -->
-<section class="relative bg-gradient-to-br from-brand-500 via-brand-600 to-brand-700 text-brand-900 overflow-hidden py-20 lg:py-28">
-  <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.15),transparent)]"></div>
-  <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(255,193,7,0.2),transparent)]"></div>
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-    <div class="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-      <div class="reveal">
-        <span class="inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full text-sm font-semibold mb-6">
-          <i class="bi bi-patch-check"></i> Elétrica com garantia e pagamento seguro
-        </span>
-        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight mb-6">{{ BRAND_NAME }}</h1>
-        <p class="text-xl text-brand-100 mb-8 max-w-xl">{{ BRAND_TAGLINE }}</p>
-        <div class="flex flex-wrap gap-4 mb-10">
-          {% if SERVICES_ENABLED %}
-          <a href="{% url 'services-list' %}" class="px-8 py-4 bg-gradient-to-r from-dark-500 to-dark-600 text-white rounded-xl text-lg font-semibold hover:from-dark-600 hover:to-dark-700 transition-all shadow-lg hover:shadow-xl">
-            Pedir um serviço
-          </a>
-          {% endif %}
-        </div>
-        {% if stats %}
-        <div class="grid grid-cols-3 gap-6 mt-10 reveal reveal-delay-2">
-          {% for s in stats %}
-          {% include "partials/ui/_stat_card.html" with value=s.value label=s.label variant_class="stat-card--brand" col_class="" delay_class="" %}
-          {% endfor %}
-        </div>
-        {% endif %}
-      </div>
-      <div class="hidden lg:block reveal reveal-delay-2">
-        <div class="bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 p-8 shadow-2xl">
-          <h5 class="text-xl font-bold text-white mb-6">Por que a {{ BRAND_NAME }}?</h5>
-          <ul class="space-y-5" role="list">
-            <li class="flex gap-4">
-              {% include "partials/ui/_avatar.html" with size_class="avatar-sm" icon="bi bi-shield-check" %}
-              <div>
-                <h6 class="font-semibold text-white mb-1">Pagamento seguro</h6>
-                <p class="text-brand-100 text-sm">Pix e cartão com seus dados protegidos.</p>
-              </div>
-            </li>
-            <li class="flex gap-4">
-              {% include "partials/ui/_avatar.html" with size_class="avatar-sm" icon="bi bi-lightning-charge" %}
-              <div>
-                <h6 class="font-semibold text-white mb-1">Atendimento rápido</h6>
-                <p class="text-brand-100 text-sm">Orçamentos ágeis e suporte em cada etapa.</p>
-              </div>
-            </li>
-            <li class="flex gap-4">
-              {% include "partials/ui/_avatar.html" with size_class="avatar-sm" icon="bi bi-patch-check" %}
-              <div>
-                <h6 class="font-semibold text-white mb-1">Garantia em cada serviço</h6>
-                <p class="text-brand-100 text-sm">Tranquilidade em cada serviço realizado.</p>
-              </div>
-            </li>
-          </ul>
-        </div>
+<section class="hero">
+  <div class="reveal">
+    <span class="badge mb-4">
+      <i class="bi bi-patch-check"></i> Elétrica com garantia e pagamento seguro
+    </span>
+    <h1 class="hero-title"><span class="text-accent">{{ BRAND_NAME }}</span></h1>
+    <p class="hero-subtitle">{{ BRAND_TAGLINE }}</p>
+    <div class="hero-cta">
+      {% if SERVICES_ENABLED %}
+      <a href="{% url 'services-list' %}" class="btn btn-lg btn-primary">
+        Pedir um serviço
+      </a>
+      {% endif %}
+    </div>
+    {% if stats %}
+    <div class="card-grid reveal reveal-delay-2 mt-6">
+      {% for s in stats %}
+      {% include "partials/ui/_stat_card.html" with value=s.value label=s.label variant_class="stat-card--brand" col_class="" delay_class="" %}
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+  <div class="reveal reveal-delay-2">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Por que a {{ BRAND_NAME }}?</h5>
+        <ul role="list">
+          <li class="flex gap-3 mb-4">
+            {% include "partials/ui/_avatar.html" with size_class="avatar-sm" icon="bi bi-shield-check" %}
+            <div>
+              <h6>Pagamento seguro</h6>
+              <p class="text-muted">Pix e cartão com seus dados protegidos.</p>
+            </div>
+          </li>
+          <li class="flex gap-3 mb-4">
+            {% include "partials/ui/_avatar.html" with size_class="avatar-sm" icon="bi bi-lightning-charge" %}
+            <div>
+              <h6>Atendimento rápido</h6>
+              <p class="text-muted">Orçamentos ágeis e suporte em cada etapa.</p>
+            </div>
+          </li>
+          <li class="flex gap-3">
+            {% include "partials/ui/_avatar.html" with size_class="avatar-sm" icon="bi bi-patch-check" %}
+            <div>
+              <h6>Garantia em cada serviço</h6>
+              <p class="text-muted">Tranquilidade em cada serviço realizado.</p>
+            </div>
+          </li>
+        </ul>
       </div>
     </div>
   </div>
 </section>
 
 <!-- O que oferecemos -->
-<section class="bg-[var(--surface-page-alt)] py-20 lg:py-28">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    {% include "partials/ui/_section_head.html" with eyebrow="Soluções" title="O que a Master Ligth oferece" description="Escolha a melhor opção para o seu projeto" %}
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10">
-      {% if SERVICES_ENABLED %}
-      {% include "partials/ui/_card_featured.html" with title="Prestadores" description="Publique seu portfólio e receba pedidos de orçamento." url="portfolio-list" icon_class="bi bi-wrench-adjustable" delay_class="reveal reveal-delay-2" %}
-      {% endif %}
-      {% if AFFILIATES_ENABLED %}
-      {% include "partials/ui/_card_featured.html" with title="Afiliados" description="Divulgue a Master Ligth e ganhe comissão por cada venda indicada." url="affiliate-landing" icon_class="bi bi-people" delay_class="reveal reveal-delay-3" %}
-      {% endif %}
-    </div>
+<section>
+  {% include "partials/ui/_section_head.html" with eyebrow="Soluções" title="O que a Master Ligth oferece" description="Escolha a melhor opção para o seu projeto" align_class="section-head--center" %}
+  <div class="card-grid mt-6">
+    {% if SERVICES_ENABLED %}
+    {% include "partials/ui/_card_featured.html" with title="Prestadores" description="Publique seu portfólio e receba pedidos de orçamento." url="portfolio-list" icon_class="bi bi-wrench-adjustable" delay_class="reveal reveal-delay-2" col_class="" %}
+    {% endif %}
+    {% if AFFILIATES_ENABLED %}
+    {% include "partials/ui/_card_featured.html" with title="Afiliados" description="Divulgue a Master Ligth e ganhe comissão por cada venda indicada." url="affiliate-landing" icon_class="bi bi-people" delay_class="reveal reveal-delay-3" col_class="" %}
+    {% endif %}
   </div>
 </section>
 
 <!-- Portfólio -->
 {% if portfolio %}
-<section class="bg-[var(--surface-page-alt)] py-20 lg:py-28">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    {% include "partials/ui/_section_head.html" with eyebrow="Trabalhos recentes" title="Portfólio de prestadores" %}
-    <div class="flex justify-between items-end mb-8 flex-wrap gap-4">
-      <div></div>
-      <a href="{% url 'portfolio-list' %}" class="px-6 py-3 border-2 border-brand-500 text-brand-700 rounded-xl font-semibold hover:bg-brand-100 hover:text-brand-900 transition-all">Ver portfólio</a>
+<section>
+  {% include "partials/ui/_section_head.html" with eyebrow="Trabalhos recentes" title="Portfólio de prestadores" align_class="section-head--center" %}
+  <div class="flex justify-between items-center mb-4">
+    <div></div>
+    <a href="{% url 'portfolio-list' %}" class="btn btn-outline">Ver portfólio</a>
+  </div>
+  <div class="card-grid">
+    {% for item in portfolio %}
+    <div class="reveal">
+      <a href="{% url 'portfolio-detail' item.pk %}" class="card card-hover">
+        {% if item.image %}
+        <div class="card-image">
+          <img src="{{ item.image }}" alt="{{ item.title }}">
+        </div>
+        {% endif %}
+        <div class="card-body">
+          <h5 class="card-title">{{ item.title }}</h5>
+          {% if item.category %}<span class="badge">{{ item.category }}</span>{% endif %}
+        </div>
+      </a>
     </div>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      {% for item in portfolio %}
-      <div class="reveal">
-        <a href="{% url 'portfolio-detail' item.pk %}" class="block bg-[var(--surface-card)] shadow-lg rounded-2xl border-l-4 border-brand-500 overflow-hidden hover:shadow-xl transition-shadow">
-          {% if item.image %}
-          <div class="aspect-video bg-[var(--surface-page-alt)] relative overflow-hidden">
-            <img src="{{ item.image }}" alt="{{ item.title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
-          </div>
-          {% endif %}
-          <div class="p-6">
-            <h5 class="text-xl font-bold text-[var(--text-strong)] mb-2">{{ item.title }}</h5>
-            {% if item.category %}<span class="inline-block px-3 py-1 bg-brand-500 text-brand-900 text-sm font-medium rounded-full">{{ item.category }}</span>{% endif %}
-          </div>
-        </a>
-      </div>
-      {% endfor %}
-    </div>
+    {% endfor %}
   </div>
 </section>
 {% endif %}
 
 <!-- Como funciona -->
-<section class="bg-[var(--surface-page)] py-20 lg:py-28">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    {% include "partials/ui/_section_head.html" with eyebrow="Simples e rápido" title="Como funciona" description="Do orçamento à entrega, tudo em poucos passos." %}
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mt-12">
-      <div class="text-center reveal reveal-delay-1">
-        {% include "partials/ui/_avatar.html" with size_class="avatar-xl" icon="bi bi-search" custom_class="mx-auto mb-4" %}
-        <h5 class="text-xl font-bold text-[var(--text-strong)] mt-4">1. Explore</h5>
-        <p class="text-[var(--color-muted)] mt-2">Navegue pelos serviços e conheça os prestadores.</p>
-      </div>
-      <div class="text-center reveal reveal-delay-2">
-        {% include "partials/ui/_avatar.html" with size_class="avatar-xl" icon="bi bi-clipboard-check" custom_class="mx-auto mb-4" %}
-        <h5 class="text-xl font-bold text-[var(--text-strong)] mt-4">2. Solicite</h5>
-        <p class="text-[var(--color-muted)] mt-2">Peça um orçamento e escolha o prestador ideal para o seu projeto.</p>
-      </div>
-      <div class="text-center reveal reveal-delay-3">
-        {% include "partials/ui/_avatar.html" with size_class="avatar-xl" icon="bi bi-credit-card" custom_class="mx-auto mb-4" %}
-        <h5 class="text-xl font-bold text-[var(--text-strong)] mt-4">3. Pague</h5>
-        <p class="text-[var(--color-muted)] mt-2">Aprove a proposta e pague com Pix ou cartão, com total segurança.</p>
-      </div>
-      <div class="text-center reveal reveal-delay-4">
-        {% include "partials/ui/_avatar.html" with size_class="avatar-xl" icon="bi bi-check2-circle" custom_class="mx-auto mb-4" %}
-        <h5 class="text-xl font-bold text-[var(--text-strong)] mt-4">4. Acompanhe</h5>
-        <p class="text-[var(--color-muted)] mt-2">Acompanhe a entrega e conclua o serviço com tranquilidade.</p>
-      </div>
+<section>
+  {% include "partials/ui/_section_head.html" with eyebrow="Simples e rápido" title="Como funciona" description="Do orçamento à entrega, tudo em poucos passos." align_class="section-head--center" %}
+  <div class="card-grid-4 mt-6">
+    <div class="text-center reveal reveal-delay-1">
+      {% include "partials/ui/_avatar.html" with size_class="avatar-xl" icon="bi bi-search" custom_class="" %}
+      <h5 class="mt-4">1. Explore</h5>
+      <p class="text-muted">Navegue pelos serviços e conheça os prestadores.</p>
+    </div>
+    <div class="text-center reveal reveal-delay-2">
+      {% include "partials/ui/_avatar.html" with size_class="avatar-xl" icon="bi bi-clipboard-check" custom_class="" %}
+      <h5 class="mt-4">2. Solicite</h5>
+      <p class="text-muted">Peça um orçamento e escolha o prestador ideal para o seu projeto.</p>
+    </div>
+    <div class="text-center reveal reveal-delay-3">
+      {% include "partials/ui/_avatar.html" with size_class="avatar-xl" icon="bi bi-credit-card" custom_class="" %}
+      <h5 class="mt-4">3. Pague</h5>
+      <p class="text-muted">Aprove a proposta e pague com Pix ou cartão, com total segurança.</p>
+    </div>
+    <div class="text-center reveal reveal-delay-4">
+      {% include "partials/ui/_avatar.html" with size_class="avatar-xl" icon="bi bi-check2-circle" custom_class="" %}
+      <h5 class="mt-4">4. Acompanhe</h5>
+      <p class="text-muted">Acompanhe a entrega e conclua o serviço com tranquilidade.</p>
     </div>
   </div>
 </section>
