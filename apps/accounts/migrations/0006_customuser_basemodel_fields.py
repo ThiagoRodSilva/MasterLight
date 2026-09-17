@@ -58,12 +58,6 @@ class Migration(migrations.Migration):
                 null=True,
             ),
         ),
-        # Add is_active with default True
-        migrations.AddField(
-            model_name="customuser",
-            name="is_active",
-            field=models.BooleanField(default=True),
-        ),
         # Backfill UUIDs for existing rows
         migrations.RunPython(backfill_uuids, migrations.RunPython.noop),
         # Backfill timestamps for existing rows
