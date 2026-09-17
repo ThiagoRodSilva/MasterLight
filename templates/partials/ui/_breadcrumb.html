@@ -1,12 +1,12 @@
 {% load static %}
 <nav aria-label="breadcrumb" class="mb-4 reveal">
-  <ol class="flex items-center gap-2 text-sm">
-    <li><a href="{% url 'home' %}" class="text-[var(--color-muted)] hover:text-brand-500 transition-colors">Início</a></li>
-    <li class="text-[var(--color-muted)]"><i class="bi bi-chevron-right"></i></li>
+  <ol class="flex items-center gap-2" style="list-style: none; padding: 0; margin: 0;">
+    <li><a href="{% url 'home' %}" class="text-muted">Início</a></li>
+    <li class="text-muted"><i class="bi bi-chevron-right"></i></li>
     {% if parent_url and parent_name %}
-    <li><a href="{{ parent_url }}" class="text-[var(--color-muted)] hover:text-brand-500 transition-colors">{{ parent_name }}</a></li>
-    <li class="text-[var(--color-muted)]"><i class="bi bi-chevron-right"></i></li>
+    <li><a href="{{ parent_url }}" class="text-muted">{{ parent_name }}</a></li>
+    <li class="text-muted"><i class="bi bi-chevron-right"></i></li>
     {% endif %}
-    <li class="text-[var(--text-strong)] font-medium" aria-current="page">{{ current }}</li>
+    <li aria-current="page">{{ current }}</li>
   </ol>
 </nav>

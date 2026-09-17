@@ -1,0 +1,134 @@
+{% load static %}
+<!-- Sidebar principal (desktop fixa / mobile drawer) -->
+<aside class="sidebar" id="sidebar" aria-label="Navegação principal">
+  <div class="sidebar-header">
+    <a href="{% url 'home' %}" class="sidebar-logo">
+      <span class="sidebar-logo-text">
+        <img src="{% static 'img/logo.svg' %}" alt="" aria-hidden="true">
+        MasterLight
+      </span>
+      <span class="sidebar-logo-tagline">Serviços elétricos para sua casa e negócio</span>
+    </a>
+  </div>
+
+  <nav class="sidebar-nav">
+    <ul class="sidebar-nav-list">
+      <li class="sidebar-nav-item">
+        <a href="{% url 'home' %}"
+           class="sidebar-nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}"
+           {% if request.resolver_match.url_name == 'home' %}aria-current="page"{% endif %}>
+          <i class="bi bi-house" aria-hidden="true"></i><span>Home</span>
+        </a>
+      </li>
+      {% if SERVICES_ENABLED %}
+      <li class="sidebar-nav-item">
+        <a href="{% url 'services-list' %}"
+           class="sidebar-nav-link {% if 'services' in request.resolver_match.url_name %}active{% endif %}"
+           {% if 'services' in request.resolver_match.url_name %}aria-current="page"{% endif %}>
+          <i class="bi bi-tools" aria-hidden="true"></i><span>Serviços</span>
+        </a>
+      </li>
+      {% endif %}
+      <li class="sidebar-nav-item">
+        <a href="{% url 'portfolio-list' %}"
+           class="sidebar-nav-link {% if 'portfolio' in request.resolver_match.url_name %}active{% endif %}"
+           {% if 'portfolio' in request.resolver_match.url_name %}aria-current="page"{% endif %}>
+          <i class="bi bi-images" aria-hidden="true"></i><span>Portfólio</span>
+        </a>
+      </li>
+      {% if AFFILIATES_ENABLED %}
+      <li class="sidebar-nav-item">
+        <a href="{% url 'affiliate-landing' %}"
+           class="sidebar-nav-link {% if 'affiliate' in request.resolver_match.url_name %}active{% endif %}"
+           {% if 'affiliate' in request.resolver_match.url_name %}aria-current="page"{% endif %}>
+          <i class="bi bi-graph-up-arrow" aria-hidden="true"></i><span>Afiliação</span>
+        </a>
+      </li>
+      {% endif %}
+    </ul>
+
+    {% if user.is_authenticated %}
+    <div class="sidebar-nav-section">Minha conta</div>
+    <ul class="sidebar-nav-list">
+      <li class="sidebar-nav-item">
+        <a href="{% url 'accounts-me' %}"
+           class="sidebar-nav-link {% if 'accounts' in request.resolver_match.url_name %}active{% endif %}">
+          <i class="bi bi-person" aria-hidden="true"></i><span>Meus dados</span>
+        </a>
+      </li>
+      {% if user.is_prestador and SERVICES_ENABLED %}
+      <li class="sidebar-nav-item">
+        <a href="{% url 'services-my' %}" class="sidebar-nav-link">
+          <i class="bi bi-briefcase" aria-hidden="true"></i><span>Meus serviços</span>
+        </a>
+      </li>
+      <li class="sidebar-nav-item">
+        <a href="{% url 'services-provider-requests' %}" class="sidebar-nav-link">
+          <i class="bi bi-inbox" aria-hidden="true"></i><span>Solicitações recebidas</span>
+        </a>
+      </li>
+      {% endif %}
+      {% if user.is_afiliado and AFFILIATES_ENABLED %}
+      <li class="sidebar-nav-item">
+        <a href="{% url 'affiliate-dashboard' %}" class="sidebar-nav-link">
+          <i class="bi bi-speedometer2" aria-hidden="true"></i><span>Painel de afiliado</span>
+        </a>
+      </li>
+      {% endif %}
+      {% if user.is_cliente and SERVICES_ENABLED %}
+      <li class="sidebar-nav-item">
+        <a href="{% url 'services-my-requests' %}" class="sidebar-nav-link">
+          <i class="bi bi-clipboard-check" aria-hidden="true"></i><span>Minhas solicitações</span>
+        </a>
+      </li>
+      {% endif %}
+    </ul>
+    {% else %}
+    <div class="sidebar-nav-section">Conta</div>
+    <ul class="sidebar-nav-list">
+      <li class="sidebar-nav-item">
+        <a href="{% url 'account_login' %}" class="sidebar-nav-link">
+          <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i><span>Entrar</span>
+        </a>
+      </li>
+      <li class="sidebar-nav-item">
+        <a href="{% url 'account_signup' %}" class="sidebar-nav-link">
+          <i class="bi bi-person-plus" aria-hidden="true"></i><span>Criar conta</span>
+        </a>
+      </li>
+    </ul>
+    {% endif %}
+  </nav>
+
+  {% if user.is_authenticated %}
+  <div class="sidebar-footer">
+    {% with display_name=user.first_name|default:user.email %}
+    <div class="sidebar-user">
+      <div class="sidebar-user-avatar" aria-hidden="true">{{ display_name|first|upper }}</div>
+      <div class="sidebar-user-info">
+        <div class="sidebar-user-name">{{ display_name }}</div>
+        <div class="sidebar-user-role">{{ user.get_role_display }}</div>
+      </div>
+    </div>
+    {% endwith %}
+    <form method="post" action="{% url 'account_logout' %}" data-loading>
+      {% csrf_token %}
+      <button type="submit" class="sidebar-logout-btn">
+        <i class="bi bi-box-arrow-right" aria-hidden="true"></i>Sair
+      </button>
+    </form>
+  </div>
+  {% endif %}
+</aside>
+
+<!-- Overlay para drawer mobile -->
+<div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true"></div>
+
+<!-- Header mobile -->
+<header class="mobile-header">
+  <a href="{% url 'home' %}" class="mobile-logo">{{ BRAND_NAME }}</a>
+  <button type="button" class="mobile-menu-toggle" id="menuToggle"
+          aria-label="Abrir menu" aria-controls="sidebar" aria-expanded="false">
+    <i class="bi bi-list" aria-hidden="true"></i>
+  </button>
+</header>

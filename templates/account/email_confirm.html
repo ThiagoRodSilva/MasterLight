@@ -301,7 +301,7 @@
 
       {% if confirmation %}
         {% if can_confirm %}
-          <form method="post" action="{% url 'account_confirm_email' confirmation.key %}" class="px-3 pb-2" data-loading>
+          <form method="post" action="{% url 'account_confirm_email' confirmation.key %}" class="mb-4" style="padding:0 var(--space-4);" data-loading>
             {% csrf_token %}
             {{ redirect_field }}
             <button type="submit" class="btn-auth btn-primary">
@@ -312,7 +312,7 @@
             </button>
           </form>
         {% else %}
-          <div class="alert-auth alert-warning mx-3 mb-3" role="alert">
+          <div class="alert-auth alert-warning mb-4" style="margin-inline:var(--space-4);" role="alert">
             <svg class="alert-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
               <circle cx="12" cy="12" r="10"></circle>
               <line x1="12" y1="8" x2="12" y2="12"></line>
@@ -323,12 +323,12 @@
               <p>Este endereço de email já foi verificado por outra conta.</p>
             </div>
           </div>
-          <div class="px-3 pb-3">
+          <div class="mb-4" style="padding:0 var(--space-4);">
             <a href="{% url 'account_login' %}" class="btn-auth btn-secondary">Entrar na conta</a>
           </div>
         {% endif %}
       {% else %}
-        <div class="alert-auth alert-info mx-3 mb-3" role="alert">
+        <div class="alert-auth alert-info mb-4" style="margin-inline:var(--space-4);" role="alert">
           <svg class="alert-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <circle cx="12" cy="12" r="10"></circle>
             <line x1="12" y1="16" x2="12" y2="12"></line>
@@ -339,9 +339,9 @@
             <p>O link de confirmação expirou ou não é válido. Solicite um novo email de verificação.</p>
           </div>
         </div>
-        <div class="px-3 pb-3">
+        <div class="mb-4" style="padding:0 var(--space-4);">
           <a href="{% url 'account_email' %}" class="btn-auth btn-secondary">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" class="me-1">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
               <circle cx="12" cy="12" r="10"></circle>
               <polyline points="12 6 12 12 16 14"></polyline>
             </svg>

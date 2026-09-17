@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% block content %}
 {% include "partials/ui/_page_header.html" with eyebrow="Portfólio" title="Portfólio" count="Trabalhos publicados pelos prestadores." %}
-<div class="flex flex-wrap gap-2 mb-4 reveal reveal-delay-1">
+<div class="flex gap-2 mb-4 reveal reveal-delay-1">
   {% if user.is_authenticated and user.is_prestador %}
-  <a href="{% url 'portfolio-create' %}" class="px-6 py-3 bg-gradient-to-r from-dark-500 to-dark-600 text-white rounded-xl font-semibold hover:from-dark-600 hover:to-dark-700 transition-all flex items-center gap-2">
+  <a href="{% url 'portfolio-create' %}" class="btn btn-primary">
     <i class="bi bi-plus-lg"></i> Novo item
   </a>
   {% endif %}
@@ -13,28 +13,23 @@
 <a href="{% url 'portfolio-list' %}" class="chip chip-primary mb-4 reveal">Remover filtro</a>
 {% endif %}
 
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+<div class="card-grid">
   {% for item in items %}
   <div class="reveal">
-    <a href="{% url 'portfolio-detail' item.pk %}" class="block bg-[var(--surface-card)] shadow-lg rounded-2xl border-l-4 border-brand-500 overflow-hidden hover:shadow-xl transition-shadow">
+    <a href="{% url 'portfolio-detail' item.pk %}" class="card card-hover">
       {% if item.image %}
-      <div class="aspect-video bg-[var(--surface-page-alt)] relative overflow-hidden">
-        <img src="{{ item.image }}" alt="{{ item.title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+      <div class="card-image">
+        <img src="{{ item.image }}" alt="{{ item.title }}" class="w-full">
       </div>
       {% endif %}
-      <div class="p-6">
-        <h5 class="text-xl font-bold text-[var(--text-strong)] mb-2">{{ item.title }}</h5>
-        {% if item.category %}<span class="inline-block px-3 py-1 bg-brand-500 text-brand-900 text-sm font-medium rounded-full">{{ item.category }}</span>{% endif %}
+      <div class="card-body">
+        <h5 class="card-title">{{ item.title }}</h5>
+        {% if item.category %}<span class="badge">{{ item.category }}</span>{% endif %}
       </div>
     </a>
   </div>
   {% empty %}
-  <div class="col-12">
-    <div class="text-center py-12 reveal">
-      <i class="bi bi-bag-check text-5xl text-[var(--color-muted)] mb-3"></i>
-      <p class="font-semibold text-[var(--text-strong)]">Nenhum item publicado.</p>
-    </div>
-  </div>
+  {% include "partials/ui/_empty_state.html" with icon="bi bi-bag-check" title="Nenhum item publicado." %}
   {% endfor %}
 </div>
 

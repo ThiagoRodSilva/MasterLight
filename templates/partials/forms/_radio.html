@@ -1,14 +1,14 @@
 {% load static %}
-<fieldset class="{{ wrapper_class|default:'mb-4' }}">
-  {% if label %}<legend class="block text-sm font-medium text-gray-700 mb-2">{{ label }}{% if required %} <span class="text-red-500">*</span>{% endif %}</legend>{% endif %}
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-{{ columns|default:4 }} gap-4">
+<fieldset class="form-group {{ wrapper_class|default:'' }}">
+  {% if label %}<legend class="form-label">{{ label }}{% if required %} <span class="text-accent">*</span>{% endif %}</legend>{% endif %}
+  <div class="flex gap-4">
     {% for choice_value, choice_label in choices %}
-    <div class="flex items-center gap-3">
-      <input type="radio" name="{{ name }}" id="{{ id|default:name }}_{{ forloop.counter }}" class="h-4 w-4 text-brand-500 border-gray-300 focus:ring-brand-500 focus:ring-2" value="{{ choice_value }}" {% if choice_value == value %}checked{% endif %} {% if required and forloop.first %}required{% endif %}>
-      <label for="{{ id|default:name }}_{{ forloop.counter }}" class="text-gray-700 cursor-pointer">{{ choice_label }}</label>
+    <div class="flex items-center gap-2">
+      <input type="radio" name="{{ name }}" id="{{ id|default:name }}_{{ forloop.counter }}" value="{{ choice_value }}" {% if choice_value == value %}checked{% endif %} {% if required and forloop.first %}required{% endif %}>
+      <label for="{{ id|default:name }}_{{ forloop.counter }}" class="form-label">{{ choice_label }}</label>
     </div>
     {% endfor %}
   </div>
-  {% if help_text %}<p class="mt-2 text-sm text-gray-500">{{ help_text }}</p>{% endif %}
-  {% if errors %}<p class="mt-2 text-sm text-red-600">{{ errors }}</p>{% endif %}
+  {% if help_text %}<p class="form-help">{{ help_text }}</p>{% endif %}
+  {% if errors %}<p class="form-error">{{ errors }}</p>{% endif %}
 </fieldset>

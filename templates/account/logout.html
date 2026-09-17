@@ -1,12 +1,14 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="max-w-md mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
-  <div class="bg-[var(--surface-card)] shadow-xl rounded-2xl border-l-4 border-brand-500 p-8 text-center reveal">
-    <h1 class="text-2xl font-bold text-[var(--text-strong)] mb-4">Sair</h1>
+<div class="auth-wrap">
+<div class="card auth-panel text-center reveal">
+  <div class="card-body">
+    <h1 class="card-title mb-4">Sair</h1>
     <form method="post" data-loading>{% csrf_token %}
-      <p class="text-[var(--color-muted)] mb-6">Confirma sair?</p>
-      <button type="submit" class="px-8 py-4 bg-gradient-to-r from-dark-500 to-dark-600 text-white rounded-xl text-lg font-semibold hover:from-dark-600 hover:to-dark-700 transition-all w-full">Sair</button>
+      <p class="text-muted mb-4">Confirma sair?</p>
+      <button type="submit" class="btn btn-primary btn-lg btn-block">Sair</button>
     </form>
   </div>
+</div>
 </div>
 {% endblock %}

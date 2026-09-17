@@ -1,46 +1,44 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container py-5">
-  <div class="row g-4">
-    <div class="col-lg-7 reveal">
-      <div class="card card-elevated">
-        <div class="card-body">
-          <h1 class="mb-2">Aprovar orçamento</h1>
-          <p class="mb-1">{{ service_request.service.name }}</p>
-          <p class="text-muted-custom small mb-2">Serviço: <strong>{{ service_request.service.name }}</strong></p>
-          {% if service_request.prestador %}
-          <p class="text-muted-custom small mb-2">Prestador: <strong>{{ service_request.prestador.email }}</strong></p>
-          {% endif %}
-          <p class="text-muted-custom small mb-3">Cliente: <strong>{{ service_request.cliente.email }}</strong></p>
-          {% if service_request.description %}
-          <p class="mb-3">{{ service_request.description }}</p>
-          {% endif %}
-        </div>
+<div class="card-grid card-grid-2">
+  <div class="reveal">
+    <div class="card">
+      <div class="card-body">
+        <h1 class="section-title mb-4">Aprovar orçamento</h1>
+        <p>{{ service_request.service.name }}</p>
+        <p class="text-muted">Serviço: <strong>{{ service_request.service.name }}</strong></p>
+        {% if service_request.prestador %}
+        <p class="text-muted">Prestador: <strong>{{ service_request.prestador.email }}</strong></p>
+        {% endif %}
+        <p class="text-muted">Cliente: <strong>{{ service_request.cliente.email }}</strong></p>
+        {% if service_request.description %}
+        <p>{{ service_request.description }}</p>
+        {% endif %}
       </div>
     </div>
-    <div class="col-lg-5 reveal reveal-delay-1">
-      <div class="card card-elevated sticky-top sticky-offset">
-        <div class="card-body">
-          <h5 class="mb-3">Resumo do orçamento</h5>
-          <p class="mb-3">Orçamento: <strong>R$ {{ service_request.final_price|floatformat:2 }}</strong></p>
-          <form method="post" data-loading>
-            {% csrf_token %}
-            <div class="mb-3">
-              <h6 class="mb-2">Pagamento</h6>
-              <p class="small mb-0">Você será direcionado para a página de pagamento segura do Asaas (Pix, cartão de crédito).</p>
-            </div>
-            <button class="btn btn-gradient w-100" type="submit">Aprovar e pagar</button>
-          </form>
+  </div>
+  <div class="reveal reveal-delay-1">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title mb-4">Resumo do orçamento</h5>
+        <p class="mb-4">Orçamento: <strong class="price">R$ {{ service_request.final_price|floatformat:2 }}</strong></p>
+        <form method="post" data-loading>
+          {% csrf_token %}
+          <div class="mb-4">
+            <h6>Pagamento</h6>
+            <p class="text-muted">Você será direcionado para a página de pagamento segura do Asaas (Pix, cartão de crédito).</p>
+          </div>
+          <button class="btn btn-primary btn-block" type="submit">Aprovar e pagar</button>
+        </form>
 
-          {% if PAYLINK_ENABLED %}
-          <hr class="my-3">
-          <p class="small text-muted-custom text-center mb-2">Prefere pagar pela tela do Asaas?</p>
-          <form id="paylink-form" method="post" action="{% url 'services-request-paylink' service_request.pk %}" data-loading>
-            {% csrf_token %}
-            <button type="submit" class="btn btn-outline-brand w-100">Pagar com link do Asaas (nova aba)</button>
-          </form>
-          {% endif %}
-        </div>
+        {% if PAYLINK_ENABLED %}
+        <hr>
+        <p class="text-muted text-center">Prefere pagar pela tela do Asaas?</p>
+        <form id="paylink-form" method="post" action="{% url 'services-request-paylink' service_request.pk %}" data-loading>
+          {% csrf_token %}
+          <button type="submit" class="btn btn-outline btn-block">Pagar com link do Asaas (nova aba)</button>
+        </form>
+        {% endif %}
       </div>
     </div>
   </div>

@@ -1,15 +1,16 @@
 {% load static %}
 {% if images %}
-<div class="flex gap-2 mt-3" role="tablist" aria-label="Galeria de imagens">
+<div class="flex gap-2 mt-4" role="tablist" aria-label="Galeria de imagens">
   {% for img in images %}
   <button type="button"
-          class="w-16 h-16 p-1 border-2 rounded {% if forloop.first %}border-brand-500{% else %}border-[var(--border-soft)]{% endif %} hover:border-brand-500 transition-colors"
+          class="{% if forloop.first %}text-accent{% endif %}"
+          style="width: 4rem; height: 4rem; padding: 0.25rem; border: 2px solid {% if forloop.first %}var(--color-accent, #FFC107){% else %}var(--border-soft, #333){% endif %}; border-radius: var(--radius-md, 8px); background: transparent; cursor: pointer;"
           data-gallery-img="{{ img.image }}"
           data-gallery-alt="{{ img.alt }}"
           aria-label="Imagem {{ forloop.counter }}"
           {% if forloop.first %}aria-selected="true"{% else %}aria-selected="false"{% endif %}
           role="tab">
-    <img src="{{ img.image }}" alt="{{ img.alt }}" class="w-full h-full object-cover rounded">
+    <img src="{{ img.image }}" alt="{{ img.alt }}" class="w-full" style="height: 100%; object-fit: cover; border-radius: 4px;">
   </button>
   {% endfor %}
 </div>

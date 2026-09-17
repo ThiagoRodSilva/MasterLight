@@ -1,66 +1,64 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container py-5">
-  <h1 class="mb-4 reveal">Minhas solicitações</h1>
-  <div class="card card-elevated reveal reveal-delay-1">
-    <div class="table-responsive">
-      <table class="table table-brand mb-0">
-        <thead>
-          <tr>
-            <th>Serviço</th>
-            <th>Status</th>
-            <th>Prestador</th>
-            <th>Orçamento</th>
-            <th>Criado em</th>
-            <th class="text-end">Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for r in requests %}
-          <tr>
-            <td>{{ r.service.name }}</td>
-            <td>
-              <span class="badge
-                {% if r.status == 'pending' %} badge-soft-warning
-                {% elif r.status == 'quoted' %} badge-soft-info
-                {% elif r.status == 'approved' %} badge-soft-success
-                {% elif r.status == 'canceled' %} badge-soft-danger
-                {% else %} badge-soft{% endif %}">
-                {{ r.get_status_display }}
-              </span>
-            </td>
-            <td>{% if r.prestador %}{{ r.prestador.email }}{% else %}<span class="text-muted-custom">—</span>{% endif %}</td>
-            <td>{% if r.final_price %}R$ {{ r.final_price|floatformat:2 }}{% else %}<span class="text-muted-custom">—</span>{% endif %}</td>
-            <td>{{ r.created_at|date:"d/m/Y H:i" }}</td>
-            <td class="text-end">
-              <div class="d-flex gap-2 justify-content-end">
-                {% if r.status == "quoted" %}
-                <a href="{% url 'services-request-approve' r.pk %}" class="btn btn-gradient btn-sm">Aprovar e pagar</a>
-                {% endif %}
-                {% if r.status == "pending" or r.status == "quoted" %}
-                <form method="post" action="{% url 'services-request-cancel' r.pk %}">
-                  {% csrf_token %}
-                  <button class="btn btn-outline-brand btn-sm" type="submit">Cancelar</button>
-                </form>
-                {% endif %}
-              </div>
-            </td>
-          </tr>
-          {% empty %}
-          <tr>
-            <td colspan="6" class="text-center py-5">
-              <div class="empty-state">
-                <i class="bi bi-clipboard-check empty-state__icon d-block mb-2"></i>
-                <p class="mb-0">Nenhuma solicitação ainda. <a href="{% url 'services-list' %}">Solicitar um serviço</a>.</p>
-              </div>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+<h1 class="section-title mb-4">Minhas solicitações</h1>
+<div class="card">
+  <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Serviço</th>
+          <th>Status</th>
+          <th>Prestador</th>
+          <th>Orçamento</th>
+          <th>Criado em</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in requests %}
+        <tr>
+          <td>{{ r.service.name }}</td>
+          <td>
+            <span class="badge
+              {% if r.status == 'pending' %} badge-secondary
+              {% elif r.status == 'quoted' %} badge
+              {% elif r.status == 'approved' %} badge-success
+              {% elif r.status == 'canceled' %} badge-danger
+              {% else %} badge-secondary{% endif %}">
+              {{ r.get_status_display }}
+            </span>
+          </td>
+          <td>{% if r.prestador %}{{ r.prestador.email }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+          <td>{% if r.final_price %}R$ {{ r.final_price|floatformat:2 }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+          <td>{{ r.created_at|date:"d/m/Y H:i" }}</td>
+          <td>
+            <div class="flex gap-2">
+              {% if r.status == "quoted" %}
+              <a href="{% url 'services-request-approve' r.pk %}" class="btn btn-primary btn-sm">Aprovar e pagar</a>
+              {% endif %}
+              {% if r.status == "pending" or r.status == "quoted" %}
+              <form method="post" action="{% url 'services-request-cancel' r.pk %}">
+                {% csrf_token %}
+                <button class="btn btn-outline btn-sm" type="submit">Cancelar</button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6">
+            <div class="empty-state">
+              <i class="bi bi-clipboard-check"></i>
+              <p>Nenhuma solicitação ainda. <a href="{% url 'services-list' %}">Solicitar um serviço</a>.</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
-
-  {% include "partials/layout/pagination.html" %}
 </div>
+
+{% include "partials/layout/pagination.html" %}
 {% endblock %}
