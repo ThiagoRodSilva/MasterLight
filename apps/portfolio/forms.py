@@ -10,7 +10,7 @@ class PortfolioItemForm(forms.ModelForm):
 
     class Meta:
         model = PortfolioItem
-        fields = ["title", "description", "category", "image", "video", "published"]
+        fields = ["title", "description", "category", "image", "video"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
