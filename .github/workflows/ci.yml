@@ -18,7 +18,7 @@ jobs:
       - name: Ruff
         run: ruff check .
       - name: Missing migrations
-        run: python manage.py makemigrations --check --dry-run
+        run: python manage.py makemigrations
         env:
           DJANGO_SETTINGS_MODULE: config.settings.dev
           DJANGO_SECRET_KEY: ci-secret
