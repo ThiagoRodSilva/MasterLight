@@ -1,6 +1,6 @@
 # MasterLight
 
-Plataforma de **serviços elétricos + afiliados** com assinatura de manutenção recorrente, autenticação social (Google/Facebook/Apple) e pagamentos Pix/cartão via Asaas.
+Plataforma de **serviços elétricos + afiliados** com assinatura de manutenção recorrente, autenticação social (Google) e pagamentos Pix/cartão via Asaas.
 
 ![CI](https://github.com/ThiagoRodSilva/MasterLight/actions/workflows/ci.yml/badge.svg)
 ![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
