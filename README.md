@@ -239,7 +239,7 @@ Contribuições são bem-vindas. Para colaborar:
 
 ## Licença
 
-Este projeto não especifica uma licença explícita no repositório. Verifique a política do repositório antes de reutilizar o código em produção.
+Veja na Aba Licença
 
 ## Contato
 
