@@ -16,6 +16,8 @@ jobs:
 
     env:
       DJANGO_SECRET_KEY: ci-secret
+      ASAAS_API_KEY: aact_ci_dummy_key
+      PAYMENT_PROVIDER: asaas
 
     steps:
       - name: Checkout
