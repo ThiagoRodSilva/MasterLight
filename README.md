@@ -246,4 +246,3 @@ Veja na Aba Licença
 Repositório oficial:
 
 https://github.com/ThiagoRodSilva/MasterLight
-```
