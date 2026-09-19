@@ -247,9 +247,3 @@ Repositório oficial:
 
 https://github.com/ThiagoRodSilva/MasterLight
 ```
-
-Se quiser, posso também criar uma versão:
-- mais curta e profissional;
-- mais focada em marketing;
-- mais técnica, para devs;
-- ou uma versão pronta para o GitHub com badges e screenshots.
